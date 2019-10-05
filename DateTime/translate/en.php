@@ -1,0 +1,33 @@
+<?php
+
+$translate = array();
+$translate["monday"] = "Monday";
+$translate["tuesday"] = "Tuesday";
+$translate["wednesday"] = "Wednesday";
+$translate["thursday"] = "Thursday";
+$translate["friday"] = "Friday";
+$translate["saturday"] = "Saturday";
+$translate["sunday"] = "Sunday";
+$translate["monday_small"] = "monday";
+$translate["tuesday_small"] = "tuesday";
+$translate["wednesday_small"] = "wednesday";
+$translate["thursday_small"] = "thursday";
+$translate["friday_small"] = "friday";
+$translate["saturday_small"] = "saturday";
+$translate["sunday_small"] = "sunday";
+$translate["january"] = "January";
+$translate["february"] = "February";
+$translate["march"] = "March";
+$translate["april"] = "April";
+$translate["may"] = "May";
+$translate["june"] = "June";
+$translate["july"] = "July";
+$translate["august"] = "August";
+$translate["september"] = "September";
+$translate["october"] = "October";
+$translate["november"] = "November";
+$translate["december"] = "December";
+$translate["minute_ago"] = "minute ago";
+$translate["min_ago"] = "min. ago";
+$translate["today"] = "today";
+$translate["yesterday"] = "yesterday";

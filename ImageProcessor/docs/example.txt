@@ -1,0 +1,76 @@
+Base syntax of ImageProcessor is:
+
+    // create processor
+    $processor = new ImageProcessor('image-file.jpg');
+
+    // add some actions
+    $processor->addAction(...);
+    $processor->addAction(...);
+    $processor->addAction(...);
+
+    // run processor
+    $processor->process();
+
+Supported actions:
+
+* ImageProcessor_ActionBlurGaussian
+* ImageProcessor_ActionBrightness
+* ImageProcessor_ActionColorize
+* ImageProcessor_ActionContrast
+* ImageProcessor_ActionCut
+* ImageProcessor_ActionEdgeDetect
+* ImageProcessor_ActionEmboss
+* ImageProcessor_ActionGammaCorrect
+* ImageProcessor_ActionGrayscale
+* ImageProcessor_ActionNegate
+* ImageProcessor_ActionPixelate
+* ImageProcessor_ActionResizeCrop
+* ImageProcessor_ActionResizeProportional
+* ImageProcessor_ActionRoundCorners
+* ImageProcessor_ActionSharpen
+* ImageProcessor_ActionSmooth
+* ImageProcessor_ActionToJPEG
+* ImageProcessor_ActionToPNG
+* ImageProcessor_ActionWatermarkPNG
+* You can create your own action by example of any ImageProcessor_Action class.
+
+Example: open image1.jpg, make it grayscale and save to image2.png
+
+    $processor = new ImageProcessor('image1.jpg');
+    $processor->addAction(new ImageProcessor_ActionGrayscale());
+    $processor->addAction(new ImageProcessor_ActionToPNG('image2.png'));
+    $processor->process();
+
+Example: open image1.jpg, resize it to 100x100px (cut-mode) and save to image2.png
+
+    $processor = new ImageProcessor('image1.jpg');
+    $processor->addAction(new ImageProcessor_ActionResizeCrop(100, 100));
+    $processor->addAction(new ImageProcessor_ActionToPNG('image2.png'));
+    $processor->process();
+
+Example: open image1.jpg, resize it to 100x100px, gamma correct and save to image2.png
+
+    $processor = new ImageProcessor('image1.jpg');
+    $processor->addAction(new ImageProcessor_ActionResizeProportional(100, 200));
+    $processor->addAction(new ImageProcessor_ActionGammaCorrect(1.0, 1.3));
+    $processor->addAction(new ImageProcessor_ActionToPNG('image2.png'));
+    $processor->process();
+
+Example: open image1.jpg, resize it to 100x100px, add watermark and save to image2.jpg with JPEG-quality 75
+
+    $processor = new ImageProcessor('image1.jpg');
+    $processor->addAction(new ImageProcessor_ActionResizeProportional(100, 200));
+    $processor->addAction(new ImageProcessor_ActionWatermarkPNG('watermark.png', 'center', 'center'));
+    $processor->addAction(new ImageProcessor_ActionToJPEG('image2.jpg', 85));
+    $processor->process();
+
+Easy way to create image thumbnails: ImageProcessor_Thumber have static-methods. They returns path to created thumb-files.
+
+    echo ImageProcessor_Thumber::MakeThumbProportional('image1.png', 100, 100);
+    echo ImageProcessor_Thumber::MakeThumbCrop('image1.png', 100, 100);
+
+Easy way to delete (clean) thumbnails:
+
+    ImageProcessor_Thumber::DeleteThumbs('image1.png');
+
+Try ImageProcessor ;)

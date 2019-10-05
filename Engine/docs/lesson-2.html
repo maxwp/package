@@ -1,0 +1,85 @@
+Subject: Урок 2. Быстрый старт. Создание новой страницы
+
+Рекомендуем прочитать эту статью, если Вы первый раз собираетесь что-либо править на [[Engine]] или хотите просто попробовать поработать с [[Engine]].
+Данная статья повторяется на практике за несколько минут.
+
+h2. Получение исходников и настройка Engine
+
+У вас уже должен быть выполнен [[Урок 1. Создание нового проекта на Engine]].
+После настройки, можете приступать к чтению следующих шагов данной инструкции.
+
+h2. Регистрация нового контента в [[contents.xml]]
+
+Для примера, мы создаем страницу /mytestpage.html.
+Откройте файл /[[contents.xml]] и допишите в XML-структуру еще один тег <content>:
+
+<code><content id="mytestpage">
+<url>/mytestpage.html</url>
+<title>Моя тестовая страница</title>
+<filehtml>test/mytestpage.html</filehtml>
+<filephp>test/mytestpage.php</filephp>
+<moveto>tpl-global</moveto>
+<moveas>content</moveas>
+</content></code>
+
+id=mytestpage указан для примера. В реальности, выберите любой id. Единственное условие - id не должны повторяться в файле [[contents.xml]]. id контента может быть строковый.
+Поля moveto и moveas указывают, куда и как дальше направить результат выполнения вашей страницы. moveto=tpl-global означает - "в контент tpl-global". Чтобы посмотреть, что такое контент tpl-global - найдите в [[contents.xml]] <content id="tpl-global">.
+
+Для более подробной информации см. также: [[Управление страницами и контентами]].
+
+h2. Создание файлов
+
+Вы только что указали, что скрипт и отображение для данной страницы будет находиться в файлах test/mytestpage.php(.html).<br />
+Попытайтесь зайти на созданную страницу, движок в режиме development автоматически создаст файлы:<br />
+
+* /controllers/test/mytestpage.html<br />
+* /controllers/test/mytestpage.php<br />
+
+h2. [[SClass]]
+
+Далее в файле /controllers/test/mytestpage.php будет автоматически создан stub (заглушка) [[SClass]]'a.<br />
+Просто откройте файл и вы должны увидеть в нем следующее:<br />
+﻿
+<code><?php
+
+class mytestpage extends SClass {
+
+    public function process() {
+
+    }
+
+}
+</code>
+
+Имя класса mytestpage определяется по имени файла (хотя есть возможность имя класса переопределить в [[contents.xml]].<br />
+По умолчанию, если файл был назван bugaga.php, то имя класса в нем должно быть bugaga.<br />
+
+h2. html-отображение и php-контроллер
+
+Вы можете писать что-угодно в только что созданном html-файле, а с скрипта php передавать в html любые [[Smarty]]-переменные и объекты.
+Для примера в html-файле напишем следующее:
+
+<code>aaaa<br>
+{|$myvar|}<br>
+bbb<br>
+</code>
+
+а в php-файле допишем одну строку:
+
+<code><?php
+
+class mytestpage extends SClass {
+
+    public function process() {
+        $this->assign('myvar', 'ccc');
+    }
+
+}
+</code>
+
+Далее, после того как Вы запросите URL http://myhostname/mytestpage.html Вы должны увидеть следующее:
+
+﻿<code>aaaa
+ссс
+bbb
+</code>

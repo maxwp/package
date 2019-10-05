@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<datetime>
+    <monday>Понедельник</monday>
+    <tuesday>Вторник</tuesday>
+    <wednesday>Среда</wednesday>
+    <thursday>Четверг</thursday>
+    <friday>Пятница</friday>
+    <saturday>Суббота</saturday>
+    <sunday>Воскресенье</sunday>
+    <monday_small>понедельник</monday_small>
+    <tuesday_small>вторник</tuesday_small>
+    <wednesday_small>среда</wednesday_small>
+    <thursday_small>четверг</thursday_small>
+    <friday_small>пятница</friday_small>
+    <saturday_small>суббота</saturday_small>
+    <sunday_small>воскресенье</sunday_small>
+    <january>Января</january>
+    <february>Февраля</february>
+    <march>Марта</march>
+    <april>Апреля</april>
+    <may>Мая</may>
+    <june>Июня</june>
+    <july>Июля</july>
+    <august>Августа</august>
+    <september>Сентября</september>
+    <october>Октября</october>
+    <november>Ноября</november>
+    <december>Декабря</december>
+    <minute_ago>минуту назад</minute_ago>
+    <min_ago>мин. назад</min_ago>
+    <today>сегодня</today>
+    <yesterday>вчера</yesterday>
+
+</datetime>

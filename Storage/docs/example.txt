@@ -1,0 +1,30 @@
+Basic usage example:
+
+    // create storage
+    Storage::Initialize('mystorage', new Storage_HandlerArray());
+
+    // put data
+    Storage::Get('mystorage')->setData('key1', 'value1');
+    Storage::Get('mystorage')->setData('key2', 'value2');
+
+    // get data
+    Storage::Get('mystorage')->getData('key1');
+    Storage::Get('mystorage')->getData('key2');
+
+    // check data
+    Storage::Get('mystorage')->hasData('key2');
+
+    // delete data
+    Storage::Get('mystorage')->removeData('key2');
+
+    // clean storage
+    Storage::Get('mystorage')->cleanData();
+
+Support storage handlers:
+
+    Storage::Initialize('mystorage1', new Storage_HandlerArray());
+    Storage::Initialize('mystorage2', new Storage_HandlerCacheFiles('/my-cache-directory/'));
+    Storage::Initialize('mystorage3', new Storage_HandlerFiles('/my-cache-directory/'));
+    Storage::Initialize('mystorage4', new Storage_HandlerMemcache('prefix-', 'localhost', 11211));
+    Storage::Initialize('mystorage5', new Storage_HandlerSession());
+

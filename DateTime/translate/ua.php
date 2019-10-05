@@ -1,0 +1,33 @@
+<?php
+
+$translate = array();
+$translate["monday"] = "Понеділок";
+$translate["tuesday"] = "Вівторок";
+$translate["wednesday"] = "Середа";
+$translate["thursday"] = "Четвер";
+$translate["friday"] = "П'ятниця";
+$translate["saturday"] = "Субота";
+$translate["sunday"] = "Неділя";
+$translate["monday_small"] = "понеділок";
+$translate["tuesday_small"] = "вівторок";
+$translate["wednesday_small"] = "середа";
+$translate["thursday_small"] = "четвер";
+$translate["friday_small"] = "п'ятниця";
+$translate["saturday_small"] = "субота";
+$translate["sunday_small"] = "неділя";
+$translate["january"] = "Cічня";
+$translate["february"] = "Лютого";
+$translate["march"] = "Березня";
+$translate["april"] = "Квітня";
+$translate["may"] = "Травня";
+$translate["june"] = "Червня";
+$translate["july"] = "Липня";
+$translate["august"] = "Серпня";
+$translate["september"] = "Вересня";
+$translate["october"] = "Жовтня";
+$translate["november"] = "Листопада";
+$translate["december"] = "Грудня";
+$translate["minute_ago"] = "хвилину тому";
+$translate["min_ago"] = "хв. тому";
+$translate["today"] = "сьогодні";
+$translate["yesterday"] = "вчора";

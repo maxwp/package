@@ -1,0 +1,43 @@
+TextProcessor - текстовый процессор любых текстовых данных.
+
+Позволяет выполнять операции над любыми текстовыми данными.
+Операции выполняют команды-обработчики (TextProcessor_IAction).
+
+В терминах ООП - это паттерны Facade + Action.
+
+Например, есть коллекции обработчиков, которые позволяют
+обрабатывать:
+- bbcode to html
+- texile to html
+- csv to html
+- txt to html
+- подсвечивать в тексте ссылки, emailы
+- и так далее: любые текстовые данные в любые текстовые данные
+
+Текстовые данные - это не бинарные данные.
+Текстовые данные - данные, которые может прочитать и понять человек.
+
+Внимание! Коллекции дописываются, в стадии разработки.
+
+=============================
+Подключение в #wpp
+=============================
+
+1. Подключите пакет:
+
+PackageLoader::Get()->import('TextProcessor');
+
+2. Начните использование по примеру unit-тестов:
+
+// начните создание "своего" процессора:
+$processor = new TextProcessor();
+
+// добавьте обработчики, которые вам нужны
+$processor->addAction(new TextProcessor_ActionBBCodeURL());
+$processor->addAction(new TextProcessor_ActionBBCodeB());
+$processor->addAction(new TextProcessor_ActionBBCodeU());
+... // и другие обработчики
+$processor->addAction(new TextProcessor_ActionBBCodeI());
+
+// выполните обработку "вашим" процессором
+$outputText = $processor->process($inputText);

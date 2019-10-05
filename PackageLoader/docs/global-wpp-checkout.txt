@@ -1,0 +1,17 @@
+Subject: Checkout пакетов из репозитория
+
+Для разработки пакетов мы используем Subversion (svn).
+Чтобы вызрузить себе последнюю версию пакетов из репозитория,
+воспользуйтесь командой:
+
+svn checkout svn://svn.webproduction.com.ua/packages/trunk
+
+Чтобы вытянуть конкретный пакет, просто уточните его адрес:
+
+svn checkout svn://svn.webproduction.com.ua/packages/trunk/Engine
+svn checkout svn://svn.webproduction.com.ua/packages/trunk/PackageLoader
+svn checkout svn://svn.webproduction.com.ua/packages/trunk/ConnectionManager
+и так далее.
+
+Также в репозитории есть ветка /dev, в которой находятся дополнительные
+обучающие материалы по #wpp - видео, презентации, лекции и так далее.

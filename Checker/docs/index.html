@@ -1,0 +1,51 @@
+Checker - это набор методов для проверки ("чека") каких либо данных.<br />
+Все методы в классе Checker - static.<br />
+<br />
+
+Наиболее частые случаи использования Checker'a:
+
+<code>
+Checker::CheckEmail($email);
+Checker::CheckLogin(...);
+Checker::CheckPassword(...);
+Checker::CheckPhone();
+...
+</code>
+
+<br />
+<strong>Важно</strong><br />
+Все методы Checker'a возвращают только true или false - и ничего другого!<br />
+<br />
+
+Для подключения пакета напишите:<br />
+<code>
+PackageLoader::Get()->import('Checker');
+</code>
+
+<h2>Доступные методы класса Checker</h2>
+
+CheckEmail - проверить емейл на корректность синтаксиса<br />
+CheckICQ - проверить номер icq на корректность синтаксиса<br />
+CheckLogin - проверить логин на корректность синтаксиса<br />
+CheckPassword - проверить пароль на минимальный и максимальный размер<br />
+CheckName - проверить ФИО на корректность ввода (наличие фамилии, имя и отчества)<br />
+CheckPhone - проверить номер телефона на корректность ввода<br />
+CheckDate - проверить дату на корректность ввода<br />
+CheckDomainName<br />
+CheckURL<br />
+CheckHostname<br />
+CheckIP - проверить IP адрес на корректность ввода IP v.4<br />
+CheckImageFormat - проверить изображение на корректность одного из допустимых форматов<br />
+
+<h2>Пример Checker::CheckImageFormat()</h2>
+
+<code>
+    $result = Checker::CheckImageFormat('/home/max/user1.jpg');
+    // или
+    $result = Checker::CheckImageFormat('/home/max/user1.jpg', $allowMIME = array('image/gif', 'image/jpeg', 'image/png', 'image/pjpeg'));
+    // или
+    $result = Checker::CheckImageFormat('http://..../image.png');
+</code>
+
+$result будет равен true только в том случае, когда введенный путь (или URL, URI) будет содержать картинку, которая подходит под один из перечисленных MIME-типов для изображений.<br />
+По умолчанию $allowMIME содержит MIME-типы изображений: JPEG, PNG и GIF.<br />

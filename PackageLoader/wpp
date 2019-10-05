@@ -1,0 +1,81 @@
+#!/bin/bash
+INSTALLDIR='packages/'
+OPT=$1
+
+usage()
+{
+	echo "usage: $0 [checkout|install|remove] pkgname";
+}
+
+if [ $# -le 1 ]; then
+	usage
+	exit 1
+fi
+
+case $OPT in
+checkout) 
+	OLDSTR=`svn propget svn:externals .`
+	NEWSTR=$OLDSTR
+	while [ $# -gt 1 ]
+	do
+		#проверяем, не установен ли уже такой пакет
+		LINE="svn://svn.webproduction.com.ua/wpp/$2/trunk/"
+		INSTALLED=`echo "$OLDSTR" | grep -e "$LINE"`
+		LINE="svn://svn.webproduction.com.ua/wpp/$2/tags/release/"
+		INSTALLED2=`echo "$OLDSTR" | grep -e "$LINE"`
+		LINE="svn://svn.webproduction.com.ua/packages/$2/trunk/"
+		INSTALLED3=`echo "$OLDSTR" | grep -e "$LINE"`
+		LINE="svn://svn.webproduction.com.ua/packages/$2/tags/release/"
+		INSTALLED4=`echo "$OLDSTR" | grep -e "$LINE"`
+		if [[ -z "$INSTALLED" && -z "$INSTALLED2" && -z "$INSTALLED3" && -z "$INSTALLED4" ]]
+		then
+			echo -n "installing $2... ";
+            NEWSTR="$OLDSTR"$'\n'"$INSTALLDIR$2/"$'\t'"svn://svn.webproduction.com.ua/wpp/$2/trunk/"
+			svn propset svn:externals "$NEWSTR" . &>/dev/null
+		        svn up &>/dev/null
+		        if [ $? -eq 0 ]
+		        then
+		                echo "success!"
+				OLDSTR=$NEWSTR
+		        else
+		                svn propset svn:externals "$OLDSTR" . >/dev/null
+                		echo "error!"
+		        fi
+		else
+			echo "package $2 already installed"
+		fi
+		shift
+	done
+;;
+install)
+        while [ $# -gt 1 ]
+        do
+		svn export svn://svn.webproduction.com.ua/wpp/$2/tags/release/ . --force
+		shift
+        done
+;;
+remove) 
+	OLDSTR=`svn propget svn:externals .`
+	NEWSTR=`svn propget svn:externals .`
+	while [ $# -gt 1 ]
+	do
+		LINE="svn://svn.webproduction.com.ua/wpp/$2/trunk/"
+        INSTALLED=`echo "$OLDSTR" | grep -e "$LINE"`
+		LINE="svn://svn.webproduction.com.ua/packages/$2/trunk/"
+        INSTALLED2=`echo "$OLDSTR" | grep -e "$LINE"`
+		if [[ "$INSTALLED" || "$INSTALLED2" ]]; then
+			echo "removing $2...";
+			RMSTR="$INSTALLDIR$2/"$'\t'"svn://svn.webproduction.com.ua/wpp/$2/trunk/"
+			NEWSTR=`echo -e "$OLDSTR" | grep -v -e "$RMSTR"`
+			RMSTR="$INSTALLDIR$2/"$'\t'"svn://svn.webproduction.com.ua/packages/$2/trunk/"
+			NEWSTR=`echo -e "$NEWSTR" | grep -v -e "$RMSTR"`
+			rm -rf "$INSTALLDIR$2"
+		else
+			echo "package $2 not installed"
+		fi
+		shift
+	done
+	svn propset svn:externals "$NEWSTR" . &>/dev/null
+;;
+*)	usage
+esac

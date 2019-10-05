@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><wpdoc><class><name>Checker</name><description><![CDATA[Класс-проверщик различных данных на корректность
+
+@author Max
+@copyright WebProduction
+@package Checker]]></description><method><name>CheckEmail</name><static /><description><![CDATA[Проверить E-mail на корректность
+
+@param string $email
+@return bool]]></description><parameter><name>email</name></parameter></method><method><name>CheckICQ</name><static /><description><![CDATA[Проверить номер icq на корректность ввода
+
+@param mixed $icq
+@return bool]]></description><parameter><name>icq</name></parameter></method><method><name>CheckLogin</name><static /><description><![CDATA[]]></description><parameter><name>login</name></parameter></method><method><name>CheckPassword</name><static /><description><![CDATA[Проверить пароль на корректность
+
+@param string $password
+@param int $min
+@param int $max
+@return bool]]></description><parameter><name>password</name></parameter><parameter><name>min</name></parameter><parameter><name>max</name></parameter></method><method><name>CheckName</name><static /><description><![CDATA[Проверить Фамилию+имя+отчество на корректность ввода.
+Допустимы:
+Фамилия Имя Отчество
+Фамилия И.О.
+Фамилия И. О.
+Фамилия И О
+
+@param string $name
+@return bool]]></description><parameter><name>name</name></parameter></method><method><name>CheckPhone</name><static /><description><![CDATA[Проверить номер телефона на корректность ввода
+
+@author Ramm
+@param string $phone
+@return bool]]></description><parameter><name>phone</name></parameter></method><method><name>CheckDate</name><static /><description><![CDATA[Проверить дату на корректность ввода
+
+@param int $datetime
+@return bool]]></description><parameter><name>datetime</name></parameter></method><method><name>CheckDomainName</name><static /><description><![CDATA[Проверить доменное имя на корректность ввода
+
+@author Max
+@param string $domainname
+@param bool $cyrillic
+@return bool]]></description><parameter><name>domainname</name></parameter><parameter><name>cyrillic</name></parameter></method><method><name>CheckURL</name><static /><description><![CDATA[Проверить URL на корректность ввода
+
+@param string $url
+@return bool]]></description><parameter><name>url</name></parameter></method><method><name>CheckHostname</name><static /><description><![CDATA[Проверить URL или host без wrapper'a на корректность
+
+@author Ramm
+@author Max
+@param string $hostname
+@param bool $cyrillic
+@return bool]]></description><parameter><name>hostname</name></parameter><parameter><name>cyrillic</name></parameter></method><method><name>CheckIP</name><static /><description><![CDATA[Проверить IP на корректность ввода.
+По умолчанию формат IPv4
+
+@author idea of atarget
+@param int $ip
+@return bool]]></description><parameter><name>ip</name></parameter><parameter><name>format</name></parameter></method><method><name>CheckImageFormat</name><static /><description><![CDATA[Проверить картинку на допустимость формата.
+Нужно указывать полный пусть к картине или полный URL
+
+@todo idea: проверка на размеры и пропорции
+
+@param string $filepath
+@param array $allowFormats
+@return bool]]></description><parameter><name>filepath</name></parameter><parameter><name>allowMIME</name></parameter></method><method><name>CheckNumberFormat</name><static /><description><![CDATA[Проверка числового значения на корректность
+Если переданное значение не является числовым - возвращает false
+
+@author Ramm
+@param float $number
+@param bool $correct если true, то возвращает числовое значение в отформатированном виде иначе не меняет первое после проверки
+@return mixed]]></description><parameter><name>number</name></parameter><parameter><name>correct</name></parameter></method><method><name>StringInUTF8</name><description><![CDATA[Проверить, является ли строка в UTF-8
+
+@param string $string
+@return bool]]></description><parameter><name>string</name></parameter></method></class></wpdoc>

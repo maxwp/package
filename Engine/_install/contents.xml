@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine>
+
+<content id="tpl-global">
+<filehtml>templates/tpl_global.html</filehtml>
+<filecss>templates/tpl_global.css</filecss>
+<filejs>templates/tpl_global.js</filejs>
+<filephp>templates/tpl_global.php</filephp>
+</content>
+
+<content id="index">
+<url>/index.html</url>
+<title>Index</title>
+<filehtml>index.html</filehtml>
+<filephp>index.php</filephp>
+<moveto>tpl-global</moveto>
+<moveas>content</moveas>
+</content>
+
+
+<content id="404">
+<title>error404</title>
+<filehtml>errors/error404.html</filehtml>
+<moveto>tpl-global</moveto>
+<moveas>content</moveas>
+</content>
+
+</engine>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<datetime>
+    <monday>Monday</monday>
+    <tuesday>Tuesday</tuesday>
+    <wednesday>Wednesday</wednesday>
+    <thursday>Thursday</thursday>
+    <friday>Friday</friday>
+    <saturday>Saturday</saturday>
+    <sunday>Sunday</sunday>
+    <monday_small>monday</monday_small>
+    <tuesday_small>tuesday</tuesday_small>
+    <wednesday_small>wednesday</wednesday_small>
+    <thursday_small>thursday</thursday_small>
+    <friday_small>friday</friday_small>
+    <saturday_small>saturday</saturday_small>
+    <sunday_small>sunday</sunday_small>
+    <january>January</january>
+    <february>February</february>
+    <march>March</march>
+    <april>April</april>
+    <may>May</may>
+    <june>June</june>
+    <july>July</july>
+    <august>August</august>
+    <september>September</september>
+    <october>October</october>
+    <november>November</november>
+    <december>December</december>
+    <minute_ago>minute ago</minute_ago>
+    <min_ago>min. ago</min_ago>
+    <today>today</today>
+    <yesterday>yesterday</yesterday>
+
+</datetime>

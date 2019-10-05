@@ -1,0 +1,31 @@
+Subject: Технические требования к серверу
+
+h2. PHP<br />
+PHP 5.2 или выше с поддержкой библиотек gd2, mbstring, iconv, mysql<br />
+<br />
+Возможность для php выставить:<br />
+memory_limit=128M<br />
+max_post_size=50M<br />
+file_upload_size=25M<br />
+register_globals=Off<br />
+display_errors=On<br />
+time_limit = 600 (10 minutes)<br />
+<br />
+h2. MySQL<br />
+MySQL 3 или выше с поддержкой кодировок UTF-8, windows-1251.<br />
+<br />
+h2. Web-Server<br />
+Веб-сервер - любой, но PHP должен работать в режиме php-cgi или php-fcgi (тоесть, процессы php должны запускаться с под имени пользователя, а не с под юзера www, а также возможность юзеру самостоятельно менять свой php.ini).<br />
+Веб-сервер НЕ_должен по умолчанию выбрасывать заголовок content-type: text/html; encoding=windows-1251;<br />
+Веб-сервер должен понимать файлы .htaccess с директивами:<br />
+<br />
+RewriteEngine (mod_rewrite)<br />
+deny from all<br />
+require valid-user (mod_auth)<br />
+Предпочтительный веб-сервер: apache 2.2<br />
+<br />
+h2. OS<br />
+Операционная система сервера:<br />
+Любая, кроме Windows и кроме Fedora.<br />
+Предпочтительно: debian, freebsd, centos, ubuntu.<br />
+<br />
