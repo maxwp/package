@@ -35,7 +35,7 @@ implements PackageLoader_IDataProcessor {
      */
     public function processAfter($data) {
         $hash = md5($data);
-        $file = __DIR__.'/compile/'.$hash.'.js';
+        $file = dirname(__FILE__).'/compile/'.$hash.'.js';
         if (!file_exists($file)) {
 
         }

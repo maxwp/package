@@ -26,9 +26,9 @@
 // fix for Mac OS X PHP 5.3 default
 @date_default_timezone_set(date_default_timezone_get());
 
-include_once(__DIR__.'/PackageLoader.class.php');
-include_once(__DIR__.'/PackageLoader_ILoader.class.php');
-include_once(__DIR__.'/PackageLoader_IDataProcessor.class.php');
-include_once(__DIR__.'/PackageLoader_Exception.class.php');
-include_once(__DIR__.'/PackageLoader_DataProcessor_CSSHashFile.class.php');
-include_once(__DIR__.'/PackageLoader_DataProcessor_JSHashFile.class.php');
+include_once(dirname(__FILE__).'/PackageLoader.class.php');
+include_once(dirname(__FILE__).'/PackageLoader_ILoader.class.php');
+include_once(dirname(__FILE__).'/PackageLoader_IDataProcessor.class.php');
+include_once(dirname(__FILE__).'/PackageLoader_Exception.class.php');
+include_once(dirname(__FILE__).'/PackageLoader_DataProcessor_CSSHashFile.class.php');
+include_once(dirname(__FILE__).'/PackageLoader_DataProcessor_JSHashFile.class.php');

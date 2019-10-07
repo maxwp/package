@@ -202,7 +202,7 @@ class Checker {
         }
 
         $length = strlen(preg_replace('/\D/', '', $phone));
-        if ($length > 13)
+        if ($length < 2 || $length > 13)
             return false;
 
         return true;
@@ -459,7 +459,7 @@ class Checker {
             // если есть цифры или _
             return false;
         }
-        if (preg_match("/^(\w+[-|,|`|']*\s*\.?\s*)+$/ius", $word)) {
+        if (preg_match("/^(\w+[-|,|`]*\s*\.?\s*)+$/ius", $word)) {
             return true;
         } else {
             if (preg_match("/\((.*)\)/ius", $word, $r)) {

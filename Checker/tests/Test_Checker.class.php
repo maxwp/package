@@ -152,12 +152,12 @@ class Test_Checker extends TestKit_TestClass {
     }
 
     public function testCheckImageFormat() {
-        $this->assertTrue(Checker::CheckImageFormat(__DIR__.'/testimage.exe'));
-        $this->assertTrue(Checker::CheckImageFormat(__DIR__.'/testimage.jpg'));
-        $this->assertTrue(Checker::CheckImageFormat(__DIR__.'/testimage.gif'));
-        $this->assertTrue(Checker::CheckImageFormat(__DIR__.'/testimage.png'));
-        $this->assertFalse(Checker::CheckImageFormat(__DIR__.'/testimage.pdf'));
-        $this->assertFalse(Checker::CheckImageFormat(__DIR__.'/include.php'));
+        $this->assertTrue(Checker::CheckImageFormat(dirname(__FILE__).'/testimage.exe'));
+        $this->assertTrue(Checker::CheckImageFormat(dirname(__FILE__).'/testimage.jpg'));
+        $this->assertTrue(Checker::CheckImageFormat(dirname(__FILE__).'/testimage.gif'));
+        $this->assertTrue(Checker::CheckImageFormat(dirname(__FILE__).'/testimage.png'));
+        $this->assertFalse(Checker::CheckImageFormat(dirname(__FILE__).'/testimage.pdf'));
+        $this->assertFalse(Checker::CheckImageFormat(dirname(__FILE__).'/include.php'));
         $this->assertFalse(Checker::CheckImageFormat('none'));
         $this->assertFalse(Checker::CheckImageFormat(''));
     }

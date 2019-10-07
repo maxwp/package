@@ -28,11 +28,6 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
         $this->_database = $database;
         $this->_encoding = $encoding;
         $this->_port = $port;
-
-        // в режиме debug включаем статистику
-        if (PackageLoader::Get()->getMode('debug')) {
-            $this->enableStatistic();
-        }
     }
 
     public function connect() {

@@ -20,4 +20,4 @@
 /**
  * Подключаем пакет и все необходимые зависимости
  */
-include_once(__DIR__.'/../include.php');
+include_once(dirname(__FILE__).'/../include.php');

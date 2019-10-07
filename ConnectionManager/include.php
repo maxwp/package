@@ -16,21 +16,23 @@
  */
 
 if (class_exists('PackageLoader')) {
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/ConnectionManager.class.php');
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/ConnectionManager_IConnection.class.php');
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/ConnectionManager_IDatabaseAdapter.class.php');
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/ConnectionManager_Exception.class.php');
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/ConnectionManager_MySQLi.class.php');
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/ConnectionManager_PgSQL.class.php');
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/ConnectionManager_PDO.class.php');
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/ConnectionManager_SphinxQL.class.php');
+    PackageLoader::Get()->registerPHPClass(dirname(__FILE__).'/ConnectionManager.class.php');
+    PackageLoader::Get()->registerPHPClass(dirname(__FILE__).'/ConnectionManager_IConnection.class.php');
+    PackageLoader::Get()->registerPHPClass(dirname(__FILE__).'/ConnectionManager_IDatabaseAdapter.class.php');
+    PackageLoader::Get()->registerPHPClass(dirname(__FILE__).'/ConnectionManager_Exception.class.php');
+    PackageLoader::Get()->registerPHPClass(dirname(__FILE__).'/ConnectionManager_MySQLi.class.php');
+    PackageLoader::Get()->registerPHPClass(dirname(__FILE__).'/ConnectionManager_PgSQL.class.php');
+    PackageLoader::Get()->registerPHPClass(dirname(__FILE__).'/ConnectionManager_PDO.class.php');
+    PackageLoader::Get()->registerPHPClass(dirname(__FILE__).'/ConnectionManager_SphinxQL.class.php');
+    PackageLoader::Get()->registerPHPClass(dirname(__FILE__).'/ConnectionManager_GearmanClient.class.php');
 } else {
-    include_once(__DIR__.'/ConnectionManager.class.php');
-    include_once(__DIR__.'/ConnectionManager_Exception.class.php');
-    include_once(__DIR__.'/ConnectionManager_IConnection.class.php');
-    include_once(__DIR__.'/ConnectionManager_IDatabaseAdapter.class.php');
-    include_once(__DIR__.'/ConnectionManager_MySQLi.class.php');
-    include_once(__DIR__.'/ConnectionManager_PgSQL.class.php');
-    include_once(__DIR__.'/ConnectionManager_PDO.class.php');
-    include_once(__DIR__.'/ConnectionManager_SphinxQL.class.php');
+    include_once(dirname(__FILE__).'/ConnectionManager.class.php');
+    include_once(dirname(__FILE__).'/ConnectionManager_Exception.class.php');
+    include_once(dirname(__FILE__).'/ConnectionManager_IConnection.class.php');
+    include_once(dirname(__FILE__).'/ConnectionManager_IDatabaseAdapter.class.php');
+    include_once(dirname(__FILE__).'/ConnectionManager_MySQLi.class.php');
+    include_once(dirname(__FILE__).'/ConnectionManager_PgSQL.class.php');
+    include_once(dirname(__FILE__).'/ConnectionManager_PDO.class.php');
+    include_once(dirname(__FILE__).'/ConnectionManager_SphinxQL.class.php');
+    include_once(dirname(__FILE__).'/ConnectionManager_GearmanClient.class.php');
 }

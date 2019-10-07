@@ -17,6 +17,7 @@ class PackageLoader {
 
     private function __construct() {
         $this->setMode('developer-report', true);
+
         if (function_exists('__autoload')) {
             // так как есть ранее определенная функция __autoload(),
             // то регистрировать свою spl_autoload_register() мы не можем,
@@ -28,14 +29,12 @@ class PackageLoader {
         }
 
         // по умолчанию packagePath на один уровень выше самого пакета PackageLoader
-        $this->addPackagesPath(__DIR__.'/../');
+        $this->addPackagesPath(dirname(__FILE__).'/../');
 
         // проверяем reject
-        if (rand(1, 100) == 1) {
-            $reportFileReject = __DIR__.'/reports/lastreport-reject.log';
-            if (file_exists($reportFileReject)) {
-                exit();
-            }
+        $reportFileReject = dirname(__FILE__).'/reports/lastreport-reject.log';
+        if (file_exists($reportFileReject)) {
+            exit();
         }
     }
 
@@ -45,7 +44,7 @@ class PackageLoader {
      * @param string $path Путь к директории с пакетами
      */
     public function addPackagesPath($path) {
-        if (!$path) {
+        if (!is_dir($path)) {
             throw new PackageLoader_Exception("Path '$path' not found");
         }
 
@@ -65,10 +64,16 @@ class PackageLoader {
         if (!empty($this->_files['php'][$className])) {
             $file = $this->_files['php'][$className];
 
+            $t = microtime(true);
             include_once($file);
+            $t = microtime(true) - $t;
 
             // записываем статистику
-            $this->_loadClassArray[] = $className;
+            $this->_loadClassArray[] = array(
+            'class' => $className,
+            'time' => round($t, 8),
+            'path' => $file,
+            );
         }
     }
 
@@ -78,6 +83,19 @@ class PackageLoader {
      * @return array
      */
     public function getLoadedClasses() {
+        $a = array();
+        foreach ($this->_loadClassArray as $c) {
+            $a[] = $c['class'];
+        }
+        return $a;
+    }
+
+    /**
+     * Получить статистику по загруженным классам
+     *
+     * @return array
+     */
+    public function getLoadedClassesStatistics() {
         return $this->_loadClassArray;
     }
 
@@ -98,6 +116,8 @@ class PackageLoader {
      * @param bool $checkExists
      */
     public function registerPHPClass($file, $checkExists = 'auto') {
+        $file = str_replace('//', '/', $file);
+
         // в режиме build происходит проверка файла на существование
         if ($checkExists == 'auto') {
             $checkExists = $this->getMode('build');
@@ -110,9 +130,11 @@ class PackageLoader {
             }
         }
 
-        $classname = basename($file);
-        $classname = str_replace(array('.class.php', '.php'), '', $classname);
-        $this->_files['php'][$classname] = $file;
+        $hash = basename($file);
+        $hash = str_replace('.class.php', '', $hash);
+        $hash = str_replace('.interface.php', '', $hash);
+        $hash = str_replace('.php', '', $hash);
+        $this->_files['php'][$hash] = $file;
 
         if (!$this->_autoload) {
             include_once($file);
@@ -216,6 +238,7 @@ class PackageLoader {
                 break;
             }
         }
+
     }
 
     /**
@@ -265,23 +288,26 @@ class PackageLoader {
      * @throws PackageLoader_Exception
      */
     public function import($package, $paramsArray = array()) {
-        if (!substr_count($package, '/')) {
+        $t = microtime(true);
+
+        // по параметру $package делаем разбивку на "имя пакета" и "путь к пакету"
+        if (is_dir($package)) {
+            // указан путь к директории (явно)
+            $x = pathinfo($package);
+            $packageDirectoryArray = array($package);
+            $packageName = @$x['filename'];
+        } elseif (is_file($package)) {
+            // указан путь к файлу include.php
+            $x = pathinfo($package);
+            $packageDirectoryArray = array(@$x['dirname']);
+            $packageName = basename($packageDirectoryArray[0]);
+        } else {
             // указано просто имя пакета
             $packageName = $package;
             $packageDirectoryArray = array();
             foreach ($this->_packagePathArray as $p) {
                 $packageDirectoryArray[] = $p.'/'.$packageName;
             }
-        } elseif (substr_count($package, 'include.php')) {
-            // указан путь к директории (явно)
-            $x = pathinfo($package);
-            $packageDirectoryArray = array($package);
-            $packageName = @$x['filename'];
-        } else {
-            // указан путь к файлу include.php
-            $x = pathinfo($package);
-            $packageDirectoryArray = array(@$x['dirname']);
-            $packageName = basename($packageDirectoryArray[0]);
         }
 
         // проверяем, подключен ли пакет
@@ -321,6 +347,7 @@ class PackageLoader {
         if (!isset($this->_importedArray[$packageName])) {
             $this->_importedArray[$packageName] = array(
             'package' => $packageName,
+            'time' => round(microtime(true) - $t, 8),
             'path' => $packageInclude,
             );
         }
@@ -385,7 +412,7 @@ class PackageLoader {
 
         if ($compile) {
             // регистрируем данные как компилированный файл
-            $pathCompile = __DIR__.'/compile/';
+            $pathCompile = dirname(__FILE__).'/compile/';
             $pathFile = $pathCompile.$hash.'.'.$type;
             if (!file_exists($pathFile)) {
                 file_put_contents($pathFile, $data, LOCK_EX);
@@ -517,6 +544,11 @@ class PackageLoader {
             $ip = @$_SERVER['REMOTE_ADDR'];
             $login = @$_COOKIE['authlogin'];
 
+            if ($ip && !$loginOrIP && $ip != '127.0.0.1') {
+                //throw new PackageLoader_Exception('Cannot enable mode for anywhere!');
+                return false;
+            }
+
             if (!$ip || $ip == $loginOrIP || $login == $loginOrIP || ($ip == '127.0.0.1' && $loginOrIP == false)) {
                 $this->_modeArray[$mode] = $value;
             } else {
@@ -563,20 +595,20 @@ class PackageLoader {
      */
     public function setProjectPath($path) {
         $path = realpath($path).'/';
-        /*if (!is_dir($path)) {
+        if (!is_dir($path)) {
             throw new PackageLoader_Exception("Incorrect project path '{$path}'");
-        }*/
+        }
         $this->_projectPath = $path;
     }
 
     public function __destruct() {
-        if ($this->getMode('developer-report') && rand(1, 100) == 1) {
+        if ($this->getMode('developer-report')) {
             // если включен этот режим, то отправляем базовую информацию
             // о системе разработчикам #wp-packages
 
             // проверяем, когда была последняя отправка
-            $reportFile = __DIR__.'/reports/lastreport.log';
-            $reportFileReject = __DIR__.'/reports/lastreport-reject.log';
+            $reportFile = dirname(__FILE__).'/reports/lastreport.log';
+            $reportFileReject = dirname(__FILE__).'/reports/lastreport-reject.log';
             $reportDate = @file_get_contents($reportFile);
             $reportDate = @strtotime($reportDate);
             if ($reportDate > time() - 3 * 60 * 60) {
