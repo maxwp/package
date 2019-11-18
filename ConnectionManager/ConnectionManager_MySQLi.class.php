@@ -1,7 +1,7 @@
 <?php
 /**
  * WebProduction Packages
- * Copyright (C) 2007-2016 WebProduction <webproduction.ua>
+ * Copyright (C) 2007-2020 WebProduction <webproduction.ua>
  *
  * This program is commercial software; you can not redistribute it and/or
  * modify it.
@@ -39,7 +39,7 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
             $this->_port
         );
 
-        $e = $this->_linkID->connect_error;
+        $e = $this->getLinkID()->connect_error;
         if ($e) {
             throw new ConnectionManager_Exception("Cannot connect to database: ".$e);
         }
@@ -61,7 +61,7 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
      * @return resource
      */
     public function query($query) {
-        if (!$this->_linkID) {
+        if (!$this->getLinkID()) {
             $this->connect();
         }
 
@@ -75,9 +75,9 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
             $this->query('START TRANSACTION');
         }
 
-        $result = $this->_linkID->query($query);
+        $result = $this->getLinkID()->query($query);
 
-        $e = $this->_linkID->error;
+        $e = $this->getLinkID()->error;
         if ($e) {
             throw new ConnectionManager_Exception("Executing error: {$e} in query: {$query}");
         }
@@ -86,8 +86,8 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
     }
 
     public function disconnect() {
-        if ($this->_linkID) {
-            $this->_linkID->close();
+        if ($this->getLinkID()) {
+            $this->getLinkID()->close();
         }
     }
 
@@ -167,6 +167,17 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
     }
 
     /**
+     * Отмотать транзакцию на самый старт
+     *
+     */
+    public function transactionClear() {
+        $this->query('ROLLBACK');
+
+        $this->_transactionStart = false;
+        $this->_transactionCount = 0;
+    }
+
+    /**
      * Получить уровень вложенности транзакции, которая сейчас открыта.
      * 0 - нет транзакции.
      * 1..N - глубина транзакции.
@@ -207,14 +218,14 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
             return $string;
         }
 
-        if (!$this->_linkID) {
+        if (!$this->getLinkID()) {
             $this->connect();
         }
-        return @mysqli_real_escape_string($this->_linkID, $string);
+        return @mysqli_real_escape_string($this->getLinkID(), $string);
     }
 
     public function getLastInsertID() {
-        return $this->_linkID->insert_id;
+        return $this->getLinkID()->insert_id;
     }
 
     private $_hostname;
