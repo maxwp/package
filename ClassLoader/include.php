@@ -20,7 +20,7 @@
 /**
  * @author Maxim Miroshnichenko <max@webproduction.com.ua>
  * @copyright WebProduction
- * @package PackageLoader
+ * @package ClassLoader
  */
 
 // fix for Mac OS X PHP 5.3 default

@@ -42,22 +42,8 @@ class Engine {
      * @throws Engine_Exception
      */
     public static function Initialize() {
-        // @todo: возможно все что ниже стоит перенести в конструктор
-        if (!defined('PROJECT_DIR')) {
-            define('PROJECT_DIR', '/');
-        }
-
-        if (!defined('MEDIA_DIR')) {
-            // @todo: не юзайте это
-            define('MEDIA_DIR', '/media/');
-        }
-        if (!defined('MEDIA_PATH')) {
-            // @todo: не юзайте это
-            define('MEDIA_PATH', PackageLoader::Get()->getProjectPath().'media/');
-        }
-
         if (!Engine::Get()->getMediaPath()) {
-            Engine::Get()->setMediaPath(PackageLoader::Get()->getProjectPath().'media/');
+            Engine::Get()->setMediaPath(dirname(__FILE__).'/../media/');
         }
         if (!Engine::Get()->getMediaDirectory()) {
             Engine::Get()->setMediaDirectory('/media/');
@@ -78,17 +64,17 @@ class Engine {
         // подключаем engine.init.php - файл, в котором можно досрочно
         // подключать некоторые пакеты (например, ConnectionManager) и т.п.
         // (В engine.init.php еще не заполнен Engine_DataSource!)
-        $engineInitFilePath = PackageLoader::Get()->getProjectPath().'engine.init.php';
+        $engineInitFilePath = dirname(__FILE__).'/../engine.init.php';
         include($engineInitFilePath);
 
         // отключаем вывод ошибок
         self::Get()->disableErrorReporting();
 
         // подключаем конфигурационные файлы
-        $filePath = PackageLoader::Get()->getProjectPath().'engine.mode.php';
+        $filePath = dirname(__FILE__).'/../engine.mode.php';
         include_once($filePath);
 
-        $filePath = PackageLoader::Get()->getProjectPath().'engine.config.php';
+        $filePath = dirname(__FILE__).'/../engine.config.php';
         include_once($filePath);
     }
 

@@ -19,22 +19,13 @@
  * @package   Engine
  */
 
-// подключаем PackageLoader
-if (!class_exists('PackageLoader')) {
-    if (file_exists(__DIR__.'/../PackageLoader/include.php')) {
-        include_once(__DIR__.'/../PackageLoader/include.php');
-    }
-}
-
-// определяем project path
-try {
-    PackageLoader::Get()->getProjectPath();
-} catch (Exception $e) {
-    PackageLoader::Get()->setProjectPath(dirname(dirname(__DIR__)));
+// подключаем ClassLoader
+if (!class_exists('ClassLoader')) {
+    include_once(__DIR__.'/../ClassLoader/include.php');
 }
 
 // подключаем пакет движка
-PackageLoader::Get()->import('Engine');
+include_once(__DIR__.'/include.php');
 
 // инициализируем движок, пусть он подгрузит все что ему нужно,
 // в том числе файлы engine.mode.php, engine.config.php, структуру contents

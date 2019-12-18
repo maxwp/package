@@ -167,20 +167,6 @@ class Engine_ContentDriver {
             $obj->setField('filephp', $data['filephp']);
             $obj->setField('filehtml', $data['filehtml']);
 
-            // обрабатываем CSS-файлы
-            $cssfile = $data['filecss'];
-            foreach ($cssfile as $cssfileOne) {
-                // подключаем CSS-файл
-                PackageLoader::Get()->registerCSSFile($cssfileOne, true, false);
-            }
-
-            // обрабатываем JS-файлы
-            $jsfile = $data['filejs'];
-            foreach ($jsfile as $jsfileOne) {
-                // подключаем JS-файл
-                PackageLoader::Get()->registerJSFile($jsfileOne, true, false);
-            }
-
             // кешируем объект
             if ($cacheObject) {
                 $this->_contentsArray[$contentID] = $obj;

@@ -113,12 +113,6 @@ class Events {
             throw new Events_Exception('Invalid event '.$eventName);
         }
 
-        if (PackageLoader::Get()->getMode('check')
-            && is_object($observer)
-        ) {
-            print "Warning! Using old-style observe for ".$eventName.". Please, use string.\n";
-        }
-
         if (is_object($this->_eventArray[$eventName])) {
             // это обычный объект - вешаем обработчик сразу на него
             $this->getEvent($eventName)->addObserver($observer, $parameter);
@@ -137,12 +131,6 @@ class Events {
      * @param mixed $event
      */
     public function addEvent($name, $event) {
-        if (PackageLoader::Get()->getMode('check')
-            && is_object($event)
-        ) {
-            print "Warning! Using old-style addEvent for ".$name.". Please, use string.\n";
-        }
-
         if (!isset($this->_eventArray[$name])) {
             $this->_eventArray[$name] = $event;
         }

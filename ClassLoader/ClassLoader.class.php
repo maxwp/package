@@ -75,9 +75,7 @@ class ClassLoader {
     }
 
     /**
-     * Получить PackageLoader Instance
-     *
-     * @return PackageLoader
+     * @return ClassLoader
      */
     public static function Get() {
         if (!self::$_Instance) {

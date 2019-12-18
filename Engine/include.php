@@ -30,42 +30,42 @@ PackageLoader::Get()->getProjectPath();
 
 // подключаем Storage
 // (необходим для кеширования)
-PackageLoader::Get()->import('Storage');
+include_once(dirname(__FILE__).'/../Storage/include.php');
 
 // подключем Events
-PackageLoader::Get()->import('Events');
+include_once(dirname(__FILE__).'/../Events/include.php');
 
 // подключаем все классы Engine
 $path = __DIR__.'/';
-PackageLoader::Get()->registerPHPClass($path.'Engine_Exception.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_Smarty.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_ContentDataSource.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_Request.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_Content.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_Class.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_ContentDriver.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_IURLParser.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_URLParser.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_ILinkMaker.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_ALinkMaker.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_LinkMaker.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_HTMLHead.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_Response.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_Auth.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_Generator.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_Exception.class.php');
+ClassLoader::Get()->registerClass($path.'Engine.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_Smarty.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_ContentDataSource.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_Request.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_Content.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_Class.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_ContentDriver.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_IURLParser.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_URLParser.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_ILinkMaker.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_ALinkMaker.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_LinkMaker.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_HTMLHead.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_Response.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_Auth.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_Generator.class.php');
 
 // Engine events
-PackageLoader::Get()->registerPHPClass($path.'Engine_Event_ContentProcess.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_Event_ContentRender.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_Event_Exception.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_Event_ContentProcess.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_Event_ContentRender.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_Event_Exception.class.php');
 
 // cache
-PackageLoader::Get()->registerPHPClass($path.'Engine_ACacheModifier.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_CacheModifierURL.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_CacheModifierUser.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_CacheModifierHost.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_CacheModifierLanguage.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_CacheModifierNoAuth.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_CacheModifierAuthLogin.class.php');
-PackageLoader::Get()->registerPHPClass($path.'Engine_Cache.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_ACacheModifier.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_CacheModifierURL.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_CacheModifierUser.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_CacheModifierHost.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_CacheModifierLanguage.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_CacheModifierNoAuth.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_CacheModifierAuthLogin.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_Cache.class.php');

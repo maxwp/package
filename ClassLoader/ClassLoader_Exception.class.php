@@ -10,7 +10,7 @@
 /**
  * @author Maxim Miroshnichenko <max@webproduction.com.ua>
  * @copyright WebProduction
- * @package PackageLoader
+ * @package ClassLoader
  */
 class ClassLoader_Exception extends Exception {
 

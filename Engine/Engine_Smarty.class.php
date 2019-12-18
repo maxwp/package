@@ -46,7 +46,7 @@ class Engine_Smarty {
 
         $smarty = $this->getSmarty();
         $smarty->assignArray($assignArray, false); // no merge
-        
+
         $html = $smarty->fetch($file, $ex);
         return $html;
     }
@@ -62,7 +62,7 @@ class Engine_Smarty {
 
     public function __construct() {
         // подключаем Smarty
-        PackageLoader::Get()->import('Smarty');
+        include_once(dirname(__FILE__).'/../Smarty/include.php');
 
         // инициируем Smarty внутри (аггрегация Smarty)
         $this->_smarty = new Smarty();

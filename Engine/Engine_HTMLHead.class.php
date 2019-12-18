@@ -20,80 +20,16 @@
  */
 class Engine_HTMLHead {
 
-
     /**
      * Вернуть html-код контента, в котором будут все необходимые
      * Engine-include'ы.
      *
-     * Если $jsAndCss == true. Метод вернет готовый html-код, в котором будет подключение
-     * всех необходимых CSS/JS. Код нужно вставить в тег <head>
-     *
-     * @param bool $jsAndCss
-     *
      * @return string
      */
-    public function render($jsAndCss = true, $isshop = false) {
-        if ($jsAndCss) {
-            // загружаем дату ревизии
-            $revFile = PackageLoader::Get()->getProjectPath().'rev.info';
-            $rev = @file_get_contents($revFile);
-
-            // js files
-            $list = PackageLoader::Get()->getJSFiles();
-            if ($rev) {
-                foreach ($list as $key => $value) {
-                    if (
-                        $isshop &&
-                        (preg_match('/^\/_js\/module\//ius', $value) || preg_match('/^\/_js\/tinymce\//ius', $value))
-                    ) {
-                        unset($list[$key]);
-                        continue;
-                    }
-                    if (!substr_count($value, '?')) {
-                        $list[$key] = $value.'?'.$rev;
-                    } else {
-                        $list[$key] = $value.'&'.$rev;
-                    }
-                }
-            }
-            $a['jsfiles'] = $list;
-
-            // css files
-            $list = PackageLoader::Get()->getCSSFiles();
-            if ($rev) {
-                foreach ($list as $key => $value) {
-                    if (!substr_count($value, '?')) {
-                        $list[$key] = $value.'?'.$rev;
-                    } else {
-                        $list[$key] = $value.'&'.$rev;
-                    }
-                }
-            }
-
-            // костыль для orange-shop
-            // все дефолтные, глобальные стили должны быть вначале массива
-            foreach ($list as $key => $value) {
-                if (substr_count($value, '/default/') && substr_count($value, '_globalstyles.')) {
-                    unset($list[$key]);
-
-                    $list = array_merge(array($key => $value), $list);
-                }
-            }
-
-            $a['cssfiles'] = $list;
-
-            // @deprecated: не кошерный стиль :)
-            $a['csscontent'] = PackageLoader::Get()->getCSSData();
-            $a['jscontent'] = PackageLoader::Get()->getJSData();
-        }
-
+    public function render() {
         $a['metaArray'] = $this->_metaArray;
         $a['linkArray'] = $this->_linkArray;
         $a['openGraphArray'] = $this->_openGraphArray;
-
-        /*if ($title) {
-        $a['title'] = $this->getTitle();
-        }*/
 
         $content = Engine::GetContentDriver()->getContent('engine-include');
         $content->addValuesArray($a);
