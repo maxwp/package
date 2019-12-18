@@ -17,20 +17,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-// fix for Mac OS X PHP 5.3 default
-@date_default_timezone_set(date_default_timezone_get());
-
-if (class_exists('XCMSE')) {
-    XCMSE::GetPackages()->registerAutoloadPath(__DIR__);
-} elseif (class_exists('PackageLoader')) {
-    PackageLoader::Get()->registerPHPDirectory(__DIR__);
-} else {
-    include_once(__DIR__.'/DateTime_IClassFormat.class.php');
-    include_once(__DIR__.'/DateTime_ClassFormatDefault.class.php');
-    include_once(__DIR__.'/DateTime_ClassFormatPhonetic.class.php');
-    include_once(__DIR__.'/DateTime_ClassFormatPhoneticFuture.class.php');
-    include_once(__DIR__.'/DateTime_Object.class.php');
-    include_once(__DIR__.'/DateTime_Corrector.class.php');
-    include_once(__DIR__.'/DateTime_Differ.class.php');
-    include_once(__DIR__.'/DateTime_Formatter.class.php');
-}
+ClassLoader::Get()->registerClass(__DIR__.'/DateTime_IClassFormat.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/DateTime_ClassFormatDefault.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/DateTime_ClassFormatPhonetic.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/DateTime_ClassFormatPhoneticFuture.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/DateTime_Object.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/DateTime_Corrector.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/DateTime_Differ.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/DateTime_Formatter.class.php');

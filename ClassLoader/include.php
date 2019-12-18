@@ -18,29 +18,13 @@
  */
 
 /**
- * Обработчик BB-код тега color
- *
  * @author Maxim Miroshnichenko <max@webproduction.com.ua>
  * @copyright WebProduction
- * @package TextProcessor
+ * @package PackageLoader
  */
-class TextProcessor_ActionBBCodeColor implements TextProcessor_IAction {
 
-    public function process($text) {
-        $matchArray[] = array(
-        'search' => "/\[color=([#A-Za-z0-9]+?)\](.*?)\[\/color\]/si",
-        'replace' => '<font color="\1">\2</font>',
-        );
+// fix for Mac OS X PHP 5.3 default
+@date_default_timezone_set(date_default_timezone_get());
 
-        foreach ($matchArray as $match) {
-            $textOld = false;
-            while ($text != $textOld) {
-                $textOld = $text;
-                $text = preg_replace($match['search'], $match['replace'], $text);
-            }
-        }
-
-        return $text;
-    }
-
-}
+include_once(dirname(__FILE__).'/ClassLoader.class.php');
+include_once(dirname(__FILE__).'/ClassLoader_Exception.class.php');

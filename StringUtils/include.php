@@ -12,23 +12,19 @@
  * @package StringUtils
  * @copyright WebProduction
  */
-if (class_exists('PackageLoader')) {
-    PackageLoader::Get()->registerPHPDirectory(__DIR__);
-} else {
-    include_once(__DIR__.'/StringUtils_Converter.class.php');
-    include_once(__DIR__.'/StringUtils_Transliterate.class.php');
-    include_once(__DIR__.'/StringUtils_SimilarText.class.php');
-    include_once(__DIR__.'/StringUtils_Orthographic.class.php');
-    include_once(__DIR__.'/StringUtils_BadLanguageDetector.class.php');
-    include_once(__DIR__.'/StringUtils_Limiter.class.php');
-    include_once(__DIR__.'/StringUtils_Punycode.class.php');
-    include_once(__DIR__.'/StringUtils_AFormatter.class.php');
-    include_once(__DIR__.'/StringUtils_FormatterPhoneClear.class.php');
-    include_once(__DIR__.'/StringUtils_FormatterPhoneDefault.class.php');
-    include_once(__DIR__.'/StringUtils_FormatterPhoneUACN.class.php');
-    include_once(__DIR__.'/StringUtils_FormatterAddressUACN.class.php');
-    include_once(__DIR__.'/StringUtils_FormatterURL.class.php');
-    include_once(__DIR__.'/StringUtils_FormatterPrice.class.php');
-    include_once(__DIR__.'/StringUtils_MD5.class.php');
-    include_once(__DIR__.'/StringUtils_Exception.class.php');
-}
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_Converter.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_Transliterate.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_SimilarText.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_Orthographic.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_BadLanguageDetector.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_Limiter.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_Punycode.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_AFormatter.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_FormatterPhoneClear.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_FormatterPhoneDefault.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_FormatterPhoneUACN.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_FormatterAddressUACN.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_FormatterURL.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_FormatterPrice.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_MD5.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_Exception.class.php');

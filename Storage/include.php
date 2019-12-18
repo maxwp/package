@@ -13,22 +13,11 @@
  * @copyright WebProduction
  */
 
-if (class_exists('PackageLoader')) {
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/Storage.class.php');
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/Storage_IHandler.class.php');
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/Storage_Exception.class.php');
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/Storage_HandlerArray.class.php');
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/Storage_HandlerCacheFiles.class.php');
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/Storage_HandlerFiles.class.php');
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/Storage_HandlerMemcache.class.php');
-    PackageLoader::Get()->registerPHPClass(__DIR__.'/Storage_HandlerSession.class.php');
-} else {
-    include_once(__DIR__.'/Storage.class.php');
-    include_once(__DIR__.'/Storage_Exception.class.php');
-    include_once(__DIR__.'/Storage_IHandler.class.php');
-    include_once(__DIR__.'/Storage_HandlerArray.class.php');
-    include_once(__DIR__.'/Storage_HandlerCacheFiles.class.php');
-    include_once(__DIR__.'/Storage_HandlerFiles.class.php');
-    include_once(__DIR__.'/Storage_HandlerMemcache.class.php');
-    include_once(__DIR__.'/Storage_HandlerSession.class.php');
-}
+ClassLoader::Get()->registerClass(__DIR__.'/Storage.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Storage_Exception.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Storage_IHandler.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerArray.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerCacheFiles.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerFiles.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerMemcache.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerSession.class.php');

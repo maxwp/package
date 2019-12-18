@@ -15,7 +15,7 @@
  * @package Events
  */
 
-include_once(__DIR__.'/Events.class.php');
-include_once(__DIR__.'/Events_Exception.class.php');
-include_once(__DIR__.'/Events_Event.class.php');
-include_once(__DIR__.'/Events_IEventObserver.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Events.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Events_Exception.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Events_Event.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Events_IEventObserver.class.php');
