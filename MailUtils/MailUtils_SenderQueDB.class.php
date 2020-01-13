@@ -20,61 +20,77 @@
 class MailUtils_SenderQueDB implements MailUtils_ISender {
 
     public function __construct() {
-        if (PackageLoader::Get()->getMode('build')) {
-            if (!is_dir(__DIR__.'/media/mailutils_que/')) {
-                mkdir(__DIR__.'/media/');
-                mkdir(__DIR__.'/media/mailutils_que/');
-            }
-        }
+
     }
 
     public function send(MailUtils_Letter $letter, $startDate = false) {
+        $mysql = ConnectionManager::Get()->getConnectionDatabase();
+
         try {
-            SQLObject::TransactionStart();
+            $mysql->transactionStart();
+
             $cdate = date('Y-m-d H:i:s');
 
             if (!$startDate) {
                 $startDate = $cdate;
             }
 
-            // $logEmails = MailUtils_Config::Get()->getLogEmails();
-            $logEmails[] = $letter->getEmailTo();
-            foreach ($logEmails as $email) {
-                $que = new MailUtils_XQue();
-                $que->setCdate($cdate);
-                $que->setSdate($startDate);
-                $que->setStatus(0); // не отправлено
-                $que->setIp(isset($_SERVER['HTTP_X_REAL_IP'])?$_SERVER['HTTP_X_REAL_IP']:@$_SERVER['REMOTE_ADDR']);
-                $que->setSubject($letter->getSubject());
-                $que->setFrom($letter->getEmailFrom());
-                $que->setTo($email);
-                $que->setCc($letter->getCc());
-                $que->setBody($letter->getBody());
-                $que->setBodytype($letter->getBodyType());
-                $que->setEventid($letter->getEventid());
-                $que->insert();
+            $status = 0;
+            $ip = isset($_SERVER['HTTP_X_REAL_IP'])?$_SERVER['HTTP_X_REAL_IP']:@$_SERVER['REMOTE_ADDR'];
+            $subject = $letter->getSubject();
+            $from = $letter->getEmailFrom();
+            $to = $letter->getEmailTo();
+            $cc = $letter->getCc();
+            $body = $letter->getBody();
+            $bodyType = $letter->getBodyType();
 
-                // сохранение attachment-ов отдельно
-                if ($attachments = $letter->getAttachments()) {
-                    foreach ($attachments as $x) {
-                        $att = new MailUtils_XQueAttachment();
-                        $att->setQueid($que->getId());
-                        $att->setCdate($cdate);
-                        $att->setType($x['type']);
-                        $att->setName($x['name']);
+            $ip = $mysql->escapeString($ip);
+            $subject = $mysql->escapeString($subject);
+            $from = $mysql->escapeString($from);
+            $to = $mysql->escapeString($to);
+            $cc = $mysql->escapeString($cc);
+            $body = $mysql->escapeString($body);
+            $bodyType = $mysql->escapeString($bodyType);
 
-                        $file = md5($x['data']);
-                        $att->setFile($file);
+            $mysql->query("
+            INSERT INTO mailutils_que
+            (cdate, sdate, status, ip, subject, `from`, `to`, cc, body, bodytype)
+            VALUES(
+            '$cdate', '$startDate', '$status', '$ip', '$subject', '$from', '$to', '$cc', '$body', '$bodyType'
+            )
+            ");
 
-                        file_put_contents(__DIR__.'/media/mailutils_que/'.$file, $x['data']);
+            $queID = $mysql->getLastInsertID();
 
-                        $att->insert();
-                    }
+            // сохранение attachment-ов отдельно
+            if ($attachments = $letter->getAttachments()) {
+                foreach ($attachments as $x) {
+                    $type = $x['type'];
+                    $name = $x['name'];
+
+                    $file = md5($x['data']);
+
+                    file_put_contents(__DIR__.'/media/'.$file, $x['data']);
+
+                    $type = $mysql->escapeString($type);
+                    $name = $mysql->escapeString($name);
+                    $file = $mysql->escapeString($file);
+
+                    $mysql->query("
+                    INSERT INTO mailutils_attachment
+                    (cdate, queid, type, name, file)
+                    VALUES(
+                    '$cdate', '$queID', '$type', '$name', '$file'
+                    )
+                    ");
                 }
             }
-            SQLObject::TransactionCommit();
+
+            $mysql->transactionCommit();
+
+            return $queID;
         } catch (Exception $e) {
-            SQLObject::TransactionRollback();
+            $mysql->transactionRollback();
             throw $e;
         }
     }
@@ -84,8 +100,9 @@ class MailUtils_SenderQueDB implements MailUtils_ISender {
      *
      * @param int $limit
      */
-    public static function ProcessQue($limit = 50, $clearInterval = 168, $package = 'SQLObject') {
-        new self($package);
+    public static function ProcessQue($limit = 50, $clearInterval = 168) {
+        new self();
+
         $result = array();
         $sender = MailUtils_Config::Get()->getSender();
 
@@ -93,29 +110,28 @@ class MailUtils_SenderQueDB implements MailUtils_ISender {
             throw new MailUtils_Exception("Can not send que with que sender");
         }
 
-        $que = new MailUtils_XQue();
-        $que->addWhere('sdate', date('Y-m-d H:i:s'), '<=');
-        $que->setStatus(0);
-        $que->setLimitCount($limit);
-        $que->setOrder('id', 'DESC');
-        while ($x = $que->getNext()) {
-
-            if (MailUtils_Config::Get()->isVerboseMode()) {
-                print 'Process send mail #'.$x->getId().' from '.$x->getFrom().' to '.$x->getTo()."\n";
-            }
+        $mysql = ConnectionManager::Get()->getConnectionDatabase();
+        $q = $mysql->query("
+        SELECT *
+        FROM mailutils_que
+        WHERE 1=1
+        AND status=0
+        AND sdate <= '".date('Y-m-d H:i:s')."'
+        ORDER BY id ASC
+        LIMIT $limit
+        ");
+        while ($x = $mysql->fetch($q)) {
             // складываем письмо...
-            $letter = new MailUtils_Letter($x->getFrom(), $x->getTo(), $x->getSubject(), $x->getBody(), $x->getCc());
-            $letter->setBodyType($x->getBodytype());
+            $letter = new MailUtils_Letter($x['from'], $x['to'], $x['subject'], $x['body'], $x['cc']);
+            $letter->setBodyType($x['bodytype']);
 
             // добавляем attachment-ы
-            $attachments = new MailUtils_XQueAttachment();
-            $attachments->setQueid($x->getId());
-            $attachments->setCdate($x->getCdate());
-            while ($attachment = $attachments->getNext()) {
+            $q_attachment = $mysql->query("SELECT * FROM mailutils_attachment WHERE queid=$x[id] AND cdate='$x[cdate]'");
+            while ($attachment = $mysql->fetch($q_attachment)) {
                 $letter->addAttachment(
-                    file_get_contents(__DIR__.'/media/mailutils_que/'.$attachment->getFile()),
-                    $attachment->getName(),
-                    $attachment->getType()
+                    file_get_contents(__DIR__.'/media/'.$attachment['file']),
+                    $attachment['name'],
+                    $attachment['type']
                 );
             }
 
@@ -123,45 +139,14 @@ class MailUtils_SenderQueDB implements MailUtils_ISender {
             $letter->make();
 
             // отправляем письмо...
-            $result[$x->getFrom()] = $letter->send();
+            $letter->send();
 
-            $config = new XShopEventIMAPConfig();
-            $config->setSmtpnosend(1);
-            $config->setActive(1);
-            $config->setEmail($x->getFrom());
-            $config->setLimitCount(1);
-            $cf = $config->getNext();
-            // обновляем информацию в базе
-            if (!$cf || $result[$x->getFrom()]['status'] == 'success') {
-                if ($result[$x->getFrom()]['sdate']) {
-                    $sdate = $result[$x->getFrom()]['sdate'];
-                } else {
-                    $sdate = date('Y-m-d H:i:s');
-                }
-                $x->setStatus(1);
-                $x->setPdate($sdate);
-                $x->update();
-
-                $eventID = $x->getEventid();
-                if ($eventID) {
-                    $event = EventService::Get()->getEventByID($eventID);
-                    $event->setCdate($x->getPdate());
-                    $event->update();
-                }
-
-                if (MailUtils_Config::Get()->isVerboseMode()) {
-                    print 'Process send mail #' . $x->getId() . ' from ' .
-                        $x->getFrom() . ' to ' . $x->getTo() . " ... OK\n";
-                }
-            } else {
-                if (MailUtils_Config::Get()->isVerboseMode()) {
-                    print 'Process send mail #' . $x->getId() . ' from ' .
-                        $x->getFrom() . ' to ' . $x->getTo() . " ... ERROR - FAIL SMTP\n";
-                }
-            }
-
+            // помечаем письмо как отправленное
+            $mysql->query("
+            UPDATE mailutils_que SET status=1, pdate='".date('Y-m-d H:i:s')."' WHERE id=$x[id] LIMIT 1
+            ");
         }
-        if (is_numeric($clearInterval)) self::ClearQueue($clearInterval);
+        //if (is_numeric($clearInterval)) self::ClearQueue($clearInterval);
 
         return $result;
     }

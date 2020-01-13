@@ -18,8 +18,9 @@
 class MailUtils_SenderSMTP implements MailUtils_ISender {
 
     public function __construct(
-        $server, $port, $login, $password, $tls = false, $sent = false, $imapConfig = false, $smtpnosend = false
+        $email, $server, $port, $login, $password, $tls = false, $sent = false, $imapConfig = false, $smtpnosend = false
     ) {
+        $this->_email = $email;
         $this->_server = $server;
         $this->_port = $port;
         $this->_login = $login;
@@ -77,18 +78,23 @@ class MailUtils_SenderSMTP implements MailUtils_ISender {
 
         // отправка через relay
         $smtp->Reset();
-        
+
         $emailFrom = $letter->getEmailFrom();
         if (preg_match("/\<(.+?)\>/ius", $emailFrom, $r)) {
             $emailFrom = $r[1];
         }
+
+        if (!$emailFrom) {
+            $emailFrom = $this->_email;
+        }
+
         $smtp->Mail($emailFrom);
         if ($smtp->Recipient($letter->getEmailTo())) {
             $smtp->Data($content);
         }
-        
+
         $result['sdate'] = date('Y-m-d H:i:s');
-        
+
         if ($this->_sent) {
             try {
                 $mailbox = $this->_imapConfig;
@@ -184,6 +190,8 @@ class MailUtils_SenderSMTP implements MailUtils_ISender {
      * @var MailUtils_SMTP
      */
     private $_smtp = null;
+
+    private $_email;
 
     private $_login;
 
