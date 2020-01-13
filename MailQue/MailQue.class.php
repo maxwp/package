@@ -49,41 +49,6 @@ class MailQue {
         return new self($file);
     }
 
-    private $_tplLetter;
-
-    /**
-     * Doc
-     *
-     * @var array
-     */
-    private $_assignsArray = array();
-
-    /**
-     * Doc
-     *
-     * @var array
-     */
-    private $_emails = array();
-
-    private $_emailFrom;
-
-    /**
-     * Doc
-     *
-     * @var array
-     */
-    private $_attachments = array();
-
-    private $_template;
-
-    /**
-     * Создать SmartySender
-     *
-     * @param string $tplLetter
-     *
-     * @see CreateFromTemplateFile()
-     * @see CreateFromTemplateData()
-     */
     public function __construct($tplLetter) {
         $this->_tplLetter = $tplLetter;
     }
@@ -92,7 +57,9 @@ class MailQue {
      * Отправить письмо
      */
     public function send($startDate = false) {
-        $body = MailQue_Smarty::FetchSmarty($this->_tplLetter, $this->_assignsArray);
+        $mysql = ConnectionManager::Get()->getConnectionDatabase();
+
+        $body = MailQue_Smarty::FetchSmarty($this->_tplLetter, $this->getValueArray());
 
         $subject = '';
 
@@ -101,27 +68,11 @@ class MailQue {
             $body = trim(preg_replace("/Subject\:\s*(.+?)\n/iu", '', $body, 1));
         }
 
-        foreach ($this->_emails as $email) {
-            $letter = new MailQue_Letter(
-                $this->_emailFrom,
-                $email,
-                $subject,
-                $body
-            );
+        $status = 0;
+        $ip = isset($_SERVER['HTTP_X_REAL_IP'])?$_SERVER['HTTP_X_REAL_IP']:@$_SERVER['REMOTE_ADDR'];
+        $bodyType = 'text/html';
 
-            // вкладываем вложения
-            foreach ($this->_attachments as $attach) {
-                $letter->addAttachment(
-                    $attach['data'],
-                    $attach['name'],
-                    $attach['type']
-                );
-            }
-
-            $letter->setBodyType('text/html');
-
-            $mysql = ConnectionManager::Get()->getConnectionDatabase();
-
+        foreach ($this->_emailArray as $to) {
             try {
                 $mysql->transactionStart();
 
@@ -131,60 +82,46 @@ class MailQue {
                     $startDate = $cdate;
                 }
 
-                $status = 0;
-                $ip = isset($_SERVER['HTTP_X_REAL_IP'])?$_SERVER['HTTP_X_REAL_IP']:@$_SERVER['REMOTE_ADDR'];
-                $subject = $letter->getSubject();
-                $from = $letter->getEmailFrom();
-                $to = $letter->getEmailTo();
-                $cc = $letter->getCc();
-                $body = $letter->getBody();
-                $bodyType = $letter->getBodyType();
-
                 $ip = $mysql->escapeString($ip);
                 $subject = $mysql->escapeString($subject);
-                $from = $mysql->escapeString($from);
+                $from = $mysql->escapeString($this->_emailFrom);
                 $to = $mysql->escapeString($to);
-                $cc = $mysql->escapeString($cc);
                 $body = $mysql->escapeString($body);
                 $bodyType = $mysql->escapeString($bodyType);
 
                 $mysql->query("
                 INSERT INTO mailque
-                (cdate, sdate, status, ip, subject, `from`, `to`, cc, body, bodytype)
+                (cdate, sdate, status, ip, subject, `from`, `to`, body, bodytype)
                 VALUES(
-                '$cdate', '$startDate', '$status', '$ip', '$subject', '$from', '$to', '$cc', '$body', '$bodyType'
+                '$cdate', '$startDate', '$status', '$ip', '$subject', '$from', '$to', '$body', '$bodyType'
                 )
                 ");
 
                 $queID = $mysql->getLastInsertID();
 
                 // сохранение attachment-ов отдельно
-                if ($attachments = $letter->getAttachments()) {
-                    foreach ($attachments as $x) {
-                        $type = $x['type'];
-                        $name = $x['name'];
+                foreach ($this->_attachmentArray as $attach) {
+                    $type = $x['type'];
+                    $name = $x['name'];
 
-                        $file = md5($x['data']);
+                    $file = md5($x['data']);
 
-                        file_put_contents(__DIR__.'/media/'.$file, $x['data']);
+                    file_put_contents(__DIR__.'/media/'.$file, $x['data']);
 
-                        $type = $mysql->escapeString($type);
-                        $name = $mysql->escapeString($name);
-                        $file = $mysql->escapeString($file);
+                    $type = $mysql->escapeString($type);
+                    $name = $mysql->escapeString($name);
+                    $file = $mysql->escapeString($file);
 
-                        $mysql->query("
-                        INSERT INTO mailque_attachment
-                        (cdate, queid, type, name, file)
-                        VALUES(
-                        '$cdate', '$queID', '$type', '$name', '$file'
-                        )
-                        ");
-                    }
+                    $mysql->query("
+                    INSERT INTO mailque_attachment
+                    (cdate, queid, type, name, file)
+                    VALUES(
+                    '$cdate', '$queID', '$type', '$name', '$file'
+                    )
+                    ");
                 }
 
                 $mysql->transactionCommit();
-
-                return $queID;
             } catch (Exception $e) {
                 $mysql->transactionRollback();
                 throw $e;
@@ -193,7 +130,7 @@ class MailQue {
     }
 
     public function setValue($key, $value) {
-        $this->_assignsArray[$key] = $value;
+        $this->_valueArray[$key] = $value;
     }
 
     /**
@@ -202,7 +139,7 @@ class MailQue {
      * @return array
      */
     public function getValueArray() {
-        return $this->_assignsArray;
+        return $this->_valueArray;
     }
 
     /**
@@ -210,52 +147,32 @@ class MailQue {
      *
      * @return array
      */
-    public function setValueArray($assignsArray) {
-        $this->_assignsArray = $assignsArray;
+    public function setValueArray($valueArray) {
+        $this->_valueArray = $valueArray;
     }
 
     /**
      * Добавить массив Email-ов или один email-адрес
      *
-     * @param mixed $email
+     * @param string $email
      */
     public function addEmail($email) {
-        // @todo check & doublicates!
-        if (is_array($email)) {
-            foreach ($email as $e) {
-                // внимание, рекурсия!
-                $this->addEmail($e);
-            }
-        } else {
-            $this->_emails[] = $email;
-        }
+        $this->_emailArray[] = $email;
     }
 
     /**
      * Очистить список емейлов для отправки
      */
-    public function clearEmails() {
-        $this->_emails = array();
+    public function clearEmailArray() {
+        $this->_emailArray = array();
     }
 
     public function setEmailFrom($email) {
         $this->_emailFrom = $email;
     }
 
-    public function setTemplate($template = false) {
-        $this->_template = $template;
-    }
-
-    public function getTemplate() {
-        return $this->_template;
-    }
-
-    public function clearTemplate() {
-        $this->_template = false;
-    }
-
     public function addAttachment($data, $name = 'Attachment', $type = "application/octet-stream") {
-        $this->_attachments[] = array(
+        $this->_attachmentArray[] = array(
         'type' => $type,
         'data' => $data,
         'name' => $name
@@ -307,5 +224,30 @@ class MailQue {
             ");
         }
     }
+
+        private $_tplLetter;
+
+    /**
+     * Doc
+     *
+     * @var array
+     */
+    private $_valueArray = array();
+
+    /**
+     * Doc
+     *
+     * @var array
+     */
+    private $_emailArray = array();
+
+    private $_emailFrom;
+
+    /**
+     * Doc
+     *
+     * @var array
+     */
+    private $_attachmentArray = array();
 
 }
