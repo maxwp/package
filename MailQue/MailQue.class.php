@@ -22,7 +22,7 @@ class MailQue {
     /**
      * Создать SmartySender на основе готового кода шаблона
      *
-     * @return MailQue_SmartySender
+     * @return MailQue
      */
     /*public static function CreateFromTemplateData($data) {
         $data = trim($data);
@@ -40,7 +40,7 @@ class MailQue {
     /**
      * Создать SmartySender на основе шаблон-файла
      *
-     * @return MailQue_SmartySender
+     * @return MailQue
      */
     public static function CreateFromTemplateFile($file) {
         if (!is_file($file)) {

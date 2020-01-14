@@ -73,7 +73,7 @@ class SMSUtils_SenderQueDB implements SMSUtils_ISender {
             $senderSMS = $sender;
 
             $diffdate = DateTime_Object::DiffDay(
-                DateTime_Object::Now()->setFormat("Y-m-d H:i:s"), 
+                DateTime_Object::Now()->setFormat("Y-m-d H:i:s"),
                 DateTime_Object::FromString($x->getCdate())
             );
             if ($diffdate > 2) {
@@ -189,41 +189,6 @@ class SMSUtils_SenderQueDB implements SMSUtils_ISender {
         }
 
         return $result;
-    }
-
-    /**
-     * Очистить отработанную очередь.
-     * $inteval указывается в часах и указывает максимальный срок хранения
-     * обработанной записи с момента её обработки.
-     * Если указать 0, то удалятся все уже отработанные записи очереди.
-     *
-     * @param int $inteval
-     */
-    public static function ClearQueue($interval = 168) {
-        $interval = (int) $interval;
-
-        try {
-            SQLObject::TransactionStart();
-
-            $que = new SMSUtils_XTurbosmsuaQue();
-
-            $date = date('Y-m-d H:i:s', time() - $interval*3600);
-
-            $que->setStatus(1);
-            $que->addWhereQuery("pdate <= '{$date}'");
-            $que->setLimitCount($interval);
-            while ($x = $que->getNext()) {
-                $x->delete();
-            }
-
-            SQLObject::TransactionCommit();
-        } catch (Exception $e) {
-            SQLObject::TransactionRollback();
-
-            if (PackageLoader::Get()->getMode('debug')) {
-                print "Exception: {$e->getMessage()}\n";
-            }
-        }
     }
 
 }
