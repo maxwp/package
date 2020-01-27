@@ -25,8 +25,6 @@ if (function_exists('mb_internal_encoding')) {
 // fix for Mac OS X PHP 5.3 default
 @date_default_timezone_set(date_default_timezone_get());
 
-// проверяем, задан ли project path
-PackageLoader::Get()->getProjectPath();
 
 // подключаем Storage
 // (необходим для кеширования)

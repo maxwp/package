@@ -64,17 +64,17 @@ class Engine {
         // подключаем engine.init.php - файл, в котором можно досрочно
         // подключать некоторые пакеты (например, ConnectionManager) и т.п.
         // (В engine.init.php еще не заполнен Engine_DataSource!)
-        $engineInitFilePath = dirname(__FILE__).'/../engine.init.php';
+        $engineInitFilePath = dirname(__FILE__).'/../../engine.init.php';
         include($engineInitFilePath);
 
         // отключаем вывод ошибок
         self::Get()->disableErrorReporting();
 
         // подключаем конфигурационные файлы
-        $filePath = dirname(__FILE__).'/../engine.mode.php';
+        $filePath = dirname(__FILE__).'/../../engine.mode.php';
         include_once($filePath);
 
-        $filePath = dirname(__FILE__).'/../engine.config.php';
+        $filePath = dirname(__FILE__).'/../../engine.config.php';
         include_once($filePath);
     }
 
