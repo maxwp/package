@@ -9,14 +9,13 @@
  */
 
 /**
- * Storage handler: memcache.
- * Обработчик кеша "хранение кеша в memcache"
+ * Storage handler: memcached.
  *
  * @author    Maxim Miroshnichenko <max@webproduction.ua>
  * @copyright WebProduction
  * @package   Storage
  */
-class Storage_HandlerMemcache implements Storage_IHandler {
+class Storage_HandlerMemcached implements Storage_IHandler {
 
     /**
      * Create memcache handler.
@@ -27,7 +26,7 @@ class Storage_HandlerMemcache implements Storage_IHandler {
      * @param string $port
      */
     public function __construct($prefix, $host = 'localhost', $port = 11211) {
-        if (!class_exists('Memcache')) {
+        if (!class_exists('Memcached')) {
             throw new Storage_Exception();
         }
 
@@ -51,7 +50,7 @@ class Storage_HandlerMemcache implements Storage_IHandler {
             throw new Storage_Exception("Incorrect TTL '{$ttl}'");
         }
 
-        $this->_getMemcache()->set($this->_prefix.$key, $value, false, $ttl);
+        $this->_getMemcached()->set($this->_prefix.$key, $value, $ttl);
     }
 
     /**
@@ -66,7 +65,7 @@ class Storage_HandlerMemcache implements Storage_IHandler {
             foreach ($key as $x) {
                 $keyArray[$x] = $this->_prefix.$x;
             }
-            $result = $this->_getMemcache()->get($keyArray);
+            $result = $this->_getMemcached()->getMulti($keyArray);
             $a = array();
             foreach ($result as $key => $x) {
                 $a[str_replace($this->_prefix, '', $key)] = $x;
@@ -75,7 +74,7 @@ class Storage_HandlerMemcache implements Storage_IHandler {
         } else {
             // single
             if ($this->has($key)) {
-                return $this->_getMemcache()->get($this->_prefix.$key);
+                return $this->_getMemcached()->get($this->_prefix.$key);
             }
             throw new Storage_Exception("Cache by key '{$key}' not found");
         }
@@ -87,7 +86,7 @@ class Storage_HandlerMemcache implements Storage_IHandler {
      * @param string $key
      */
     public function has($key) {
-        return ($this->_getMemcache()->get($this->_prefix.$key) != false);
+        return ($this->_getMemcached()->get($this->_prefix.$key) != false);
     }
 
     /**
@@ -96,7 +95,7 @@ class Storage_HandlerMemcache implements Storage_IHandler {
      * @param string $key
      */
     public function remove($key) {
-        $this->_getMemcache()->delete($this->_prefix.$key);
+        $this->_getMemcached()->delete($this->_prefix.$key);
     }
 
     /**
@@ -107,13 +106,17 @@ class Storage_HandlerMemcache implements Storage_IHandler {
             throw new Storage_Exception('Cannot flush all cache');
         }
 
-        $this->_getMemcache()->flush();
+        $this->_getMemcached()->flush();
     }
 
-    private function _getMemcache() {
+    public function getLink() {
+        return $this->_getMemcached();
+    }
+
+    private function _getMemcached() {
         if (!$this->_link) {
-            $this->_link = new Memcache();
-            $this->_link->connect($this->_host, $this->_port);
+            $this->_link = new Memcached();
+            $this->_link->addServer($this->_host, $this->_port);
         }
         return $this->_link;
     }

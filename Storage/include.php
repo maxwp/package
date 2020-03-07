@@ -20,4 +20,5 @@ ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerArray.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerCacheFiles.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerFiles.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerMemcache.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerMemcached.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerSession.class.php');
