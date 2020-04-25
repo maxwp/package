@@ -49,8 +49,12 @@ class APIClient {
         }
 
         $data = json_decode($server_output, true);
-        if ($data['status'] != 'success') {
+        if (@$data['status'] != 'success') {
             throw new APIClient_Exception($data['errorArray']);
+        }
+
+        if (!isset($data['resultArray'])) {
+            throw new APIClient_Exception('No result in responce');
         }
 
         $resultArray = $data['resultArray'];
