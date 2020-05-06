@@ -199,7 +199,7 @@ class MailQue {
         ");
         while ($x = $mysql->fetch($q)) {
             // складываем письмо...
-            $letter = new MailQue_Letter($x['from'], $x['to'], $x['subject'], $x['body'], $x['cc']);
+            $letter = new MailQue_Letter($x['from'], $x['to'], $x['subject'], $x['body']);
             $letter->setBodyType($x['bodytype']);
 
             // добавляем attachment-ы
