@@ -31,8 +31,8 @@ class Engine_HTMLHead {
         $a['linkArray'] = $this->_linkArray;
         $a['openGraphArray'] = $this->_openGraphArray;
 
-        $content = Engine::GetContentDriver()->getContent('engine-include');
-        $content->addValuesArray($a);
+        $content = Engine::GetContentDriver()->getContent('engine_include');
+        $content->addValueArray($a);
         return $content->render();
     }
 
@@ -43,8 +43,8 @@ class Engine_HTMLHead {
      * @param string $title
      */
     public function setTitle($title) {
-        $contentID = Engine::Get()->getRequest()->getContentID();
-        Engine::GetContentDriver()->getContent($contentID)->setField('title', $title);
+        $content = Engine::Get()->getContentCurrent();
+        $content->setField('title', $title);
     }
 
     /**
@@ -67,8 +67,8 @@ class Engine_HTMLHead {
      * @return string
      */
     public function getTitle() {
-        $contentID = Engine::Get()->getRequest()->getContentID();
-        return Engine::GetContentDriver()->getContent($contentID)->getField('title');
+        $content = Engine::Get()->getContentCurrent();
+        return $content->getField('title');
     }
 
     /**

@@ -14,25 +14,10 @@
  */
 class Engine_Content {
 
-    /**
-     * Получить данные текущего контента.
-     * Данные получаются из ContentDataSource
-     *
-     * @return Engine_ContentDataArray
-     */
-    public function getContentData() {
-        return Engine::GetContentDataSource()->getDataByID($this->getContentID());
-    }
-
-    /**
-     * Построить URL на текущую страницу (контент)
-     *
-     * @param array $paramsArray
-     *
-     * @return string
-     */
-    public function makeURL($paramsArray = array()) {
-        return Engine::GetLinkMaker()->makeURLCurrentByReplaceParams($paramsArray);
+    public function __construct() {
+        $filePHP = new ReflectionClass($this);
+        $fileHTML = str_replace('.php', '.html', $filePHP->getFileName());
+        $this->setField('filehtml', $fileHTML);
     }
 
     /**
@@ -61,7 +46,7 @@ class Engine_Content {
         if (isset($this->_controlArray[$controlName])) {
             return $this->_controlArray[$controlName];
         }
-        $value = Engine::GetURLParser()->getArgumentSecure($controlName, $argType);
+        $value = Engine::GetRequest()->getArgumentSecure($controlName, $argType);
         if ($value && !is_array($value)) {
             $value = trim($value);
         }
@@ -144,7 +129,7 @@ class Engine_Content {
      * @return mixed
      */
     public function getArgument($name, $typing = false, $argType = false) {
-        $x = Engine::GetURLParser()->getArgument($name, $argType);
+        $x = Engine::GetRequest()->getArgument($name, $argType);
         if ($typing) {
             $x = Engine::Get()->typeArgument($x, $typing);
         }
@@ -163,7 +148,7 @@ class Engine_Content {
      * @return mixed
      */
     public function getArgumentSecure($name, $typing = false, $argType = false) {
-        $x = Engine::GetURLParser()->getArgumentSecure($name, $argType);
+        $x = Engine::GetRequest()->getArgumentSecure($name, $argType);
         if ($typing) {
             $x = Engine::Get()->typeArgument($x, $typing);
         }
@@ -176,8 +161,8 @@ class Engine_Content {
      *
      * @return array
      */
-    public function getArguments() {
-        return Engine::GetURLParser()->getArguments();
+    public function getArgumentArray() {
+        return Engine::GetRequest()->getArgumentArray();
     }
 
     /**
@@ -200,10 +185,6 @@ class Engine_Content {
         }
         return $a;
     }
-
-    private $_controlArray = array();
-
-    private $_controlUnsetArray = array();
 
     /**
      * Установить значение в контент.
@@ -248,7 +229,7 @@ class Engine_Content {
      *
      * @param array $a
      */
-    public function addValuesArray($a) {
+    public function addValueArray($a) {
         if (!$this->_valueArray) {
             $this->_valueArray = $a;
         } else {
@@ -262,21 +243,8 @@ class Engine_Content {
      *
      * @return array
      */
-    public function getValuesArray() {
+    public function getValueArray() {
         return $this->_valueArray;
-    }
-
-    public function __construct($contentID) {
-        $this->_contentID = $contentID;
-    }
-
-    /**
-     * Получить ID текущего контента
-     *
-     * @return string
-     */
-    public function getContentID() {
-        return $this->_contentID;
     }
 
     public function process() {
@@ -289,7 +257,7 @@ class Engine_Content {
      * @return string
      */
     public function render() {
-        return Engine::GetContentDriver()->displayOne($this->getContentID());
+        return Engine::GetContentDriver()->renderOne($this);
     }
 
     /**
@@ -340,5 +308,9 @@ class Engine_Content {
     protected $_valueArray = array();
 
     protected $_fieldArray = array();
+
+    private $_controlArray = array();
+
+    private $_controlUnsetArray = array();
 
 }

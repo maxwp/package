@@ -73,7 +73,7 @@ interface Engine_IURLParser {
      *
      * @return array
      */
-    public function getArguments();
+    public function getArgumentArray();
 
     /**
      * Возвращает аргумент по ключу

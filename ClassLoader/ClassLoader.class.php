@@ -61,15 +61,26 @@ class ClassLoader {
      * использовать registerClass()
      *
      * @param string $dir
+     * @param bool $recursive
      */
-    public function registerDirectory($dir) {
+    public function registerDirectory($dir, $recursive = true) {
         // сканируем директорию
         // и регистрируем все файлы
         $data = scandir($dir);
         foreach ($data as $x) {
-            if (strpos($x, '.class.php')
-            || strpos($x, '.interface.php')) {
+            if ($x == '.') {
+                continue;
+            }
+            if ($x == '..') {
+                continue;
+            }
+
+            if (strpos($x, '.php')) {
                 $this->registerClass($dir.'/'.$x);
+            }
+
+            if ($recursive && is_dir($dir.'/'.$x)) {
+                $this->registerDirectory($dir.'/'.$x);
             }
         }
     }

@@ -18,15 +18,7 @@
 class Engine {
 
     private function __construct() {
-        // URLParser по умолчанию
-        if (class_exists('Engine_URLParser')) {
-            $this->setURLParser(Engine_URLParser::Get());
-        }
 
-        // LinkMaker по умолчанию
-        if (class_exists('Engine_LinkMaker')) {
-            $this->setLinkMaker(Engine_LinkMaker::Get());
-        }
     }
 
     /**
@@ -83,22 +75,17 @@ class Engine {
      * @return Engine_Response
      */
     public function execute() {
-        // по умолчанию достаем все аргументы и определяем страницу
-        $parser = self::GetURLParser();
-        $query = $this->getRequest();
-        $argumentsArray = $parser->getArguments();
-        $languageCurrent = $this->getLanguage();
-        if ($languageCurrent) {
-            $argumentsArray['engine-language'] = $languageCurrent;
-        }
+        $request = self::GetRequest();
+        $routing = self::GetRouting();
+        $responce = self::GetResponse();
 
-        // получаем контент
-        $contentID = $query->defineContentID($parser->getMatchURL(), $argumentsArray);
-
-        if ($contentID) {
-            $query->setContentID($contentID);
-        } else {
-            $query->setContentNotFound();
+        try {
+            $className = $routing->matchClassName($request);
+            // в этой точке мы нашли класс который надо запустить
+        } catch (Exception $e) {
+            // сюда мы прилетаем если не нашли класс который запустить (ошибка 404)
+            $className = 'error404'; // @todo надо смотреть на url 404
+            Engine::Get()->getResponse()->setHTTPStatus404();
         }
 
         // после того, как query определил точку входа
@@ -106,14 +93,14 @@ class Engine {
         $event = Events::Get()->generateEvent('afterQueryDefine');
         $event->notify();
 
-        // задаем параметры вывода
-        $this->getResponse()->setContentType('text/html; charset=utf-8');
+        // формируем ответ
+        $responce->setContentType('text/html; charset=utf-8');
+
         try {
-            $this->getResponse()->setBody(
-                self::GetContentDriver()->getString(
-                    $this->getRequest()->getContentID()
-                )
-            );
+            $html = $this->_run($className);
+
+            $responce->setBody($html);
+
         } catch (Exception $ex500) {
             // если есть событие и обработчики afterEngineError - то перенаправляем вывод
             if (Events::Get()->hasEvent('afterEngineException')) {
@@ -122,6 +109,7 @@ class Engine {
                 $event->notify();
             } else {
                 // иначе все как обычно - fatal в экран
+                Engine::Get()->getResponse()->setHTTPStatus('500 Internal Server Error');
                 throw $ex500;
             }
         }
@@ -131,7 +119,25 @@ class Engine {
         $event = Events::Get()->generateEvent('afterEngineFinal');
         $event->notify();
 
-        return $this->getResponse();
+        return $responce;
+    }
+
+    private function _run($className) {
+        $content = self::GetContentDriver()->getContent($className);
+
+        // записываем ссылку на контент в Engine
+        $this->setContentCurrent($content);
+
+        $html = self::GetContentDriver()->renderTree($content);
+
+        // если в процессе обработки контента поменялся указатель contentID,
+        // значит повторяем вызов рекурсивно, пока не будет изменений
+        $newClassName = get_class($this->getContentCurrent());
+        if ($newClassName != $className) {
+            return $this->_run($newClassName);
+        }
+
+        return $html;
     }
 
     /**
@@ -163,30 +169,12 @@ class Engine {
     }
 
     /**
-     * Получить объект авторизации
-     *
-     * @return Engine_Auth
-     * @static
-     */
-    public static function GetAuth() {
-        // @todo: что-то это все не красиво ужасно
-        // никому не советую пока-что юзать этот метод ибо концепт
-        if (!self::$_Auth) {
-            self::$_Auth = new Engine_Auth();
-        }
-        return self::$_Auth;
-    }
-
-    /**
      * Get Engine Request
      *
      * @return Engine_Request
      */
-    public function getRequest() {
-        if (!$this->_request) {
-            $this->_request = new Engine_Request();
-        }
-        return $this->_request;
+    public static function GetRequest() {
+        return Engine_Request::Get();
     }
 
     /**
@@ -200,68 +188,10 @@ class Engine {
     }
 
     /**
-     * Получить URL-парсер
-     *
-     * @return Engine_IURLParser
+     * @return Engine_Routing
      */
-    public static function GetURLParser() {
-        $urlParser = self::Get()->_urlParser;
-        if ($urlParser) {
-            return $urlParser;
-        }
-        throw new Engine_Exception("No URLParser in Engine!");
-    }
-
-    /**
-     * Задать собственный URLParser для Engine
-     *
-     * @param Engine_IURLParser $urlParser
-     */
-    public function setURLParser(Engine_IURLParser $urlParser) {
-        $this->_urlParser = $urlParser;
-    }
-
-    /**
-     * Получить LinkMaker Engine
-     *
-     * @return Engine_ILinkMaker
-     */
-    public static function GetLinkMaker() {
-        $linkmaker = self::Get()->_linkmaker;
-        if ($linkmaker) {
-            return $linkmaker;
-        }
-        throw new Engine_Exception("No LinkMaker in Engine!");
-    }
-
-    /**
-     * Получить шаблонизатор Smarty
-     *
-     * @return Engine_Smarty
-     */
-    public static function GetSmarty() {
-        if (!self::Get()->_smarty) {
-            self::Get()->_smarty = new Engine_Smarty();
-        }
-        return self::Get()->_smarty;
-    }
-
-    /**
-     * Задать собственный LinkMaker для Engine
-     *
-     * @param Engine_ILinkMaker $linkmaker
-     */
-    public function setLinkMaker(Engine_ILinkMaker $linkmaker) {
-        $this->_linkmaker = $linkmaker;
-    }
-
-    /**
-     * Получить генератор Engine-данных
-     *
-     * @return Engine_Generator
-     */
-    public static function GetGenerator() {
-        return Engine_Generator::Get();
+    public static function GetRouting() {
+        return Engine_Routing::Get();
     }
 
     /**
@@ -270,10 +200,20 @@ class Engine {
      * @return Engine_Response
      */
     public function getResponse() {
-        if (!$this->_response) {
-            $this->_response = new Engine_Response();
+        return Engine_Response::Get();
+    }
+
+    /**
+     * Получить шаблонизатор Smarty
+     * @todo
+     *
+     * @return Engine_Smarty
+     */
+    public static function GetSmarty() {
+        if (!self::Get()->_smarty) {
+            self::Get()->_smarty = new Engine_Smarty();
         }
-        return $this->_response;
+        return self::Get()->_smarty;
     }
 
     /**
@@ -421,53 +361,6 @@ class Engine {
     }
 
     /**
-     * Установить язык системы
-     *
-     * @param string $language
-     */
-    public function setLanguage($language) {
-        $this->setConfigField('language', $language);
-    }
-
-    /**
-     * Узнать текущий язык системы
-     *
-     * @return string
-     */
-    public function getLanguage() {
-        return $this->getConfigFieldSecure('language');
-    }
-
-    /**
-     * Задать движку массив доступных языков
-     *
-     * @param array $array
-     *
-     * @throws Engine_Exception
-     */
-    public function setLanguagesArray($array) {
-        if (!is_array($array)) {
-            throw new Engine_Exception("Incorrect language array");
-        }
-        $this->setConfigField('engine-languages-array', $array);
-    }
-
-    /**
-     * Запросить у движка массив доступных языков
-     *
-     * @todo скорее всего нет надобности в Engine
-     *
-     * @return array
-     */
-    public function getLanguagesArray() {
-        $a = $this->getConfigFieldSecure('engine-languages-array');
-        if (!$a) {
-            $a = array();
-        }
-        return $a;
-    }
-
-    /**
      * Включить отображение ошибок в движке.
      * Включать можно ТОЛЬКО для localhost (для всех)
      * или ТОЛЬКО для заданного юзера или IP.
@@ -572,6 +465,25 @@ class Engine {
         return $value;
     }
 
+    // @todo может в систему роутинга перенести?
+    public function setContentCurrent($content) {
+        if ($content instanceof Engine_Content) {
+            $this->_content = $content;
+        } else {
+            $content = Engine::GetContentDriver()->getContent($content);
+            $this->_content = $content;
+        }
+    }
+
+    /**
+     * @return Engine_Content
+     */
+    public function getContentCurrent() {
+        return $this->_content;
+    }
+
+    private $_content;
+
     /**
      * Получить объект движка (Engine)
      *
@@ -590,16 +502,6 @@ class Engine {
      * @var Engine
      */
     private static $_Instance = false;
-
-    private static $_Auth = null;
-
-    private $_request = null;
-
-    private $_response = null;
-
-    private $_urlParser = null;
-
-    private $_linkmaker = null;
 
     private $_smarty = null;
 
