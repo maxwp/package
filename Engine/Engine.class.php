@@ -49,9 +49,6 @@ class Engine {
             Engine::Get()->setMediaDirectory('/media/');
         }
 
-        // какой класс будет использоваться при обработке/генерации контентов?
-        self::Get()->setContentClass('Engine_Content');
-
         // регистрация существующих событий
         Events::Get()->addEvent('beforeContentProcess', 'Engine_Event_ContentProcess');
         Events::Get()->addEvent('afterContentProcess', 'Engine_Event_ContentProcess');
@@ -374,34 +371,6 @@ class Engine {
             return $x;
         }
         return false;
-    }
-
-    /**
-     * Установить имя класса, которым оперирует движок
-     *
-     * @param string $className
-     *
-     * @return bool
-     * @return Engine_Exception
-     *
-     * @see EngineGenerator
-     */
-    public function setContentClass($className) {
-        if (class_exists($className)) {
-            $this->setConfigField('Engine-content-class', $className);
-            return true;
-        }
-        throw new Engine_Exception("ContentClass '{$className}' not exists");
-    }
-
-    /**
-     * Получить имя класса, которым оперирует движок
-     *
-     * @return string
-     * @throws Engine_Exception
-     */
-    public function getContentClass() {
-        return $this->getConfigField('Engine-content-class');
     }
 
     /**

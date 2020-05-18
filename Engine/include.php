@@ -50,7 +50,6 @@ ClassLoader::Get()->registerClass($path.'Engine_LinkMaker.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_HTMLHead.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_Response.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_Auth.class.php');
-ClassLoader::Get()->registerClass($path.'Engine_Generator.class.php');
 
 // Engine events
 ClassLoader::Get()->registerClass($path.'Engine_Event_ContentProcess.class.php');

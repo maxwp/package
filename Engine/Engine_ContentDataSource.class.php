@@ -77,31 +77,8 @@ class Engine_ContentDataSource {
             $argumentsArray = array();
         }
 
-        // автоматически определяем fileclass контента
-        $fileClass = trim(@$fieldsArray['fileclass'].'');
         $filePHP = trim(@$fieldsArray['filephp'].'');
-        if (!$fileClass && $filePHP) {
-            $fileClass = basename($filePHP, '.php');
-        }
-        if (!$fileClass) {
-            $fileClass = Engine::Get()->getContentClass();
-        }
-
         $fileHTML = trim(@$fieldsArray['filehtml'].'');
-
-        $fileCSSArray = @$fieldsArray['filecss'];
-        if (!$fileCSSArray) {
-            $fileCSSArray = array();
-        } else {
-            $fileCSSArray = (array) $fileCSSArray;
-        }
-
-        $fileJSArray = @$fieldsArray['filejs'];
-        if (!$fileJSArray) {
-            $fileJSArray = array();
-        } else {
-            $fileJSArray = (array) $fileJSArray;
-        }
 
         $data = array(
             'id' => $id,
@@ -109,11 +86,6 @@ class Engine_ContentDataSource {
             'url' => @$fieldsArray['url'], // URLы контента
             'filehtml' => $fileHTML, // html-отображение
             'filephp' => $filePHP, // php-файл
-            'fileclass' => $fileClass, // php-класс в этом файле (extends @see Engine_Content)
-            'filecss' => $fileCSSArray, // css-файлы
-            'filecssremove' => @$fieldsArray['filecssremove'], // удалять ли css при extend'e
-            'filejs' => $fileJSArray, // js-файлы
-            'filejsremove' => @$fieldsArray['filejsremove'], // удалять ли js при extend'e
             'moveto' => trim(@$fieldsArray['moveto'].''), // в какой контент отправлять
             'moveas' => trim(@$fieldsArray['moveas'].''), // в какую переменную контента отправлять
             'level' => $level, // уровень доступа (минимальный)
@@ -128,20 +100,8 @@ class Engine_ContentDataSource {
             // расширение свойств объекта
             $currentData = @$this->_data[$id];
 
-            if ($data['filecssremove']) {
-                $currentData['filecss'] = array();
-            }
-
-            if ($data['filejsremove']) {
-                $currentData['filejs'] = array();
-            }
-
             if ($data['filephp']) {
                 $currentData['filephp'] = $data['filephp'];
-
-                if ($data['fileclass']) {
-                    $currentData['fileclass'] = $data['fileclass'];
-                }
             }
             if ($data['filehtml']) {
                 $currentData['filehtml'] = $data['filehtml'];
@@ -163,16 +123,6 @@ class Engine_ContentDataSource {
             }
             if ($data['arguments']) {
                 $currentData['arguments'] = $data['arguments'];
-            }
-            if ($data['filecss']) {
-                foreach ($data['filecss'] as $x) {
-                    $currentData['filecss'][] = $x;
-                }
-            }
-            if ($data['filejs']) {
-                foreach ($data['filejs'] as $x) {
-                    $currentData['filejs'][] = $x;
-                }
             }
             if (!empty($data['argument'])) {
                 foreach ($data['argument'] as $x) {
@@ -197,20 +147,6 @@ class Engine_ContentDataSource {
      */
     private function _loadContents($init = false) {
         if (!$this->_loaded || $init) {
-
-            // пытаемся найти данные из кеша
-            /*if (!$init) {
-                try {
-                    $a = Engine::GetCache()->getData(Engine::Get()->getProjectHost().'contents-data');
-                    $this->_data = unserialize($a);
-                    $this->_loaded = true;
-
-                    return;
-                } catch (Exception $e) {
-
-                }
-
-            }*/
 
             // регистрируем автоматический контент движка
             $path = __DIR__.'/contents/';

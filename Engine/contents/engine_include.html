@@ -6,34 +6,10 @@
     <meta name="{|$k|}" content="{|$v|}" />
 {|/foreach|}
 
-{|foreach from=$cssfiles item="css"|}
-    <link rel="stylesheet" type="text/css" href="{|$css|}" />
-{|/foreach|}
-
-{|foreach from=$jsfiles item="js"|}
-    <script type="text/javascript" src="{|$js|}"></script>
+{|foreach from=$openGraphArray key="k" item="v"|}
+    <meta property="{|$k|}" content="{|$v|}" />
 {|/foreach|}
 
 {|foreach from=$linkArray item="e"|}
     <link rel="{|$e.rel|}" href="{|$e.href|}" {|if $e.title|}title="{|$e.title|}"{|/if|} {|if $e.type|}type="{|$e.type|}"{|/if|} />
 {|/foreach|}
-
-{|if $csscontent|}
-    <style type="text/css">{|$csscontent|}</style>
-{|/if|}
-
-{|if $jscontent|}
-    <script type="text/javascript">
-    //<![CDATA[
-    {|$jscontent|}
-    //]]>
-    </script>
-{|/if|}
-
-{|if $jsEngineInfo|}
-    <script type="text/javascript">
-        {|foreach from=$jsEngineInfo item="str"|}
-            console.log("{|$str|}");
-        {|/foreach|}
-    </script>
-{|/if|}

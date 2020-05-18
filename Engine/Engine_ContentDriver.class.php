@@ -148,7 +148,8 @@ class Engine_ContentDriver {
                 throw new Engine_Exception("Content #{$contentID} not found in ContentDataSource", 1);
             }
 
-            $classname = $data['fileclass'];
+            $classname = basename($data['filephp']);
+            $classname = str_replace('.php', '', $classname);
             if (!class_exists($classname) && $data['filephp']) {
                 // если задан php-файл
                 include_once($data['filephp']);
