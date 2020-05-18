@@ -41,7 +41,6 @@ ClassLoader::Get()->registerClass($path.'Engine_Smarty.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_ContentDataSource.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_Request.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_Content.class.php');
-ClassLoader::Get()->registerClass($path.'Engine_Class.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_ContentDriver.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_IURLParser.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_URLParser.class.php');

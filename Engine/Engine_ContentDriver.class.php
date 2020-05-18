@@ -137,7 +137,7 @@ class Engine_ContentDriver {
      * @param string $contentID
      * @param bool $cacheObject Сохранить ли объект во внутреннем кеш-pool'e?
      *
-     * @return Engine_Class
+     * @return Engine_Content
      */
     public function getContent($contentID, $cacheObject = true) {
         // @todo: returns Engine_Content

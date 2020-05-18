@@ -48,8 +48,9 @@ class Engine {
         if (!Engine::Get()->getMediaDirectory()) {
             Engine::Get()->setMediaDirectory('/media/');
         }
+
         // какой класс будет использоваться при обработке/генерации контентов?
-        self::Get()->setContentClass('Engine_Class');
+        self::Get()->setContentClass('Engine_Content');
 
         // регистрация существующих событий
         Events::Get()->addEvent('beforeContentProcess', 'Engine_Event_ContentProcess');
