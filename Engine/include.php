@@ -42,16 +42,10 @@ $path = __DIR__.'/';
 ClassLoader::Get()->registerClass($path.'Engine_Exception.class.php');
 ClassLoader::Get()->registerClass($path.'Engine.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_Smarty.class.php');
-//ClassLoader::Get()->registerClass($path.'Engine_ContentDataSource.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_Request.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_Content.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_ContentDriver.class.php');
-ClassLoader::Get()->registerClass($path.'Engine_IURLParser.class.php');
-//ClassLoader::Get()->registerClass($path.'Engine_URLParser.class.php');
-//ClassLoader::Get()->registerClass($path.'Engine_ILinkMaker.class.php');
-//ClassLoader::Get()->registerClass($path.'Engine_ALinkMaker.class.php');
-//ClassLoader::Get()->registerClass($path.'Engine_LinkMaker.class.php');
-ClassLoader::Get()->registerClass($path.'Engine_HTMLHead.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_IRequest.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_Response.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_Routing.class.php');
 
@@ -60,17 +54,7 @@ ClassLoader::Get()->registerClass($path.'Engine_Event_ContentProcess.class.php')
 ClassLoader::Get()->registerClass($path.'Engine_Event_ContentRender.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_Event_Exception.class.php');
 
-// cache
-/*ClassLoader::Get()->registerClass($path.'Engine_ACacheModifier.class.php');
-ClassLoader::Get()->registerClass($path.'Engine_CacheModifierURL.class.php');
-ClassLoader::Get()->registerClass($path.'Engine_CacheModifierUser.class.php');
-ClassLoader::Get()->registerClass($path.'Engine_CacheModifierHost.class.php');
-ClassLoader::Get()->registerClass($path.'Engine_CacheModifierLanguage.class.php');
-ClassLoader::Get()->registerClass($path.'Engine_CacheModifierNoAuth.class.php');
-ClassLoader::Get()->registerClass($path.'Engine_CacheModifierAuthLogin.class.php');
-ClassLoader::Get()->registerClass($path.'Engine_Cache.class.php');*/
-
-ClassLoader::Get()->registerClass($path.'content/engine_include.php');
+// ClassLoader::Get()->registerClass($path.'content/engine_include.php');
 
 // инициализируем движок, пусть он подгрузит все что ему нужно,
 // в том числе файлы engine.mode.php, engine.config.php, структуру contents

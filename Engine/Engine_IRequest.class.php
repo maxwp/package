@@ -9,7 +9,7 @@
  */
 
 /**
- * Интерфейс для URLParser'a
+ * Интерфейс для Request'a
  *
  * @copyright WebProduction
  *
@@ -19,7 +19,7 @@
  *
  * @subpackage URLParser
  */
-interface Engine_IURLParser {
+interface Engine_IRequest {
 
     /**
      * Получение парсера (реализация шаблона singleton)

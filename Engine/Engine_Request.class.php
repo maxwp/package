@@ -19,8 +19,7 @@
  *
  * @package Engine
  */
-
-class Engine_Request implements Engine_IURLParser {
+class Engine_Request implements Engine_IRequest {
 
     protected function __construct() {
         $this->_setArguments();

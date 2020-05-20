@@ -151,40 +151,12 @@ class Engine {
     }
 
     /**
-     * Получить блок управления head-содержимым страницы
-     *
-     * @return Engine_HTMLHead
-     */
-    public static function GetHTMLHead() {
-        return Engine_HTMLHead::Get();
-    }
-
-    /**
-     * Получить встроенную систему кеширования Engine
-     *
-     * @return Engine_Cache
-     */
-    public static function GetCache() {
-        return Engine_Cache::Get();
-    }
-
-    /**
      * Get Engine Request
      *
      * @return Engine_Request
      */
     public static function GetRequest() {
         return Engine_Request::Get();
-    }
-
-    /**
-     * Получить драйвер контентов
-     *
-     * @static
-     * @return Engine_ContentDataSource
-     */
-    public static function GetContentDataSource() {
-        return Engine_ContentDataSource::Get();
     }
 
     /**
