@@ -66,8 +66,8 @@ class ClassLoader {
     public function registerDirectory($dir, $recursive = true) {
         // сканируем директорию
         // и регистрируем все файлы
-        $data = scandir($dir);
-        foreach ($data as $x) {
+        $d = opendir($dir);
+        while ($x = readdir($d)) {
             if ($x == '.') {
                 continue;
             }
@@ -83,6 +83,7 @@ class ClassLoader {
                 $this->registerDirectory($dir.'/'.$x);
             }
         }
+        closedir($d);
     }
 
     /**
