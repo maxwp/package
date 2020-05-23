@@ -60,12 +60,42 @@ class ClassLoader {
      * Так как не соблюдается порядок подключения, рекомендуется
      * использовать registerClass()
      *
+     * $cache - сколько времени держать кеш (по умолчанию 2 секунды)
+     *
      * @param string $dir
-     * @param bool $recursive
+     * @param int $cache
      */
-    public function registerDirectory($dir, $recursive = true) {
+    public function registerDirectory($dir, $cache = 2) {
+        if ($cache > 0) {
+            $cacheFile = dirname(__FILE__).'/cache/'.md5($dir);
+            $mtime = @filemtime($cacheFile);
+            if ($mtime && $mtime >= time() - $cache) {
+                $a = file($cacheFile);
+                if ($a) {
+                    foreach ($a as $x) {
+                        $this->registerClass(trim($x));
+                    }
+                }
+                return;
+            }
+        }
+
         // сканируем директорию
-        // и регистрируем все файлы
+        $a = $this->_scandir($dir);
+
+        foreach ($a as $x) {
+            $this->registerClass($x);
+        }
+
+        // записываем cache
+        if ($cache > 0) {
+            $cacheFile = dirname(__FILE__).'/cache/'.md5($dir);
+            file_put_contents($cacheFile, implode("\n", $a));
+        }
+    }
+
+    private function _scandir($dir) {
+        $a = array();
         $d = opendir($dir);
         while ($x = readdir($d)) {
             if ($x == '.') {
@@ -76,14 +106,17 @@ class ClassLoader {
             }
 
             if (strpos($x, '.php')) {
-                $this->registerClass($dir.'/'.$x);
+                $a[] = $dir.'/'.$x;
             }
 
-            if ($recursive && is_dir($dir.'/'.$x)) {
-                $this->registerDirectory($dir.'/'.$x);
+            if (is_dir($dir.'/'.$x)) {
+                $tmp = $this->_scandir($dir.'/'.$x);
+                $a = array_merge($a, $tmp);
             }
         }
         closedir($d);
+
+        return $a;
     }
 
     /**
