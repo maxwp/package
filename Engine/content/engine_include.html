@@ -1,0 +1,15 @@
+{|if $title|}
+    <title>{|$title|}</title>
+{|/if|}
+
+{|foreach from=$metaArray key="k" item="v"|}
+    <meta name="{|$k|}" content="{|$v|}" />
+{|/foreach|}
+
+{|foreach from=$openGraphArray key="k" item="v"|}
+    <meta property="{|$k|}" content="{|$v|}" />
+{|/foreach|}
+
+{|foreach from=$linkArray item="e"|}
+    <link rel="{|$e.rel|}" href="{|$e.href|}" {|if $e.title|}title="{|$e.title|}"{|/if|} {|if $e.type|}type="{|$e.type|}"{|/if|} />
+{|/foreach|}
