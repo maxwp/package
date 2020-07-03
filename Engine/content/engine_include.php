@@ -1,5 +1,5 @@
 <?php
-class engine_include extends Engine_Class {
+class engine_include extends Engine_Content {
 
     public function process() {
 

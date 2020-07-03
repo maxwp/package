@@ -30,18 +30,6 @@ class Engine_Response {
     }
 
     /**
-     * Установить заголовок powered-by.
-     * По умолчанию он устанавливается в конструкторе.
-     *
-     * @param string $value
-     *
-     * @see __construct()
-     */
-    public function setXPoweredBy($value) {
-        $this->setHeader('X-Powered-By', $value);
-    }
-
-    /**
      * Задать заголовок языка
      *
      * @param string $language
@@ -156,8 +144,20 @@ class Engine_Response {
 
     public function __construct() {
         // задаем идентификационный заголовок
-        $this->setXPoweredBy('WebProduction Packages Engine');
+        $this->setHeader('X-Powered-By', 'Eventic');
     }
+
+    /**
+     * @return Engine_Routing
+     */
+    public static function Get() {
+        if (!self::$_Instance) {
+            self::$_Instance = new self();
+        }
+        return self::$_Instance;
+    }
+
+    private static $_Instance = false;
 
     private $_headerArray = array();
 
