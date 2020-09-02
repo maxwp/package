@@ -67,7 +67,9 @@ class MailQue_SenderSMTP implements MailQue_ISender {
 
         $smtp = $this->_smtp;
 
-
+        if (!$letter->getEmailFrom()) {
+            $letter->setEmailFrom($this->_email);
+        }
         $content = $letter->make(true); // full
 
         // отправка через relay

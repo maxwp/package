@@ -101,12 +101,12 @@ class MailQue {
 
                 // сохранение attachment-ов отдельно
                 foreach ($this->_attachmentArray as $attach) {
-                    $type = $x['type'];
-                    $name = $x['name'];
+                    $type = $attach['type'];
+                    $name = $attach['name'];
 
-                    $file = md5($x['data']);
+                    $file = md5($attach['data']);
 
-                    file_put_contents(__DIR__.'/media/'.$file, $x['data']);
+                    file_put_contents(__DIR__.'/media/'.$file, $attach['data']);
 
                     $type = $mysql->escapeString($type);
                     $name = $mysql->escapeString($name);
@@ -199,7 +199,7 @@ class MailQue {
         ");
         while ($x = $mysql->fetch($q)) {
             // складываем письмо...
-            $letter = new MailQue_Letter($x['from'], $x['to'], $x['subject'], $x['body'], $x['cc']);
+            $letter = new MailQue_Letter($x['from'], $x['to'], $x['subject'], $x['body']);
             $letter->setBodyType($x['bodytype']);
 
             // добавляем attachment-ы

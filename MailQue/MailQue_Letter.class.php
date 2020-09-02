@@ -63,6 +63,10 @@ class MailQue_Letter {
         return $this->_from;
     }
 
+    public function setEmailFrom($from) {
+        $this->_from = $from;
+    }
+
     /**
      * Получить тему письма
      *
@@ -258,8 +262,6 @@ class MailQue_Letter {
     private $_cc;
 
     private $_from;
-
-    private $_fromName;
 
     private $_subject;
 
