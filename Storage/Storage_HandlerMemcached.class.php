@@ -73,10 +73,11 @@ class Storage_HandlerMemcached implements Storage_IHandler {
             return $a;
         } else {
             // single
-            if ($this->has($key)) {
-                return $this->_getMemcached()->get($this->_prefix.$key);
+            $x = $this->_getMemcached()->get($this->_prefix.$key);
+            if ($x === false) {
+                throw new Storage_Exception("Cache by key '{$key}' not found");
             }
-            throw new Storage_Exception("Cache by key '{$key}' not found");
+            return $x;
         }
     }
 
