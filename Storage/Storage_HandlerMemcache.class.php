@@ -51,7 +51,10 @@ class Storage_HandlerMemcache implements Storage_IHandler {
             throw new Storage_Exception("Incorrect TTL '{$ttl}'");
         }
 
-        $this->_getMemcache()->set($this->_prefix.$key, $value, false, $ttl);
+        $result = $this->_getMemcache()->set($this->_prefix.$key, $value, false, $ttl);
+        /*if (!$result) {
+            var_dump($value);
+        }*/
     }
 
     /**
