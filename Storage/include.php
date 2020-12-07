@@ -8,7 +8,7 @@
  */
 
 /**
- * @author Maxim Miroshnichenko <max@webproduction.com.ua>
+ * @author Maxim Miroshnichenko <max@webproduction.ua>
  * @package Storage
  * @copyright WebProduction
  */
@@ -21,4 +21,5 @@ ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerCacheFiles.class.php'
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerFiles.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerMemcache.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerMemcached.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerRedis.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerSession.class.php');
