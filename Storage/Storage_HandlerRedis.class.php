@@ -49,6 +49,8 @@ class Storage_HandlerRedis implements Storage_IHandler {
         }
         if ($ttl && $ttl < 0) {
             throw new Storage_Exception("Incorrect TTL '{$ttl}'");
+        } else {
+            $ttl = null;
         }
 
         $result = $this->_getRedis()->set($this->_prefix.$key, $value, $ttl);
@@ -70,6 +72,7 @@ class Storage_HandlerRedis implements Storage_IHandler {
                 $keyArray[$x] = $this->_prefix.$x;
             }
             $result = $this->_getRedis()->mget($keyArray);
+            return $result;
             // в $result будет не ассоциативный массив, а набор по индексам
             // массив еще нужно собрать
             return array_combine($key, $result);
