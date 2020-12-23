@@ -228,6 +228,10 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
         return $this->getLinkID()->insert_id;
     }
 
+    public function getAffectedRows() {
+        return $this->getLinkID()->affected_rows;
+    }
+
     private $_hostname;
 
     private $_username;
