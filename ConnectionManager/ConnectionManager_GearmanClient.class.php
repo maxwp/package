@@ -19,7 +19,7 @@ implements ConnectionManager_IConnection {
 
     private $_linkID = null;
 
-    public function doBackground($key, $data = false) {
+    public function doBackground($key, $data = false, $unique = false) {
         if (!$data) {
             $data = date('Y-m-d H:i:s');
         } elseif (is_array($data)) {
@@ -30,7 +30,7 @@ implements ConnectionManager_IConnection {
             $this->connect();
         }
 
-        $this->getLinkID()->doBackground($key, $data);
+        $this->getLinkID()->doBackground($key, $data, $unique);
     }
 
     public function __construct($host = false) {
