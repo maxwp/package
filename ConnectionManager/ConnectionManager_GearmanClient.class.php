@@ -19,7 +19,7 @@ implements ConnectionManager_IConnection {
 
     private $_linkID = null;
 
-    public function doBackground($key, $data = false, $unique = false) {
+    public function doBackground($key, $data = false, $unique = false, $priority = 'normal') {
         if (!$data) {
             $data = date('Y-m-d H:i:s');
         } elseif (is_array($data)) {
@@ -30,7 +30,13 @@ implements ConnectionManager_IConnection {
             $this->connect();
         }
 
-        $this->getLinkID()->doBackground($key, $data, $unique);
+        if ($priority == 'normal' || !$priority) {
+            $this->getLinkID()->doBackground($key, $data, $unique);
+        } elseif ($priority == 'high') {
+            $this->getLinkID()->doHighBackground($key, $data, $unique);
+        } elseif ($priority == 'low') {
+            $this->getLinkID()->doLowBackground($key, $data, $unique);
+        }
     }
 
     public function __construct($host = false) {
