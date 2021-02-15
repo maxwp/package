@@ -52,9 +52,9 @@ class Storage_HandlerMemcache implements Storage_IHandler {
         }
 
         $result = $this->_getMemcache()->set($this->_prefix.$key, $value, false, $ttl);
-        /*if (!$result) {
-            var_dump($value);
-        }*/
+        if (!$result) {
+            throw new Storage_Exception('Memcached set returns false for key='.$key);
+        }
     }
 
     /**
