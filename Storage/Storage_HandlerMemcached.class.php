@@ -39,7 +39,7 @@ class Storage_HandlerMemcached implements Storage_IHandler {
     /**
      * Записать данные в кеш.
      *
-     * @param string $key
+     * @param mixed $key
      * @param mixed $value
      */
     public function set($key, $value, $ttl = false, $parentKey = false) {
@@ -50,7 +50,16 @@ class Storage_HandlerMemcached implements Storage_IHandler {
             throw new Storage_Exception("Incorrect TTL '{$ttl}'");
         }
 
-        $this->_getMemcached()->set($this->_prefix.$key, $value, $ttl);
+        if (is_array($key)) {
+            $keyArray = array();
+            foreach ($key as $k => $v) {
+                $keyArray[$this->_prefix.$k] = $v;
+            }
+
+            $this->_getMemcached()->setMulti($keyArray, $ttl);
+        } else {
+            $this->_getMemcached()->set($this->_prefix.$key, $value, $ttl);
+        }
     }
 
     /**
