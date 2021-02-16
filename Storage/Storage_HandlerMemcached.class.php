@@ -127,6 +127,7 @@ class Storage_HandlerMemcached implements Storage_IHandler {
         if (!$this->_link) {
             $this->_link = new Memcached();
             $this->_link->addServer($this->_host, $this->_port);
+            $this->_link->setOption(Memcached::OPT_TCP_NODELAY, 1);
         }
         return $this->_link;
     }
