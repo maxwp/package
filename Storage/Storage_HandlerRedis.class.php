@@ -27,7 +27,7 @@ class Storage_HandlerRedis implements Storage_IHandler {
      * @param string $port
      */
     public function __construct($prefix, $host = '127.0.0.1', $port = 6379) {
-        if (!class_exists('Memcache')) {
+        if (!class_exists('Redis')) {
             throw new Storage_Exception();
         }
 
