@@ -39,6 +39,26 @@ implements ConnectionManager_IConnection {
         }
     }
 
+    public function do($key, $data = false, $unique = false, $priority = 'normal') {
+        if (!$data) {
+            $data = date('Y-m-d H:i:s');
+        } elseif (is_array($data)) {
+            $data = json_encode($data);
+        }
+
+        if (!$this->getLinkID()) {
+            $this->connect();
+        }
+
+        if ($priority == 'normal' || !$priority) {
+            return $this->getLinkID()->doNormal($key, $data, $unique);
+        } elseif ($priority == 'high') {
+            return $this->getLinkID()->doHigh($key, $data, $unique);
+        } elseif ($priority == 'low') {
+            return $this->getLinkID()->doLow($key, $data, $unique);
+        }
+    }
+
     public function __construct($host = false) {
         // проверка
         if (!class_exists('GearmanClient')) {
