@@ -79,6 +79,17 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
 
         $e = $this->getLinkID()->error;
         if ($e) {
+            if (substr_count($e, 'MySQL server has gone away')) {
+                // пауза 1 секунду
+                sleep(1);
+
+                // переподключаемся
+                $this->connect();
+
+                // выполняем запрос еще раз
+                return $this->query($query);
+            }
+
             throw new ConnectionManager_Exception("Executing error: {$e} in query: {$query}");
         }
 
