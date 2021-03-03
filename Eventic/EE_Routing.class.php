@@ -4,18 +4,18 @@
  * @copyright WebProduction
  * @package Package
  */
-class Engine_Routing implements EE_IRouting {
+class EE_Routing implements EE_IRouting {
 
     /**
      * На основе запроса выдать имя класса, который надо запустить
-     * или бросить Engine_Exception
+     * или бросить Exception
      *
-     * @param Engine_Request $request
+     * @param EE_IRequest $request
      * @return string
      */
-    public function matchClassName(Engine_Request $request) {
+    public function matchClassName(EE_IRequest $request) {
         // $url, $args = array(), $return = false
-        $url = $request->getMatchURL();
+        $url = $request->getURL();
         $args = $request->getArgumentArray();
         $return = false;
 
@@ -116,13 +116,13 @@ class Engine_Routing implements EE_IRouting {
         //}
 
         //return false;
-        throw new Engine_Exception('matchClassName failed for url='.$url);
+        throw new EE_Exception('matchClassName failed for url='.$url);
     }
 
     private function _callbackPregMatchURL($paramArray) {
         $param = trim($paramArray[1]);
         if (!$param) {
-            throw new Engine_Exception("Empty param in match URL!");
+            throw new EE_Exception("Empty param in match URL!");
         }
         $this->_callbackArray[] = $param;
 
@@ -144,5 +144,17 @@ class Engine_Routing implements EE_IRouting {
     private $_callbackReturn;
 
     private $_routeArray;
+
+    /**
+     * @return EE_Routing
+     */
+    public static function Get() {
+        if (!self::$_Instance) {
+            self::$_Instance = new self();
+        }
+        return self::$_Instance;
+    }
+
+    private static $_Instance = false;
 
 }

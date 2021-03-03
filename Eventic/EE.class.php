@@ -9,7 +9,7 @@
  */
 
 /**
- * Движок Engine
+ * Движок Eventic Engine
  *
  * @copyright WebProduction
  * @author    Maxim Miroshnichenko <max@webproduction.ua>
@@ -18,25 +18,8 @@
 class EE {
 
     private function __construct() {
-        // регистрация событий которые понимает Eventic Engine
-        Events::Get()->addEvent('EE:content.process:before', 'EE_Event_ContentProcess');
-        Events::Get()->addEvent('EE:content.process:after', 'EE_Event_ContentProcess');
-
-        Events::Get()->addEvent('EE:content.render:before', 'EE_Event_ContentRender');
-        Events::Get()->addEvent('EE:content.render:after', 'EE_Event_ContentRender');
-
-        Events::Get()->addEvent('EE:routing:before', 'Events_Event');
-        Events::Get()->addEvent('EE:routing:after', 'Events_Event');
-
-        Events::Get()->addEvent('EE:execute:before', 'Events_Event');
-        Events::Get()->addEvent('EE:execute:exception', 'EE_Event_Exception');
-        Events::Get()->addEvent('EE:execute:after', 'Events_Event');
-
         // задаем обработчик контентов по умолчанию
         $this->_smarty = new EE_Smarty();
-
-        // @todo
-        // для инициации движка нужно ему всунуть Routing
     }
 
     /**
@@ -56,7 +39,7 @@ class EE {
         $responce = new EE_Response();
 
         // до того как сработал роутинг
-        $event = Events::Get()->generateEvent('EE:roting:before');
+        $event = Events::Get()->generateEvent('EE:routing:before');
         $event->notify();
 
         // получаем систему роутинга
@@ -77,7 +60,7 @@ class EE {
         }
 
         // после того как сработал роутинг
-        $event = Events::Get()->generateEvent('EE:roting:after');
+        $event = Events::Get()->generateEvent('EE:routing:after');
         $event->notify();
 
         // формируем ответ
@@ -110,6 +93,12 @@ class EE {
         $this->_request = false;
         $this->_responce = false;
 
+        // очищаем все контенты
+        // ради следующего запуска движка
+        foreach ($this->_contentArray as $content) {
+            $content->clear();
+        }
+
         return $responce;
     }
 
@@ -132,7 +121,7 @@ class EE {
     }
 
     /**
-     * @return Engine_IRequest
+     * @return EE_IRequest
      */
     public function getRequest() {
         return $this->_request;
@@ -143,6 +132,10 @@ class EE {
      */
     public function getRouting() {
         return $this->_routing;
+    }
+
+    public function setRouting(EE_IRouting $routing) {
+        $this->_routing = $routing;
     }
 
     /**
@@ -387,7 +380,7 @@ class EE {
         // получаем все параметры, которые надо передать в smarty
         $a = $content->getValueArray();
 
-        $arguments = $this->getRequest()>getArgumentArray();
+        $arguments = $this->getRequest()->getArgumentArray();
         foreach ($arguments as $name => $value) {
             if (is_array($value)) {
                 continue;
@@ -415,19 +408,11 @@ class EE {
         $event->setRenderHTML($html);
         $event->notify();
 
-        // достаем новый $html
+        // достаем новый $html из события
         $html = $event->getRenderHTML();
 
         return $html;
     }
-
-    /**
-     * Массив созданных контентов
-     * array of EE_Content
-     *
-     * @var array
-     */
-    private $_contentArray = array();
 
     /**
      * Получить объект движка Eventic Engine
@@ -454,6 +439,16 @@ class EE {
 
     private $_responce = null;
 
+    private $_routing = null;
+
     private $_configFieldArray = array();
+
+    /**
+     * Массив загруженных контентов
+     * array of EE_Content
+     *
+     * @var array
+     */
+    private $_contentArray = array();
 
 }

@@ -74,8 +74,11 @@ class Engine {
      *
      * @return Engine_Response
      */
-    public function execute() {
-        $request = self::GetRequest();
+    public function execute($request = false) {
+        if (!$request) {
+            $request = self::GetRequest();
+        }
+
         $routing = self::GetRouting();
         $responce = self::GetResponse();
 

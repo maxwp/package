@@ -1,14 +1,5 @@
 <?php
 /**
- * WebProduction Packages
- *
- * @copyright (C) 2007-2013 WebProduction <webproduction.ua>
- *
- * This program is commercial software;
- * you can not distribute it and/or modify it.
- */
-
-/**
  * Реализация класса работающего с запросом
  * для древовидной структуры сайта
  *
@@ -17,14 +8,26 @@
  *
  * @copyright WebProduction
  *
- * @package Engine
+ * @package EE
  */
-class Engine_Request implements Engine_IRequest {
+class EE_Request implements EE_IRequest {
 
-    protected function __construct() {
-        $this->_setArguments();
-        $this->_setTotalUrl(@$_SERVER['REQUEST_URI']);
-        $this->_setHost();
+    public function __construct($url, $host, $GET, $POST, $FILES, $COOKIE) {
+        // сначала задаем хост
+        $this->_setHost($host);
+
+        // затем переменные
+        $this->_setArguments($GET, $POST, $FILES);
+
+        // затем уже URL, потому что в URL могут быть GET-параметры
+        // и нам их надо перетереть
+        $this->_setTotalUrl($url); // @$_SERVER['REQUEST_URI']
+
+        $this->_cookie = $COOKIE;
+    }
+
+    public function getCOOKIEArray() {
+        return $this->_cookie;
     }
 
     /**
@@ -45,17 +48,6 @@ class Engine_Request implements Engine_IRequest {
                 $_GET[$p[0]] = '';
             }
         }
-    }
-
-    /**
-     * Получить хеш текущего request'a
-     * Для текущей открытой страницы получить идентификатор, который
-     * с большой степенью вероятности будет ее однозначно идентифицировать
-     *
-     * @return string
-     */
-    public function makeURLID() {
-        return @md5($this->getTotalURL().serialize($this->getArguments()));
     }
 
     /**
@@ -85,9 +77,9 @@ class Engine_Request implements Engine_IRequest {
      * @author Max
      * @author Vova (found bugs)
      */
-    protected function _setArguments() {
+    protected function _setArguments($GETArray, $POSTArray, $FILESArray) {
         $files = array();
-        foreach ($_FILES as $file => $val) {
+        foreach ($FILESArray as $file => $val) {
             if (is_array($val['tmp_name'])) {
                 foreach ($val['tmp_name'] as $key => $name) {
                     if (is_uploaded_file($val['tmp_name'][$key])) {
@@ -109,26 +101,26 @@ class Engine_Request implements Engine_IRequest {
             }
         }
 
-        $a = array_merge(array_merge($files, $_GET), $_POST);
+        $a = array_merge(array_merge($files, $GETArray), $POSTArray);
 
-        if (get_magic_quotes_gpc()) {
+        /*if (get_magic_quotes_gpc()) {
             // если включены magic quotes - вручную снимаем экранирование
             $a = $this->_unescapeArray($a);
-        }
+        }*/
 
         $this->arguments = $a;
-        $this->argumentsPost = $_POST;
-        $this->argumentsGet = $_GET;
-        $this->argumentsFile = $_FILES;
+        $this->argumentsPost = $POSTArray;
+        $this->argumentsGet = $GETArray;
+        $this->argumentsFile = $FILESArray;
 
         // очищаем массивы GET/POST/FILES,
         // чтобы не повадно было с ними работать :-)
-        $_FILES = array();
-        $_GET = array();
-        $_POST = array();
-        $_SERVER['argv'] = array();
-        $_SERVER['QUERY_STRING'] = '';
-        $_SERVER['REDIRECT_QUERY_STRING'] = '';
+        //$_FILES = array();
+        //$_GET = array();
+        //$_POST = array();
+        //$_SERVER['argv'] = array();
+        //$_SERVER['QUERY_STRING'] = '';
+        //$_SERVER['REDIRECT_QUERY_STRING'] = '';
     }
 
     /**
@@ -154,8 +146,8 @@ class Engine_Request implements Engine_IRequest {
      *
      * @author Ramm
      */
-    protected function _setHost() {
-        $this->host = @$_SERVER['HTTP_HOST'];
+    protected function _setHost($host) {
+        $this->host = $host;
     }
 
     /**
@@ -201,6 +193,10 @@ class Engine_Request implements Engine_IRequest {
         return $this->stringGET;
     }
 
+    public function getURL() {
+        return $this->getMatchURL();
+    }
+
     /**
      * Возвращает хост
      *
@@ -226,26 +222,26 @@ class Engine_Request implements Engine_IRequest {
      *
      * @return mixed
      *
-     * @throws Engine_Exception
+     * @throws EE_Exception
      */
     public function getArgument($key, $argType = false) {
         $argType = strtolower($argType);
 
         if ($argType == 'post') {
             if (!isset($this->argumentsPost[$key])) {
-                throw new Engine_Exception("Argument {$key} is missing");
+                throw new EE_Exception("Argument {$key} is missing");
             }
         } elseif ($argType == 'get') {
             if (!isset($this->argumentsGet[$key])) {
-                throw new Engine_Exception("Argument {$key} is missing");
+                throw new EE_Exception("Argument {$key} is missing");
             }
         } elseif ($argType == 'file') {
             if (!isset($this->argumentsFile[$key])) {
-                throw new Engine_Exception("Argument {$key} is missing");
+                throw new EE_Exception("Argument {$key} is missing");
             }
         } else {
             if (!isset($this->arguments[$key])) {
-                throw new Engine_Exception("Argument {$key} is missing");
+                throw new EE_Exception("Argument {$key} is missing");
             }
         }
 
@@ -360,6 +356,8 @@ class Engine_Request implements Engine_IRequest {
     protected $argumentsPost = array();
     protected $argumentsFile = array();
 
+    private $_cookie = array();
+
     /**
      * Локальная часть URL
      *
@@ -368,7 +366,7 @@ class Engine_Request implements Engine_IRequest {
     protected $local = false;
 
     /**
-     * @return Engine_Request
+     * @return EE_Request
      */
     public static function Get() {
         if (!self::$_Instance) {

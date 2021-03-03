@@ -11,4 +11,6 @@ interface EE_IRequest {
 
     public function getArgumentSecure($key, $argType = false);
 
+    public function getCOOKIEArray();
+
 }

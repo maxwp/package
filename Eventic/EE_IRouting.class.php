@@ -1,6 +1,6 @@
 <?php
 interface EE_IRouting {
 
-    public function matchClassName(Engine_Request $request);
+    public function matchClassName(EE_IRequest $request);
 
 }

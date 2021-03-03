@@ -1,14 +1,5 @@
 <?php
 /**
- * WebProduction Packages
- *
- * @copyright (C) 2007-2016 WebProduction <webproduction.ua>
- *
- * This program is commercial software;
- * you can not distribute it and/or modify it.
- */
-
-/**
  * Система ответа в Engine.
  * Позволяет удобно устанавливать ответы заголовки HTTP-ответа.
  * Например, настройки cache, gzip, last-modified, body, ...
@@ -21,6 +12,22 @@
  * @package   Engine
  */
 class EE_Response {
+
+    public function setCookie($name, $value = "", $expires = 0, $path = "", $domain = "", $secure = true) {
+        $this->_cookieArray[$name] = array(
+            'value' => $value,
+            'expires' => $expires,
+            'path' => $path,
+            'domain' => $domain,
+            'secure' => $secure,
+        );
+    }
+
+    public function getCookieArray() {
+        return $this->_cookieArray;
+    }
+
+    private $_cookieArray = array();
 
     /**
      * Установить 404й статус ответа
@@ -87,7 +94,11 @@ class EE_Response {
         if (isset($this->_headerArray[$header])) {
             return $this->_headerArray[$header];
         }
-        throw new Engine_Exception("Header '{$header}' not found");
+        throw new EE_Exception("Header '{$header}' not found");
+    }
+
+    public function getHeaderArray() {
+        return $this->_headerArray;
     }
 
     public function __toString() {
@@ -146,18 +157,6 @@ class EE_Response {
         // задаем идентификационный заголовок
         $this->setHeader('X-Powered-By', 'Eventic');
     }
-
-    /**
-     * @return Engine_Routing
-     */
-    public static function Get() {
-        if (!self::$_Instance) {
-            self::$_Instance = new self();
-        }
-        return self::$_Instance;
-    }
-
-    private static $_Instance = false;
 
     private $_headerArray = array();
 
