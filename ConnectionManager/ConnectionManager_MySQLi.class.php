@@ -41,7 +41,7 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
 
         $e = $this->getLinkID()->connect_error;
         if ($e) {
-            throw new ConnectionManager_Exception("Cannot connect to database: ".$e);
+            throw new ConnectionManager_Exception("Cannot connect to database $this->_database@$this->_hostname: ".$e);
         }
 
         if ($this->_encoding) {
