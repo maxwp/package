@@ -43,6 +43,7 @@ ClassLoader::Get()->registerClass($path.'Engine_Exception.class.php');
 ClassLoader::Get()->registerClass($path.'Engine.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_Smarty.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_Request.class.php');
+ClassLoader::Get()->registerClass($path.'Engine_Request2.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_Content.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_ContentDriver.class.php');
 ClassLoader::Get()->registerClass($path.'Engine_IRequest.class.php');

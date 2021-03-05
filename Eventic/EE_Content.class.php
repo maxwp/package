@@ -1,13 +1,5 @@
 <?php
 /**
- * WebProduction Packages
- * @copyright (C) 2007-2014 WebProduction <webproduction.ua>
- *
- * This program is commercial software;
- * you can not distribute it and/or modify it.
- */
-
-/**
  * @author Maxim Miroshnichenko <max@webproduction.com.ua>
  * @copyright WebProduction
  * @package Eventic
@@ -155,8 +147,8 @@ class EE_Content {
      *
      * @return array
      */
-    public function getArguments() {
-        return EE::Get()->getRequest()->getArguments();
+    public function getArgumentArray() {
+        return EE::Get()->getRequest()->getArgumentArray();
     }
 
     /**
@@ -291,12 +283,12 @@ class EE_Content {
         }
     }
 
-    /**
-     * Текуший идентификатор контента
-     *
-     * @var string
-     */
-    protected $_contentID;
+    public function clear() {
+        $this->_valueArray = array();
+        //$this->_fieldArray = array();
+        $this->_controlArray = array();
+        $this->_controlUnsetArray = array();
+    }
 
     protected $_valueArray = array();
 

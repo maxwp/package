@@ -40,3 +40,14 @@ ClassLoader::Get()->registerClass($path.'EE_Routing.class.php');
 ClassLoader::Get()->registerClass($path.'EE_Event_ContentProcess.class.php');
 ClassLoader::Get()->registerClass($path.'EE_Event_ContentRender.class.php');
 ClassLoader::Get()->registerClass($path.'EE_Event_Exception.class.php');
+
+// регистрация событий которые понимает Eventic Engine
+Events::Get()->addEvent('EE:content.process:before', 'EE_Event_ContentProcess');
+Events::Get()->addEvent('EE:content.process:after', 'EE_Event_ContentProcess');
+Events::Get()->addEvent('EE:content.render:before', 'EE_Event_ContentRender');
+Events::Get()->addEvent('EE:content.render:after', 'EE_Event_ContentRender');
+Events::Get()->addEvent('EE:routing:before', 'Events_Event');
+Events::Get()->addEvent('EE:routing:after', 'Events_Event');
+Events::Get()->addEvent('EE:execute:before', 'Events_Event');
+Events::Get()->addEvent('EE:execute:exception', 'EE_Event_Exception');
+Events::Get()->addEvent('EE:execute:after', 'Events_Event');
