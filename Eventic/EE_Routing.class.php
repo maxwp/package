@@ -1,8 +1,8 @@
 <?php
 /**
- * @author Maxim Miroshnichenko <max@webproduction.ua>
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  * @copyright WebProduction
- * @package Package
+ * @package EE
  */
 class EE_Routing implements EE_IRouting {
 

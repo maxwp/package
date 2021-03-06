@@ -1,10 +1,10 @@
 <?php
 /**
- * Engine
+ * Eventic Engine
  *
- * @author    Maxim Miroshnichenko <max@miroshnichenko.org>
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  * @copyright WebProduction
- * @package   Engine
+ * @package EE
  */
 
 // задаем локаль по умолчанию

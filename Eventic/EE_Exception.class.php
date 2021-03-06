@@ -1,17 +1,8 @@
 <?php
 /**
- * WebProduction Packages
- * @copyright (C) 2007-2012 WebProduction <webproduction.com.ua>
- *
- * This program is commercial software;
- * you can not distribute it and/or modify it.
- */
-
-/**
- * @author DFox
- * @author Maxim Miroshnichenko <max@webproduction.com.ua>
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  * @copyright WebProduction
- * @package Engine
+ * @package EE
  */
 class EE_Exception extends Exception {
 

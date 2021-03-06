@@ -1,19 +1,11 @@
 <?php
 /**
- * WebProduction Packages
- * @copyright (C) 2007-2012 WebProduction <webproduction.com.ua>
- *
- * This program is commercial software;
- * you can not distribute it and/or modify it.
- */
-
-/**
  * Событие, которое вызывается до и после обработки контента
- * (до и после вызова метода Engine_Content->process())
+ * (до и после вызова метода EE_Content->process())
  *
- * @author Maxim Miroshnichenko <max@webproduction.com.ua>
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  * @copyright WebProduction
- * @package Engine
+ * @package EE
  */
 class EE_Event_ContentProcess extends Events_Event {
 

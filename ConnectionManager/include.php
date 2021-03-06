@@ -22,5 +22,5 @@ ClassLoader::Get()->registerClass(dirname(__FILE__).'/ConnectionManager_Exceptio
 ClassLoader::Get()->registerClass(dirname(__FILE__).'/ConnectionManager_MySQLi.class.php');
 ClassLoader::Get()->registerClass(dirname(__FILE__).'/ConnectionManager_PgSQL.class.php');
 ClassLoader::Get()->registerClass(dirname(__FILE__).'/ConnectionManager_PDO.class.php');
-ClassLoader::Get()->registerClass(dirname(__FILE__).'/ConnectionManager_SphinxQL.class.php');
 ClassLoader::Get()->registerClass(dirname(__FILE__).'/ConnectionManager_GearmanClient.class.php');
+ClassLoader::Get()->registerClass(dirname(__FILE__).'/ConnectionManager_Redis.class.php');

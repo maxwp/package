@@ -3,11 +3,8 @@
  * Реализация класса работающего с запросом
  * для древовидной структуры сайта
  *
- * @author DFox (idea)
- * @author Maxim Miroshnichenko <max@webproduction.ua>
- *
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  * @copyright WebProduction
- *
  * @package EE
  */
 class EE_Request implements EE_IRequest {

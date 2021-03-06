@@ -4,12 +4,9 @@
  * Позволяет удобно устанавливать ответы заголовки HTTP-ответа.
  * Например, настройки cache, gzip, last-modified, body, ...
  *
- * Через систему ответа можно проганять картинки с настройками
- * кеширования, а не только страницы.
- *
- * @author    Maxim Miroshnichenko <max@webproduction.ua>
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  * @copyright WebProduction
- * @package   Engine
+ * @package EE
  */
 class EE_Response {
 
@@ -27,31 +24,21 @@ class EE_Response {
         return $this->_cookieArray;
     }
 
-    private $_cookieArray = array();
-
-    /**
-     * Установить 404й статус ответа
-     */
-    public function setHTTPStatus404() {
-        $this->setHTTPStatus('404 Not Found');
+    public function getCode() {
+        return $this->_code;
     }
 
-    /**
+    public function setCode($code) {
+        $this->_code = $code;
+    }
+
+     /**
      * Задать заголовок языка
      *
      * @param string $language
      */
-    public function setContentLanguage($language) {
+    public function setHeaderContentLanguage($language) {
         $this->setHeader('Content-Language', $language);
-    }
-
-    /**
-     * Задать статус ответа HTTP
-     *
-     * @param string $status
-     */
-    public function setHTTPStatus($status) {
-        $this->setHeader('HTTP/1.0 '.$status);
     }
 
     /**
@@ -59,7 +46,7 @@ class EE_Response {
      *
      * @param int $seconds
      */
-    public function setLastModifiedCaching($seconds) {
+    public function setHeaderLastModifiedCaching($seconds) {
         $time = time() - $seconds;
         $this->setHeader('Last-Modified', gmdate('D, d M Y H:i:s', $time).' GMT');
     }
@@ -69,7 +56,7 @@ class EE_Response {
      *
      * @param string $value
      */
-    public function setContentType($value) {
+    public function setHeaderContentType($value) {
         $this->setHeader('content-type', $value);
     }
 
@@ -101,40 +88,6 @@ class EE_Response {
         return $this->_headerArray;
     }
 
-    public function __toString() {
-        if (!headers_sent()) {
-            $headerList = headers_list();
-
-            $status = false;
-            foreach ($headerList as $header) {
-                $lowerHeader = strtolower($header);
-                if (strpos(strtolower($lowerHeader), 'location') === 0) {
-                    // если в header location, сразу exit
-                    exit;
-                }
-
-                if (strpos(strtolower($lowerHeader), 'status') === 0) {
-                    $status = true;
-                }
-            }
-
-            // по умолчанию задаем 200 ОК.
-            // Это специальный костыль, нужный для Apache
-            if (!$status) {
-                $this->setHeader('Status', '200 OK');
-            }
-
-            foreach ($this->_headerArray as $k => $v) {
-                if ($v) {
-                    header("{$k}: {$v}");
-                } else {
-                    header($k);
-                }
-            }
-        }
-        return $this->_body;
-    }
-
     /**
      * Задать тело ответа
      *
@@ -161,5 +114,9 @@ class EE_Response {
     private $_headerArray = array();
 
     private $_body = '';
+
+    private $_cookieArray = array();
+
+    private $_code;
 
 }

@@ -1,15 +1,13 @@
 <?php
 /**
- * @author Maxim Miroshnichenko <max@webproduction.com.ua>
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  * @copyright WebProduction
- * @package Eventic
+ * @package EE
  */
 class EE_Content {
 
     public function __construct() {
-        $filePHP = new ReflectionClass($this);
-        $fileHTML = str_replace('.php', '.html', $filePHP->getFileName());
-        $this->setField('filehtml', $fileHTML);
+        $this->clear();
     }
 
     /**
@@ -284,10 +282,16 @@ class EE_Content {
     }
 
     public function clear() {
+        // очищаем все
         $this->_valueArray = array();
-        //$this->_fieldArray = array();
+        $this->_fieldArray = array();
         $this->_controlArray = array();
         $this->_controlUnsetArray = array();
+
+        // заполняем только одно поле - filehtml
+        $filePHP = new ReflectionClass($this);
+        $fileHTML = str_replace('.php', '.html', $filePHP->getFileName());
+        $this->setField('filehtml', $fileHTML);
     }
 
     protected $_valueArray = array();

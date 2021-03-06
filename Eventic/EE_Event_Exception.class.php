@@ -1,19 +1,10 @@
 <?php
 /**
- * WebProduction Packages
- *
- * @copyright (C) 2007-2016 WebProduction <webproduction.ua>
- *
- * This program is commercial software;
- * you can not distribute it and/or modify it.
- */
-
-/**
  * Событие, которое возникает если в Engine есть не отловленный Exception
  *
- * @author    Maxim Miroshnichenko <max@webproduction.ua>
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  * @copyright WebProduction
- * @package   Engine
+ * @package EE
  */
 class EE_Event_Exception extends Events_Event {
 

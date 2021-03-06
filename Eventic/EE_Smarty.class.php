@@ -1,20 +1,10 @@
 <?php
 /**
- * WebProduction Packages
- *
- * @copyright (C) 2007-2016 WebProduction <webproduction.ua>
- *
- * This program is commercial software;
- * you can not distribute it and/or modify it.
- */
-
-/**
  * Smarty template engine for wpp Engine
  *
- * @author     Maxim Miroshnichenko <max@webproduction.ua>
- * @copyright  WebProduction
- * @package    Engine
- * @subpackage Smarty
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
+ * @copyright WebProduction
+ * @package EE
  */
 class EE_Smarty {
 

@@ -1,0 +1,35 @@
+<?php
+ClassLoader::Get()->registerDirectory(dirname(__FILE__).'/content/');
+
+EE::Get()->getRouting()->registerRoute('/', 'index');
+EE::Get()->getRouting()->registerRoute('404', 'error404');
+EE::Get()->getRouting()->registerRoute('500', 'error500');
+EE::Get()->getRouting()->registerRoute('/docs.html', 'docs');
+EE::Get()->getRouting()->registerRoute('/pay.html', 'pay');
+EE::Get()->getRouting()->registerRoute('/aboutus.html', 'aboutus');
+EE::Get()->getRouting()->registerRoute('/contacts.html', 'contacts');
+EE::Get()->getRouting()->registerRoute('/faq.html', 'faq_index');
+EE::Get()->getRouting()->registerRoute('/faq/{id}.html', 'faq_view');
+EE::Get()->getRouting()->registerRoute('/hosting.html', 'hosting_index');
+EE::Get()->getRouting()->registerRoute('/hosting/{line}/', 'hosting_line');
+//EE::Get()->getRouting()->registerRoute('/hosting/tariff/{id}/', 'hosting_tariff');
+//EE::Get()->getRouting()->registerRoute('/hosting/tariff/{id}/details.html', 'hosting_tariff_details');
+EE::Get()->getRouting()->registerRoute('/domains.html', 'domain_index');
+EE::Get()->getRouting()->registerRoute('/domains/check/', 'domain_check');
+EE::Get()->getRouting()->registerRoute('/domains/check/ajax/', 'domain_check_ajax');
+EE::Get()->getRouting()->registerRoute('/domain/{id}/', 'domain_view');
+EE::Get()->getRouting()->registerRoute('/vps.html', 'vps_index');
+EE::Get()->getRouting()->registerRoute('/vps/{id}/', 'vps_view');
+EE::Get()->getRouting()->registerRoute('/dedicated.html', 'dedicated_index');
+EE::Get()->getRouting()->registerRoute('/dedicated/{id}/', 'dedicated_view');
+EE::Get()->getRouting()->registerRoute('/basket/', 'basket_index');
+EE::Get()->getRouting()->registerRoute('/basket/preview/', 'basket_preview');
+EE::Get()->getRouting()->registerRoute('/basket/ajax/', 'basket_ajax');
+EE::Get()->getRouting()->registerRoute('/privacy.html', 'privacy');
+EE::Get()->getRouting()->registerRoute('/oferta.html', 'public_offer');
+EE::Get()->getRouting()->registerRoute('/sales.html', 'sales');
+//EE::Get()->getRouting()->registerRoute('/news/', 'news_index');
+EE::Get()->getRouting()->registerRoute('/news/{id}/', 'news_view');
+EE::Get()->getRouting()->registerRoute('/clients.html', 'clients');
+EE::Get()->getRouting()->registerRoute('/registration.html', 'registration');
+EE::Get()->getRouting()->registerRoute('/makeorder.html', 'make_order');

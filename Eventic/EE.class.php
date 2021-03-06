@@ -1,19 +1,10 @@
 <?php
 /**
- * WebProduction Packages
- *
- * @copyright (C) 2007-2016 WebProduction <webproduction.ua>
- *
- * This program is commercial software;
- * you can not distribute it and/or modify it.
- */
-
-/**
  * Движок Eventic Engine
  *
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  * @copyright WebProduction
- * @author    Maxim Miroshnichenko <max@webproduction.ua>
- * @package   Engine
+ * @package EE
  */
 class EE {
 
@@ -35,8 +26,8 @@ class EE {
         // сохраняем request в себе
         $this->_request = $request;
 
-        // создаем чистый объект responce
-        $responce = new EE_Response();
+        // создаем чистый объект response
+        $this->_response = new EE_Response();
 
         // до того как сработал роутинг
         $event = Events::Get()->generateEvent('EE:routing:before');
@@ -50,13 +41,13 @@ class EE {
             $className = $routing->matchClassName($request);
             // в этой точке мы нашли класс который надо запустить
 
-            $responce->setHTTPStatus('200 OK');
+            $this->getResponse()->setCode(200);
         } catch (Exception $e) {
             // сюда мы прилетаем если не нашли класс который запустить
             // реально это ошибка 404
             // ставим класс 404
             $className = 'error404';
-            $responce->setHTTPStatus('404 Not found');
+            $this->getResponse()->setCode(404);
         }
 
         // после того как сработал роутинг
@@ -69,10 +60,10 @@ class EE {
             $html = $this->_run($className);
 
             // пишем ответ
-            $responce->setBody($html);
-            $responce->setContentType('text/html; charset=utf-8');
+            $this->getResponse()->setBody($html);
+            $this->getResponse()->setHeaderContentType('text/html; charset=utf-8');
         } catch (Exception $ex500) {
-            $responce->setHTTPStatus('500 Internal server error');
+            $this->getResponse()->setCode(500);
 
             // если есть событие и обработчики EE:execute:exception - то перенаправляем вывод
             if (Events::Get()->hasEvent('EE:execute:exception')) {
@@ -81,7 +72,6 @@ class EE {
                 $event->notify();
             } else {
                 // иначе все как обычно - fatal в экран как нибудь
-                $this->getResponse()->setHTTPStatus('500 Internal Server Error');
                 throw $ex500;
             }
         }
@@ -89,17 +79,20 @@ class EE {
         $event = Events::Get()->generateEvent('EE:execute:after');
         $event->notify();
 
-        // очищаем объекты request/responce
-        $this->_request = false;
-        $this->_responce = false;
-
         // очищаем все контенты
         // ради следующего запуска движка
         foreach ($this->_contentArray as $content) {
             $content->clear();
         }
 
-        return $responce;
+        $response = $this->getResponse();
+
+        // очищаем объекты request/response
+        // чтобы движок был готов к следующему запуску
+        $this->_request = false;
+        $this->_response = false;
+
+        return $response;
     }
 
     private function _run($className) {
@@ -144,7 +137,7 @@ class EE {
      * @return EE_Response
      */
     public function getResponse() {
-        return $this->_responce;
+        return $this->_response;
     }
 
     /**
@@ -437,7 +430,7 @@ class EE {
 
     private $_request = null;
 
-    private $_responce = null;
+    private $_response = null;
 
     private $_routing = null;
 
