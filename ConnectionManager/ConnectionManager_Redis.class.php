@@ -8,7 +8,7 @@
  */
 
 /**
- * Адаптер для соеденения с MySQL базой.
+ * Адаптер для соеденения с Redis
  *
  * @author Maxim Miroshnichenko <max@webproduction.ua>
  * @copyright WebProduction
