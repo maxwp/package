@@ -44,6 +44,7 @@ while (1) {
             $responseArray['body'] = $eeResponse->getBody();
 
             $redis->lPush('eventic-response-'.$hash, json_encode($responseArray));
+            $redis->expire('eventic-response-'.$hash, 5); // чтобы не забивалась память
 
             print "Response code ".$eeResponse->getCode()."\n";
 
