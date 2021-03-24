@@ -7,6 +7,14 @@
 class EE_Content {
 
     public function __construct() {
+        // первый раз определяем есть ли filehtml
+        $filePHP = new ReflectionClass($this);
+        $fileHTML = str_replace('.php', '.html', $filePHP->getFileName());
+        if (file_exists($fileHTML)) {
+            $this->_filehtml = $fileHTML;
+        }
+
+        // очищаем все, записываем filehtml в field
         $this->clear();
     }
 
@@ -289,9 +297,9 @@ class EE_Content {
         $this->_controlUnsetArray = array();
 
         // заполняем только одно поле - filehtml
-        $filePHP = new ReflectionClass($this);
-        $fileHTML = str_replace('.php', '.html', $filePHP->getFileName());
-        $this->setField('filehtml', $fileHTML);
+        if ($this->_filehtml) {
+            $this->setField('filehtml', $this->_filehtml);
+        }
     }
 
     protected $_valueArray = array();
@@ -301,5 +309,7 @@ class EE_Content {
     private $_controlArray = array();
 
     private $_controlUnsetArray = array();
+
+    private $_filehtml = false;
 
 }

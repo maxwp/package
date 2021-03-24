@@ -56,12 +56,14 @@ class EE {
 
         // формируем ответ
         try {
+            // заголовок ставим в начало, чтобы в run контент мог его перетереть
+            $this->getResponse()->setHeaderContentType('text/html; charset=utf-8');
+
             // запускаем рендеринг ответа
             $html = $this->_run($className);
 
             // пишем ответ
             $this->getResponse()->setBody($html);
-            $this->getResponse()->setHeaderContentType('text/html; charset=utf-8');
         } catch (Exception $ex500) {
             $this->getResponse()->setCode(500);
 
@@ -357,7 +359,7 @@ class EE {
         $event->setContent($content);
         $event->notify();
 
-        $content->process();
+        $data = $content->process();
 
         // вызываем все пост-процессоры
         $event = Events::Get()->generateEvent('EE:content.process:after');
@@ -367,6 +369,10 @@ class EE {
         // если html-файла нет - то нет смысла продолжать
         $file = $content->getField('filehtml');
         if (!$file) {
+            if ($data) {
+                return $data;
+            }
+
             return '';
         }
 
