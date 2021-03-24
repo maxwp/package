@@ -362,16 +362,4 @@ class EE_Request implements EE_IRequest {
      */
     protected $local = false;
 
-    /**
-     * @return EE_Request
-     */
-    public static function Get() {
-        if (!self::$_Instance) {
-            self::$_Instance = new self();
-        }
-        return self::$_Instance;
-    }
-
-    private static $_Instance = null;
-
 }
