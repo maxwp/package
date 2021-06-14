@@ -51,9 +51,13 @@ class Storage_HandlerMemcached implements Storage_IHandler {
         }
 
         if (is_array($key)) {
-            $keyArray = array();
-            foreach ($key as $k => $v) {
-                $keyArray[$this->_prefix.$k] = $v;
+            if ($this->_prefix) {
+                $keyArray = array();
+                foreach ($key as $k => $v) {
+                    $keyArray[$this->_prefix.$k] = $v;
+                }
+            } else {
+                $keyArray = $key;
             }
 
             $this->_getMemcached()->setMulti($keyArray, $ttl);
@@ -69,17 +73,23 @@ class Storage_HandlerMemcached implements Storage_IHandler {
      */
     public function get($key) {
         if (is_array($key)) {
-            // multi
-            $keyArray = array();
-            foreach ($key as $x) {
-                $keyArray[$x] = $this->_prefix.$x;
+            // multi with prefix
+            if ($this->_prefix) {
+                $keyArray = array();
+                foreach ($key as $x) {
+                    $keyArray[$x] = $this->_prefix.$x;
+                }
+
+                $result = $this->_getMemcached()->getMulti($keyArray);
+                $a = array();
+                foreach ($result as $key => $x) {
+                    $a[str_replace($this->_prefix, '', $key)] = $x;
+                }
+                return $a;
+            } else {
+                // multi without prefix
+                return $this->_getMemcached()->getMulti($key);
             }
-            $result = $this->_getMemcached()->getMulti($keyArray);
-            $a = array();
-            foreach ($result as $key => $x) {
-                $a[str_replace($this->_prefix, '', $key)] = $x;
-            }
-            return $a;
         } else {
             // single
             $x = $this->_getMemcached()->get($this->_prefix.$key);
