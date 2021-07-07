@@ -57,6 +57,18 @@ implements ConnectionManager_IConnection {
         return $this->_linkID;
     }
 
+    public function getLinkIDNew() {
+        $redis = new Redis();
+        $redis->connect($this->_hostname, $this->_port);
+
+        $e = $redis->getLastError();
+        if ($e) {
+            throw new ConnectionManager_Exception("Cannot connect to Redis: ".$e);
+        }
+
+        return $redis;
+    }
+
     public function __destruct() {
         $this->disconnect();
     }
