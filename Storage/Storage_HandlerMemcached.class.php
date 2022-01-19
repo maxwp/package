@@ -138,6 +138,11 @@ class Storage_HandlerMemcached implements Storage_IHandler {
             $this->_link = new Memcached();
             $this->_link->addServer($this->_host, $this->_port);
             $this->_link->setOption(Memcached::OPT_TCP_NODELAY, 1);
+
+            // эти три опции приводят к полному пиздецу, но какая именно - не понятно
+            //$this->_link->setOption(Memcached::OPT_BINARY_PROTOCOL, 1);
+            //$this->_link->setOption(Memcached::OPT_BUFFER_WRITES, 1);
+            //$this->_link->setOption(Memcached::OPT_NO_BLOCK, 1);
         }
         return $this->_link;
     }
