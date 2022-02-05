@@ -54,18 +54,18 @@ class Storage {
      * @see Initialize()
      *
      * @package string $storageKey
-     * @return Storage
+     * @return Storage_IHandler
      */
     public static function Get($storageKey) {
         if (!$storageKey) {
             throw new Storage_Exception("Empty Storage key.");
         }
 
-        if (!isset(self::$_Instance[$storageKey])) {
+        if (!isset(self::$_InstanceArray[$storageKey])) {
             throw new Storage_Exception("Storage with key '{$storageKey}' not found, please, call Initialize() before.");
         }
 
-        return self::$_Instance[$storageKey];
+        return self::$_InstanceArray[$storageKey];
     }
 
     /**
@@ -78,116 +78,15 @@ class Storage {
      *
      * @param Storage_IHandler $handler
      * @param string $storageKey
-     * @return Storage
+     * @return Storage_IHandler
      */
     public static function Initialize($storageKey, Storage_IHandler $handler) {
         if (!$storageKey) {
             throw new Storage_Exception("Empty Storage key.");
         }
 
-        self::$_Instance[$storageKey] = new self();
-        self::Get($storageKey)->clearHandlers();
-        self::Get($storageKey)->addHandler($handler);
-        return self::Get($storageKey);
-    }
-
-    /**
-     * Add handler to storage.
-     *
-     * Добавить обработчик кеша
-     *
-     * @param Storage_IHandler $handler
-     */
-    public function addHandler(Storage_IHandler $handler) {
-        $this->_handlersArray[] = $handler;
-    }
-
-    /**
-     * Remove handlers from storage.
-     *
-     * Очистить все обработчики
-     */
-    public function clearHandlers() {
-        $this->_handlersArray = array();
-    }
-
-    /**
-     * Put data to storage.
-     *
-     * Записать данные в кеш.
-     *
-     * Если вместо ключа будет передан false, то
-     * ключ будет построен автоматически (на основе md5-суммы)
-     * и возвращен методом
-     *
-     * @param mixed $key
-     * @param mixed $parentKey
-     * @param mixed $value
-     * @param int $ttl
-     * @return string
-     */
-    public function setData($key, $value, $ttl = false, $parentKey = false) {
-        if ($key === false) {
-            $key = md5($value);
-        }
-        foreach ($this->_handlersArray as $h) {
-            // пишем данные во все хранилища
-            $h->set($key, $value, $ttl, $parentKey);
-        }
-
-        return $key;
-    }
-
-    /**
-     * Get data from storage by key
-     *
-     * Получить данные по ключу
-     *
-     * @param string $key
-     * @return mixed
-     */
-    public function getData($key) {
-        foreach ($this->_handlersArray as $h) {
-            return $h->get($key);
-        }
-    }
-
-    /**
-     * Has data on key or no?
-     *
-     * Узнать, существует ли ключ?
-     *
-     * @param string $key
-     * @return bool
-     */
-    public function hasData($key) {
-        foreach ($this->_handlersArray as $h) {
-            return $h->has($key);
-        }
-    }
-
-    /**
-     * Remove data from storage
-     *
-     * Удалить данные из кеша
-     *
-     * @param string $key
-     */
-    public function removeData($key) {
-        foreach ($this->_handlersArray as $h) {
-            return $h->remove($key);
-        }
-    }
-
-    /**
-     * Clean all storage
-     *
-     * Очистить всё хранилище
-     */
-    public function clearData() {
-        foreach ($this->_handlersArray as $h) {
-            $h->clean();
-        }
+        self::$_InstanceArray[$storageKey] = $handler;
+        return $handler;
     }
 
     /**
@@ -198,7 +97,7 @@ class Storage {
      * @static
      */
     public static function Reset() {
-        self::$_Instance = array();
+        self::$_InstanceArray = array();
     }
 
     private function __construct() {
@@ -210,13 +109,8 @@ class Storage {
     }
 
     /**
-     * @var array of Storage
+     * @var array<Storage_IHandler>
      */
-    private static $_Instance = array();
-
-    /**
-     * @var array
-     */
-    private $_handlersArray = array();
+    private static $_InstanceArray = array();
 
 }
