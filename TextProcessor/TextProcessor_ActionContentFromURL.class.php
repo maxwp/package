@@ -124,7 +124,7 @@ class TextProcessor_ActionContentFromURL implements TextProcessor_IAction {
         curl_setopt($ch, CURLOPT_VERBOSE, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         //curl_setopt($ch, CURLOPT_USERAGENT, $this->_userAgent);
-        //curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         if ($this->_proxy) {
             curl_setopt($ch, CURLOPT_PROXY, $this->_proxy);
         }
