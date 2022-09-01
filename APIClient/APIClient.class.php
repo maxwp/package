@@ -31,10 +31,18 @@ class APIClient {
         curl_setopt($ch, CURLOPT_URL, $this->_apiURL.$method);
         if ($postArray) {
             curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $postArray);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postArray));
         }
 
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_ENCODING, '');
+        if (defined('CURLOPT_TCP_FASTOPEN')) {
+            curl_setopt($ch, CURLOPT_TCP_FASTOPEN, 1);
+        }
+
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
 
         $server_output = curl_exec($ch);
 

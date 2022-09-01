@@ -111,7 +111,7 @@ class Engine_Request implements Engine_IRequest {
 
         $a = array_merge(array_merge($files, $_GET), $_POST);
 
-        if (get_magic_quotes_gpc()) {
+        if (function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
             // если включены magic quotes - вручную снимаем экранирование
             $a = $this->_unescapeArray($a);
         }
