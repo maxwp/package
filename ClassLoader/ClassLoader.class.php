@@ -90,7 +90,7 @@ class ClassLoader {
         // записываем cache
         if ($cache > 0) {
             $cacheFile = dirname(__FILE__).'/cache/'.md5($dir);
-            file_put_contents($cacheFile, implode("\n", $a));
+            file_put_contents($cacheFile, implode("\n", $a), LOCK_EX);
         }
     }
 
