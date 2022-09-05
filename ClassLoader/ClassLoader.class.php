@@ -60,12 +60,12 @@ class ClassLoader {
      * Так как не соблюдается порядок подключения, рекомендуется
      * использовать registerClass()
      *
-     * $cache - сколько времени держать кеш (по умолчанию 2 секунды)
+     * $cache - сколько времени держать кеш (по умолчанию без кеша)
      *
      * @param string $dir
      * @param int $cache
      */
-    public function registerDirectory($dir, $cache = 2) {
+    public function registerDirectory($dir, $cache = false) {
         if ($cache > 0) {
             $cacheFile = dirname(__FILE__).'/cache/'.md5($dir);
             $mtime = @filemtime($cacheFile);
