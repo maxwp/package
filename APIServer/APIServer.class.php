@@ -80,9 +80,14 @@ class APIServer {
         'resultArray' => $dataArray,
         );
 
-        header('Content-type: application/json');
-        print json_encode($a);
-        exit();
+        if (!empty($_SERVER['SHELL'])) {
+            print_r($a);
+            exit;
+        } else {
+            header('Content-type: application/json');
+            print json_encode($a);
+            exit();
+        }
     }
 
     /**
@@ -106,9 +111,14 @@ class APIServer {
         'errorArray' => $errorArray,
         );
 
-        header('Content-type: application/json');
-        print json_encode($a);
-        exit();
+        if (!empty($_SERVER['SHELL'])) {
+            print_r($a);
+            exit;
+        } else {
+            header('Content-type: application/json');
+            print json_encode($a);
+            exit();
+        }
     }
 
     /**
