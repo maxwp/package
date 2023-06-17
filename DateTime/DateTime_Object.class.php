@@ -70,6 +70,10 @@ class DateTime_Object {
         return $this->_classformat->__toString();
     }
 
+    public function setDate($date) {
+        $this->_timestamp = strtotime($date);
+    }
+
     /**
      * Добавить месяц
      *
