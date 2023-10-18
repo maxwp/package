@@ -31,11 +31,11 @@ implements ConnectionManager_IConnection {
         }
 
         if ($priority == 'normal' || !$priority) {
-            $this->getLinkID()->doBackground($key, $data, $unique);
+            return $this->getLinkID()->doBackground($key, $data, $unique);
         } elseif ($priority == 'high') {
-            $this->getLinkID()->doHighBackground($key, $data, $unique);
+            return $this->getLinkID()->doHighBackground($key, $data, $unique);
         } elseif ($priority == 'low') {
-            $this->getLinkID()->doLowBackground($key, $data, $unique);
+            return $this->getLinkID()->doLowBackground($key, $data, $unique);
         }
     }
 
@@ -70,6 +70,7 @@ implements ConnectionManager_IConnection {
 
     public function connect() {
         $gearman = new GearmanClient();
+        $gearman->setTimeout(60);
         if ($this->_host) {
             $gearman->addServer($this->_host);
         } else {
