@@ -10,6 +10,8 @@
 /**
  * Адаптер для соеденения с любой базой через стандартный php PDO-класс.
  *
+ * @deprecated gearman too bugged
+ *
  * @author Maxim Miroshnichenko <max@webproduction.com.ua>
  * @copyright WebProduction
  * @package ConnectionManager
