@@ -16,14 +16,6 @@ if (function_exists('mb_internal_encoding')) {
 // fix for Mac OS X PHP 5.3 default
 @date_default_timezone_set(date_default_timezone_get());
 
-// подключаем ClassLoader
-if (!class_exists('ClassLoader')) {
-    include_once(__DIR__.'/../ClassLoader/include.php');
-}
-
-// подключем Events
-include_once(dirname(__FILE__).'/../Events/include.php');
-
 // подключаем все классы Engine
 $path = __DIR__.'/';
 ClassLoader::Get()->registerClass($path.'EE_Exception.class.php');
@@ -42,6 +34,7 @@ ClassLoader::Get()->registerClass($path.'EE_Event_ContentRender.class.php');
 ClassLoader::Get()->registerClass($path.'EE_Event_Exception.class.php');
 
 // регистрация событий которые понимает Eventic Engine
+// @todo если я не юзаю eventic - то такие вызовы не нужны
 Events::Get()->addEvent('EE:content.process:before', 'EE_Event_ContentProcess');
 Events::Get()->addEvent('EE:content.process:after', 'EE_Event_ContentProcess');
 Events::Get()->addEvent('EE:content.render:before', 'EE_Event_ContentRender');
