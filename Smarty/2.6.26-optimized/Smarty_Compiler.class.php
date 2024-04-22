@@ -332,7 +332,7 @@ class Smarty_Compiler extends Smarty {
         }
 
         // put header at the top of the compiled template
-        $template_header = "<?php /* Smarty version ".$this->_version.", created on ".strftime("%Y-%m-%d %H:%M:%S")."\n";
+        $template_header = "<?php /* Smarty version ".$this->_version.", created on ".date("Y-m-d H:i:s")."\n";
         $template_header .= "         compiled from ".strtr(urlencode($resource_name), array('%2F'=>'/', '%3A'=>':'))." */ ?>\n";
 
         /* Emit code to load needed plugins. */
@@ -485,7 +485,22 @@ class Smarty_Compiler extends Smarty {
 
             case 'php':
                 // handle folded tags replaced by {php}
-                list(, $block) = each($this->_folded_blocks);
+                //print_r($this->_folded_blocks);
+                //list(, $block) = each($this->_folded_blocks);
+                /*$cnt = 0;
+                $block = false;
+                foreach($this->_folded_blocks as $b) {
+                    var_dump($cnt);
+                    var_dump($b);
+                    if ($cnt > 0) {
+                    $block = $b;
+                    break;
+                    }
+                    $cnt ++;
+                }
+                var_dump($block);*/
+                $block = $this->_folded_blocks[0];
+
                 $this->_current_line_no += substr_count($block[0], "\n");
                 // the number of matched elements in the regexp in _compile_file()
                 //   determins the type of folded tag that was found
