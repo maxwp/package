@@ -1,12 +1,12 @@
 <?php
 class Math_Array {
 
-    public function Max() {
-
+    public function Max($a) {
+        return max($a);
     }
 
-    public function Min() {
-
+    public function Min($a) {
+        return min($a);
     }
 
     public static function Count($a) {
