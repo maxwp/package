@@ -1,11 +1,11 @@
 <?php
 class Math_Array {
 
-    public function Max($a) {
+    public static function Max($a) {
         return max($a);
     }
 
-    public function Min($a) {
+    public static function Min($a) {
         return min($a);
     }
 
