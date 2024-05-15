@@ -15,4 +15,5 @@ include(__DIR__.'/SQLBuilder/include.php');
 include(__DIR__.'/Storage/include.php');
 include(__DIR__.'/StringUtils/include.php');
 include(__DIR__.'/TextProcessor/include.php');
+include(__DIR__.'/Math/include.php');
 
