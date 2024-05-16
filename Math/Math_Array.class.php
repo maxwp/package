@@ -2,11 +2,23 @@
 class Math_Array {
 
     public static function Max($a) {
-        return max($a);
+        $max = false;
+        foreach ($a as $x) {
+            if ($max === false || $x > $max) {
+                $max = $x;
+            }
+        }
+        return $max;
     }
 
     public static function Min($a) {
-        return min($a);
+        $min = false;
+        foreach ($a as $x) {
+            if ($min === false || $x < $min) {
+                $min = $x;
+            }
+        }
+        return $min;
     }
 
     public static function Count($a) {
