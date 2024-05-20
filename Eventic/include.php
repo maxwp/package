@@ -23,6 +23,7 @@ ClassLoader::Get()->registerClass($path.'EE.class.php');
 ClassLoader::Get()->registerClass($path.'EE_Smarty.class.php');
 ClassLoader::Get()->registerClass($path.'EE_IRequest.class.php');
 ClassLoader::Get()->registerClass($path.'EE_Request.class.php');
+ClassLoader::Get()->registerClass($path.'EE_IProcessable.interface.php');
 ClassLoader::Get()->registerClass($path.'EE_Content.class.php');
 ClassLoader::Get()->registerClass($path.'EE_Response.class.php');
 ClassLoader::Get()->registerClass($path.'EE_IRouting.class.php');

@@ -4,7 +4,7 @@
  * @copyright WebProduction
  * @package EE
  */
-class EE_Content {
+class EE_Content implements EE_IProcessable {
 
     public function __construct() {
         // первый раз определяем есть ли filehtml
