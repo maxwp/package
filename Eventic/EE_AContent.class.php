@@ -6,10 +6,6 @@
  */
 abstract class EE_AContent implements EE_IContent {
 
-    public function __construct() {
-        $this->clear();
-    }
-
     /**
      * Получить аргумент из запроса (POST, GET, FILES).
      * Если аргумента нет - будет EE_Exception

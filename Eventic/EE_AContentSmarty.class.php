@@ -13,8 +13,6 @@ class EE_AContentSmarty extends EE_AContent implements EE_IContent {
         if (file_exists($fileHTML)) {
             $this->_filehtml = $fileHTML;
         }
-
-        parent::__construct();
     }
 
     /**
