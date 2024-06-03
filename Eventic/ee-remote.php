@@ -52,7 +52,7 @@ while (1) {
             print "Response code ".$response->getCode()."\n";
 
             $t = microtime(true) - $t;
-            print "rount ts = $t\n";
+            print "round ts = $t\n";
             print "\n";
         } catch (Throwable $e) {
             print $e;
