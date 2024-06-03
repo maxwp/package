@@ -1,9 +1,18 @@
 <?php
+
+// default locale
+setlocale(LC_ALL, 'en_EN.utf8');
+if (function_exists('mb_internal_encoding')) {
+    mb_internal_encoding("UTF-8");
+}
+
+// fix for Mac OS X PHP 5.3 default
+@date_default_timezone_set(date_default_timezone_get());
+
 include(__DIR__.'/ClassLoader/include.php');
 include(__DIR__.'/APIClient/include.php');
 include(__DIR__.'/APIServer/include.php');
 include(__DIR__.'/Checker/include.php');
-include(__DIR__.'/CLI/include.php');
 include(__DIR__.'/ConnectionManager/include.php');
 include(__DIR__.'/DateTime/include.php');
 include(__DIR__.'/Events/include.php');
@@ -16,4 +25,3 @@ include(__DIR__.'/Storage/include.php');
 include(__DIR__.'/StringUtils/include.php');
 include(__DIR__.'/TextProcessor/include.php');
 include(__DIR__.'/Math/include.php');
-

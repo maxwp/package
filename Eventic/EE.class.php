@@ -9,45 +9,60 @@
 class EE {
 
     private function __construct() {
-        // задаем обработчик контентов по умолчанию
-        $this->_smarty = new EE_Smarty();
+        // регистрация событий которые понимает Eventic Engine
+        Events::Get()->addEvent('EE:content.process:before', 'EE_Event_ContentProcess');
+        Events::Get()->addEvent('EE:content.process:after', 'EE_Event_ContentProcess');
+        Events::Get()->addEvent('EE:content.render:before', 'EE_Event_ContentRender');
+        Events::Get()->addEvent('EE:content.render:after', 'EE_Event_ContentRender');
+        Events::Get()->addEvent('EE:routing:before', 'Events_Event');
+        Events::Get()->addEvent('EE:routing:after', 'Events_Event');
+        Events::Get()->addEvent('EE:execute:before', 'Events_Event');
+        Events::Get()->addEvent('EE:execute:exception', 'EE_Event_Exception');
+        Events::Get()->addEvent('EE:execute:after', 'Events_Event');
     }
 
     /**
-     * Вызвать движок.
-     * Передаем параметр $request, получаем $responce
-     *
-     * @return EE_Responce
+     * Вызвать движок
+     * Передаем параметр $request, получаем $response
      */
-    public function execute(EE_IRequest $request) {
+    public function execute(EE_IRequest $request, EE_IResponse $response) {
         $event = Events::Get()->generateEvent('EE:execute:before');
         $event->notify();
 
         // сохраняем request в себе
+        // это нужно чтобы в процессе работы движка любой контент мог получить доступ к Request
         $this->_request = $request;
 
         // создаем чистый объект response
-        $this->_response = new EE_Response();
+        // это нужно чтобы в процессе работы движка любой контент мог получить доступ к Response
+        $this->_response = $response;
 
         // до того как сработал роутинг
         $event = Events::Get()->generateEvent('EE:routing:before');
         $event->notify();
 
         // получаем систему роутинга
+        // она должна быть инициирована заранее
         $routing = $this->getRouting();
 
         // по системе роутинга определяем что у нас за контент
         try {
             $className = $routing->matchClassName($request);
-            // в этой точке мы нашли класс который надо запустить
 
+            // в этой точке мы нашли класс который надо запустить,
+            // причем роутинг сам должен вернуть класс или класс-404,
+            // в противном случае он должен вернуть пустоту или бросить exception - и это будет считаться ошибкой 500
+
+            // на всякий случай проверяем чтобы роутинг не вернул пустоту
+            if (!$className) {
+                throw new EE_Exception("Routing returned null");
+            }
+
+            // по умолчанию ставится код 200, но в процессе его можно поменять
             $this->getResponse()->setCode(200);
-        } catch (Exception $e) {
-            // сюда мы прилетаем если не нашли класс который запустить
-            // реально это ошибка 404
-            // ставим класс 404
-            $className = 'error404';
-            $this->getResponse()->setCode(404);
+        } catch (Exception $routingException) {
+            $this->getResponse()->setCode(500);
+            $className = 'ee500'; // штатный контент
         }
 
         // после того как сработал роутинг
@@ -56,15 +71,13 @@ class EE {
 
         // формируем ответ
         try {
-            // заголовок ставим в начало, чтобы в run контент мог его перетереть
-            $this->getResponse()->setHeaderContentType('text/html; charset=utf-8');
-
             // запускаем рендеринг ответа
-            $html = $this->_run($className);
+            $data = $this->_run($className);
 
             // пишем ответ
-            $this->getResponse()->setBody($html);
+            $this->getResponse()->setData($data);
         } catch (Exception $ex500) {
+            // что-то пошло не так
             $this->getResponse()->setCode(500);
 
             // если есть событие и обработчики EE:execute:exception - то перенаправляем вывод
@@ -81,44 +94,46 @@ class EE {
         $event = Events::Get()->generateEvent('EE:execute:after');
         $event->notify();
 
-        // очищаем все контенты
-        // ради следующего запуска движка
+        // очищаем все контенты,
+        // это нужно следующего запуска движка в режиме non-stop
         foreach ($this->_contentArray as $content) {
             $content->clear();
         }
-
-        $response = $this->getResponse();
 
         // очищаем объекты request/response
         // чтобы движок был готов к следующему запуску
         $this->_request = false;
         $this->_response = false;
-
-        return $response;
     }
 
     private function _run($className) {
+        // получаем объект
         $content = $this->getContent($className);
 
         // записываем ссылку на контент в Engine
         $this->setContentCurrent($content);
 
-        $html = $this->renderTree($content);
+        $data = $this->renderTree($content);
 
-        // если в процессе обработки контента поменялся указатель contentID,
-        // значит повторяем вызов рекурсивно, пока не будет изменений
+        // Если в процессе обработки контента поменялся указатель на запускаемый контент,
+        // значит повторяем вызов рекурсивно.
+        // Это нужно чтобы контент мог в процессе сказать "нет, сейчас запускаем что-то другое"
         $newClassName = get_class($this->getContentCurrent());
         if ($newClassName != $className) {
             return $this->_run($newClassName);
         }
 
-        return $html;
+        return $data;
     }
 
     /**
      * @return EE_IRequest
      */
     public function getRequest() {
+        if (!$this->_request) {
+            throw new EE_Exception('Request object not set');
+        }
+
         return $this->_request;
     }
 
@@ -126,6 +141,10 @@ class EE {
      * @return EE_IRouting
      */
     public function getRouting() {
+        if (!$this->_routing) {
+            throw new EE_Exception('Routing object not set');
+        }
+
         return $this->_routing;
     }
 
@@ -134,164 +153,43 @@ class EE {
     }
 
     /**
-     * Получить систему ответа Engine.
-     *
      * @return EE_Response
      */
     public function getResponse() {
+        if (!$this->_response) {
+            throw new EE_Exception('Response object not set');
+        }
+
         return $this->_response;
     }
 
-    /**
-     * @return EE_Smarty
-     */
-    public function getSmarty() {
-        return $this->_smarty;
-    }
-
-    /**
-     * Установить конфигурационное поле
-     *
-     * @param string $field
-     * @param mixed $value
-     */
-    public function setConfigField($field, $value) {
-        $field = trim($field);
-        $this->_configFieldArray[$field] = $value;
-    }
-
-    /**
-     * Получить значение конфигурационного поля
-     *
-     * @param string $field
-     * @param string $typing
-     *
-     * @return mixed
-     *
-     * @throws EE_Exception
-     */
-    public function getConfigField($field, $typing = false) {
-        $field = trim($field);
-        if (isset($this->_configFieldArray[$field])) {
-            $x = $this->_configFieldArray[$field];
-            if ($typing) {
-                $x = $this->typeArgument($x, $typing);
-            }
-            return $x;
-        }
-        throw new EE_Exception("ConfigField '{$field}' not exists");
-    }
-
-    /**
-     * Безопастно получить значение конфигурационного поля
-     *
-     * @param string $field
-     * @param string $typing
-     *
-     * @return mixed
-     */
-    public function getConfigFieldSecure($field, $typing = false) {
-        $field = trim($field);
-        if (isset($this->_configFieldArray[$field])) {
-            $x = $this->_configFieldArray[$field];
-            if ($typing) {
-                $x = $this->typeArgument($x, $typing);
-            }
-            return $x;
-        }
-        return false;
-    }
-
-    /**
-     * Привести аргумент к необходимому типу данных
-     *
-     * @param mixed $value
-     * @param string $typing
-     *
-     * @return mixed
-     */
-    public function typeArgument($value, $typing) {
-        if ($typing == 'string') {
-            $value = (string) $value;
-        }
-        if ($typing == 'int') {
-            $value = (int) $value;
-        }
-        if ($typing == 'bool') {
-            if ($value == 'true') {
-                $value = true;
-            } elseif ($value == 'false') {
-                $value = false;
-            } else {
-                $value = (bool) $value;
-            }
-        }
-        if ($typing == 'array') {
-            if (!$value) {
-                $value = array();
-            } elseif (!is_array($value)) {
-                $value = (array) $value;
-            }
-        }
-        if ($typing == 'float') {
-            $value = preg_replace("/[^0-9\.\,]/ius", '', $value);
-            $value = str_replace(',', '.', $value);
-            $value = (float) $value;
-        }
-        if ($typing == 'date') {
-            $x = strtotime($value);
-            if (!$x || $x < 0) {
-                $value = '';
-            } else {
-                $value = date('Y-m-d', $x);
-            }
-        }
-        if ($typing == 'datetime') {
-            $x = strtotime($value);
-            if (!$x || $x < 0) {
-                $value = '';
-            } else {
-                $value = date('Y-m-d H:i:s', $x);
-            }
-        }
-        if ($typing == 'file') {
-            if (isset($value['tmp_name'])) {
-                $value = $value['tmp_name'];
-            } else {
-                $value = false;
-            }
-        }
-        return $value;
-    }
-
-    // @todo может в систему роутинга перенести?
     public function setContentCurrent($content) {
-        if ($content instanceof EE_Content) {
-            $this->_content = $content;
+        if ($content instanceof EE_IContent) {
+            $this->_contentCurrent = $content;
         } else {
             $content = $this->getContent($content);
-            $this->_content = $content;
+            $this->_contentCurrent = $content;
         }
     }
 
     /**
-     * @return EE_Content
+     * @return EE_IContent
      */
     public function getContentCurrent() {
-        return $this->_content;
+        return $this->_contentCurrent;
     }
 
-    private $_content;
+    private $_contentCurrent;
 
     /**
      * Вернуть готовое html-содержимое контента и всех его вложений
      * с учетом иерархии
      *
-     * @param EE_Content $content
+     * @param EE_AContent $content
      * @return string
      */
-    public function renderTree(EE_Content $content) {
-        $html = $this->renderOne($content);
+    public function renderTree(EE_IContent $content) {
+        $data = $content->render();
 
         $moveTo = $content->getField('moveto');
         $moveAs = $content->getField('moveas');
@@ -299,36 +197,36 @@ class EE {
         if ($moveTo) {
             $moveToContent = $this->getContent($moveTo);
             if ($moveAs) {
-                $moveToContent->setValue($moveAs, $html);
+                $moveToContent->setValue($moveAs, $data);
             }
             return $this->renderTree($moveToContent);
         }
 
-        return $html;
+        return $data;
     }
 
     /**
-     * Вернуть объект контента по его ID
+     * Вернуть объект имени класса
      *
      * @param string $className
-     * @param bool $cacheObject Сохранить ли объект во внутреннем кеш-pool'e?
+     * @param bool $cache Сохранить ли объект во внутреннем кеш-pool'e?
      *
-     * @return EE_Content
+     * @return EE_AContent
      */
-    public function getContent($className, $cacheObject = true) {
+    public function getContent($className, $cache = true) {
         if (!$className) {
             throw new EE_Exception('Empty className');
         }
 
         if (is_object($className)) {
-            throw new EE_Exception('Object className');
+            throw new EE_Exception('Classname is an object');
         }
 
         if (empty($this->_contentArray[$className])) {
             $content = new $className();
 
             // кешируем объект
-            if ($cacheObject) {
+            if ($cache) {
                 $this->_contentArray[$className] = $content;
             }
 
@@ -341,76 +239,11 @@ class EE {
     /**
      * Узнать, был ли загружен/вызван контент
      *
-     * @param string $contentID
+     * @param string $content
      * @return bool
      */
-    public function isContentLoaded($contentID) {
-        return isset($this->_contentArray[$contentID]);
-    }
-
-    /**
-     * Обработать и вернуть содержимое контента $contentID
-     *
-     * @param EE_Content $content
-     * @return string
-     */
-    public function renderOne($content) {
-        $event = Events::Get()->generateEvent('EE:content.process:before');
-        $event->setContent($content);
-        $event->notify();
-
-        $data = $content->process();
-
-        // вызываем все пост-процессоры
-        $event = Events::Get()->generateEvent('EE:content.process:after');
-        $event->setContent($content);
-        $event->notify();
-
-        // если html-файла нет - то нет смысла продолжать
-        $file = $content->getField('filehtml');
-        if (!$file) {
-            if ($data) {
-                return $data;
-            }
-
-            return '';
-        }
-
-        // получаем все параметры, которые надо передать в smarty
-        $a = $content->getValueArray();
-
-        $arguments = $this->getRequest()->getArgumentArray();
-        foreach ($arguments as $name => $value) {
-            if (is_array($value)) {
-                continue;
-            }
-            $a['arg_'.$name] = $value;
-            if ($content->isControlValue($name)) {
-                $a['control_'.$name] = htmlspecialchars($value);
-            }
-        }
-
-        // передаем все параметры еще раз, в виде массива
-        $a['contentValueArray'] = $a;
-
-        // рендерим контент
-        $event = Events::Get()->generateEvent('EE:content.render:before');
-        $event->setContent($content);
-        $event->setRenderHTML('');
-        $event->notify();
-
-        $html = $this->getSmarty()->fetch($file, $a);
-
-        // генерируем событие afterRender
-        $event = Events::Get()->generateEvent('EE:content.render:after');
-        $event->setContent($content);
-        $event->setRenderHTML($html);
-        $event->notify();
-
-        // достаем новый $html из события
-        $html = $event->getRenderHTML();
-
-        return $html;
+    public function isContentLoaded($content) {
+        return isset($this->_contentArray[$content]);
     }
 
     /**
@@ -432,15 +265,11 @@ class EE {
      */
     private static $_Instance = false;
 
-    private $_smarty = null;
-
     private $_request = null;
 
     private $_response = null;
 
     private $_routing = null;
-
-    private $_configFieldArray = array();
 
     /**
      * Массив загруженных контентов
@@ -448,6 +277,6 @@ class EE {
      *
      * @var array
      */
-    private $_contentArray = array();
+    private $_contentArray = [];
 
 }

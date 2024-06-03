@@ -1,9 +1,9 @@
 <?php
 interface EE_IRequest {
 
-    public function getURL();
+    //public function getURL();
 
-    public function getHost();
+    //public function getHost();
 
     public function getArgumentArray();
 
@@ -11,6 +11,6 @@ interface EE_IRequest {
 
     public function getArgumentSecure($key, $argType = false);
 
-    public function getCOOKIEArray();
+    //public function getCOOKIEArray();
 
 }

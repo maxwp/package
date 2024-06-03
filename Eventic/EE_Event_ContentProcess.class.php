@@ -12,16 +12,16 @@ class EE_Event_ContentProcess extends Events_Event {
     /**
      * Задать контент, для которого вызвано событие
      *
-     * @param EE_Content $content
+     * @param EE_AContent $content
      */
-    public function setContent(EE_Content $content) {
+    public function setContent(EE_IContent $content) {
         $this->_content = $content;
     }
 
     /**
      * Получить контент, для которого вызвано событие
      *
-     * @return EE_Content
+     * @return EE_IContent
      */
     public function getContent() {
         return $this->_content;

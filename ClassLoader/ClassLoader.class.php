@@ -62,6 +62,8 @@ class ClassLoader {
      *
      * $cache - сколько времени держать кеш (по умолчанию без кеша)
      *
+     * @todo recursive
+     *
      * @param string $dir
      * @param int $cache
      */

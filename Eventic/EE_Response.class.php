@@ -7,8 +7,26 @@
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  * @copyright WebProduction
  * @package EE
+ *
+ * @todo rename to EE_ResponseHTTP
  */
-class EE_Response {
+class EE_Response implements EE_IResponse {
+
+    public function getData() {
+        return $this->_body;
+    }
+
+    public function setData($data) {
+        $this->_body = $data;
+    }
+
+    public function setCode($code) {
+        $this->_code = $code;
+    }
+
+    public function getCode() {
+        return $this->_code;
+    }
 
     public function setCookie($name, $value = "", $expires = 0, $path = "", $domain = "", $secure = true) {
         $this->_cookieArray[$name] = array(
@@ -22,14 +40,6 @@ class EE_Response {
 
     public function getCookieArray() {
         return $this->_cookieArray;
-    }
-
-    public function getCode() {
-        return $this->_code;
-    }
-
-    public function setCode($code) {
-        $this->_code = $code;
     }
 
      /**
@@ -89,33 +99,32 @@ class EE_Response {
     }
 
     /**
-     * Задать тело ответа
-     *
-     * @param string $content
+     * @deprecated
      */
     public function setBody($content) {
-        $this->_body = $content;
+        $this->setData($content);
     }
 
     /**
-     * Получить тело ответа
-     *
-     * @return string
+     * @deprecated
      */
     public function getBody() {
-        return $this->_body;
+        return $this->getData();
     }
 
     public function __construct() {
         // задаем идентификационный заголовок
         $this->setHeader('X-Powered-By', 'Eventic');
+
+        // заголовок ставим в начало, чтобы в run контент мог его перетереть
+        $this->setHeaderContentType('text/html; charset=utf-8');
     }
 
-    private $_headerArray = array();
+    private $_headerArray = [];
 
     private $_body = '';
 
-    private $_cookieArray = array();
+    private $_cookieArray = [];
 
     private $_code;
 

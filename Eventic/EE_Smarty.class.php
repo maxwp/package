@@ -50,7 +50,7 @@ class EE_Smarty {
         return $this->_smarty;
     }
 
-    public function __construct() {
+    private function __construct() {
         // подключаем Smarty
         include_once(dirname(__FILE__).'/../Smarty/include.php');
 
@@ -66,6 +66,18 @@ class EE_Smarty {
     public function setCompileDirectory($dir) {
         $this->getSmarty()->compile_dir = $dir;
     }
+
+    /**
+     * @return EE_Smarty
+     */
+    public static function Get() {
+        if (!self::$_Instance) {
+            self::$_Instance = new self();
+        }
+        return self::$_Instance;
+    }
+
+    private static $_Instance = false;
 
     /**
      * Внутренний объект Smarty
