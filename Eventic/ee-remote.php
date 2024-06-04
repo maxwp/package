@@ -45,6 +45,9 @@ while (1) {
             $responseArray['hash'] = $hash;
             $responseArray['code'] = $response->getCode();
             $responseArray['data'] = $response->getData();
+            $responseArray['ts_request'] = $requestArray['ts_request']; // время запроса
+            $responseArray['ts_start'] = $t; // время начала обработки
+            $responseArray['ts_response'] = microtime(true); // время впушивания ответа
 
             $redisResponse->lPush($hash, json_encode($responseArray));
             $redisResponse->expire($hash, $requestArray['timeout']); // чтобы не забивалась память

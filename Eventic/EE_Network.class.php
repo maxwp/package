@@ -11,7 +11,7 @@ class EE_Network {
         $requestArray = [];
         $requestArray['content'] = $content;
         $requestArray['argumentArray'] = $argumentArray;
-        $requestArray['ts'] = microtime(true);
+        $requestArray['ts_request'] = microtime(true);
         $requestArray['hash'] = $hash;
         $requestArray['timeout'] = $timeout;
 
