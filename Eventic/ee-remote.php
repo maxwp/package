@@ -8,6 +8,9 @@ ini_set('error_reporting', E_ALL);
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 
+// redis timeout setup
+ini_set('default_socket_timeout', 24*3600);
+
 $redisRequest = new Redis();
 $redisRequest->connect('127.0.0.1', 6379);
 
@@ -55,8 +58,10 @@ while (1) {
 
                 print "Response code ".$response->getCode()."\n";
 
-                $t = microtime(true) - $t;
-                print "round ts = $t\n";
+                // показываем все тайминги
+                print "t(request > start) = ".($responseArray['ts_start'] - $responseArray['ts_request'])." sec.\n";
+                print "t(ts_start > response) = ".($responseArray['ts_response'] - $responseArray['ts_start'])." sec.\n";
+                print "t(request > response) = ".($responseArray['ts_response'] - $responseArray['ts_request'])." sec.\n";
                 print "\n";
             } catch (Throwable $e) {
                 print $e;
