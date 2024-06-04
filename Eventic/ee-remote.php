@@ -39,18 +39,18 @@ while (1) {
                 $content = $requestArray['content'];
                 $argumentArray = $requestArray['argumentArray'];
 
-                print date('Y-m-d H:i:s', $t)."\n";
+                print date('Y-m-d H:i:s', round($t))."\n";
                 print "Request $hash in channel $channel:\n";
                 print "Content = $content\n";
                 print "Arguments = ".json_encode($argumentArray)."\n";
 
-                $request = new EE_RequestRemote($content, $argumentArray);
-
                 $response = new EE_ResponseCLI();
 
                 try {
+                    $request = new EE_RequestRemote($content, $argumentArray);
+
                     EE::Get()->execute($request, $response);
-                } catch (Exception $eeException) {
+                } catch (Throwable $eeException) {
                     $response->setCode(500);
                     $response->setData($eeException->getMessage());
                 }
