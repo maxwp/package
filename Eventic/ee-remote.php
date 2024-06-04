@@ -17,6 +17,11 @@ $redisRequest->connect('127.0.0.1', 6379);
 $redisResponse = new Redis();
 $redisResponse->connect('127.0.0.1', 6379);
 
+// задаем систему роутинга
+// @todo а если роутинга еще нет?
+$routing = new EE_RoutingRemote();
+EE::Get()->setRouting($routing);
+
 // вечный цикл с паузами
 // для обработки Eventic Request-ов из redis
 while (1) {
@@ -25,25 +30,30 @@ while (1) {
     $channelArray = [$channel];
     try {
         $redisRequest->subscribe($channelArray, function ($redis, $channel, $message) use ($redisResponse) {
-            try {
-                // засекаем время
-                $t = microtime(true);
+            $t = microtime(true);
 
+            try {
                 $requestArray = json_decode($message, true);
-                print_r($requestArray);
 
                 $hash = $requestArray['hash'];
                 $content = $requestArray['content'];
                 $argumentArray = $requestArray['argumentArray'];
 
-                $request = new EE_RequestRemote($content, $argumentArray);
+                print date('Y-m-d H:i:s', $t)."\n";
+                print "Request $hash in channel $channel:\n";
+                print "Content = $content\n";
+                print "Arguments = ".json_encode($argumentArray)."\n";
 
-                $routing = new EE_RoutingRemote();
-                EE::Get()->setRouting($routing);
+                $request = new EE_RequestRemote($content, $argumentArray);
 
                 $response = new EE_ResponseCLI();
 
-                EE::Get()->execute($request, $response);
+                try {
+                    EE::Get()->execute($request, $response);
+                } catch (Exception $eeException) {
+                    $response->setCode(500);
+                    $response->setData($eeException->getMessage());
+                }
 
                 $responseArray = [];
                 $responseArray['hash'] = $hash;
@@ -59,14 +69,13 @@ while (1) {
                 print "Response code ".$response->getCode()."\n";
 
                 // показываем все тайминги
-                print "t(request > start) = ".($responseArray['ts_start'] - $responseArray['ts_request'])." sec.\n";
-                print "t(ts_start > response) = ".($responseArray['ts_response'] - $responseArray['ts_start'])." sec.\n";
-                print "t(request > response) = ".($responseArray['ts_response'] - $responseArray['ts_request'])." sec.\n";
+                print "t(request > start) = ".number_format($responseArray['ts_start'] - $responseArray['ts_request'], 8, '.', '')." sec.\n";
+                print "t(ts_start > response) = ".number_format($responseArray['ts_response'] - $responseArray['ts_start'], 8, '.', '')." sec.\n";
+                print "t(request > response) = ".number_format($responseArray['ts_response'] - $responseArray['ts_request'], 8, '.', '')." sec.\n";
+
                 print "\n";
             } catch (Throwable $e) {
-                print $e;
-
-                // @todo в случае ошибки Eventic'a тоже надо записать ответ тоже
+                print_r($e);
             }
         });
     } catch (Throwable $redisEx) {
