@@ -20,49 +20,53 @@ while (1) {
     print 'EE remote worker on channel '.$channel."\n";
 
     $channelArray = [$channel];
-    $redisRequest->subscribe($channelArray, function ($redis, $channel, $message) use ($redisResponse) {
-        try {
-            // засекаем время
-            $t = microtime(true);
+    try {
+        $redisRequest->subscribe($channelArray, function ($redis, $channel, $message) use ($redisResponse) {
+            try {
+                // засекаем время
+                $t = microtime(true);
 
-            $requestArray = json_decode($message, true);
-            print_r($requestArray);
+                $requestArray = json_decode($message, true);
+                print_r($requestArray);
 
-            $hash = $requestArray['hash'];
-            $content = $requestArray['content'];
-            $argumentArray = $requestArray['argumentArray'];
+                $hash = $requestArray['hash'];
+                $content = $requestArray['content'];
+                $argumentArray = $requestArray['argumentArray'];
 
-            $request = new EE_RequestRemote($content, $argumentArray);
+                $request = new EE_RequestRemote($content, $argumentArray);
 
-            $routing = new EE_RoutingRemote();
-            EE::Get()->setRouting($routing);
+                $routing = new EE_RoutingRemote();
+                EE::Get()->setRouting($routing);
 
-            $response = new EE_ResponseCLI();
+                $response = new EE_ResponseCLI();
 
-            EE::Get()->execute($request, $response);
+                EE::Get()->execute($request, $response);
 
-            $responseArray = [];
-            $responseArray['hash'] = $hash;
-            $responseArray['code'] = $response->getCode();
-            $responseArray['data'] = $response->getData();
-            $responseArray['ts_request'] = $requestArray['ts_request']; // время запроса
-            $responseArray['ts_start'] = $t; // время начала обработки
-            $responseArray['ts_response'] = microtime(true); // время впушивания ответа
+                $responseArray = [];
+                $responseArray['hash'] = $hash;
+                $responseArray['code'] = $response->getCode();
+                $responseArray['data'] = $response->getData();
+                $responseArray['ts_request'] = $requestArray['ts_request']; // время запроса
+                $responseArray['ts_start'] = $t; // время начала обработки
+                $responseArray['ts_response'] = microtime(true); // время впушивания ответа
 
-            $redisResponse->lPush($hash, json_encode($responseArray));
-            $redisResponse->expire($hash, $requestArray['timeout']); // чтобы не забивалась память
+                $redisResponse->lPush($hash, json_encode($responseArray));
+                $redisResponse->expire($hash, $requestArray['timeout']); // чтобы не забивалась память
 
-            print "Response code ".$response->getCode()."\n";
+                print "Response code ".$response->getCode()."\n";
 
-            $t = microtime(true) - $t;
-            print "round ts = $t\n";
-            print "\n";
-        } catch (Throwable $e) {
-            print $e;
+                $t = microtime(true) - $t;
+                print "round ts = $t\n";
+                print "\n";
+            } catch (Throwable $e) {
+                print $e;
 
-            // @todo в случае ошибки Eventic'a тоже надо записать ответ тоже
-        }
-    });
+                // @todo в случае ошибки Eventic'a тоже надо записать ответ тоже
+            }
+        });
+    } catch (Throwable $redisEx) {
+        print_r($redisEx);
+    }
 
     sleep(1);
 }
