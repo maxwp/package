@@ -14,5 +14,4 @@ if ($data) {
 }
 
 print "\n\n";
-print "code = ".$response->getCode()."\n";
-print "done.\n\n";
+print "done (code ".$response->getCode().")\n\n";

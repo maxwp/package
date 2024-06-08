@@ -6,7 +6,7 @@
 //    смело вешайте 25 потоков на одно ядро, даже если это VCPU
 
 // разовый запуск движка (удобно для отладки)
-//include(__DIR__.'/package/Eventic/ee-execute-once.php');
+//include(__DIR__.'/package/EE/ee-execute-once.php');
 
 // постоянный запуск движка на redis eventic
-//include(__DIR__.'/package/Eventic/ee-execute-redis.php');
+//include(__DIR__.'/package/EE/ee-execute-redis.php');

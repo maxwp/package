@@ -3,7 +3,7 @@ include __DIR__ . '/MemSockServer.class.php';
 include __DIR__ . '/MemSockServerConnection.class.php';
 
 // подключаем пакет движка
-include(__DIR__ . '/package/Eventic/include.php');
+include(__DIR__ . '/package/EE/include.php');
 
 // подключаем локальный конфиг
 include(__DIR__ . '/eventic.config.php');

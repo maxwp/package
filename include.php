@@ -16,7 +16,7 @@ include(__DIR__.'/Checker/include.php');
 include(__DIR__.'/ConnectionManager/include.php');
 include(__DIR__.'/DateTime/include.php');
 include(__DIR__.'/Events/include.php');
-include(__DIR__.'/Eventic/include.php');
+include(__DIR__.'/EE/include.php');
 include(__DIR__.'/ImageProcessor/include.php');
 //include(__DIR__.'/MailQue/include.php');
 include(__DIR__.'/Smarty/include.php');
