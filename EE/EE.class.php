@@ -191,8 +191,8 @@ class EE {
     public function renderTree(EE_IContent $content) {
         $data = $content->render();
 
-        $moveTo = $content->getField('moveto');
-        $moveAs = $content->getField('moveas');
+        $moveTo = $content->getValue('moveto');
+        $moveAs = $content->getValue('moveas');
 
         if ($moveTo) {
             $moveToContent = $this->getContent($moveTo);
@@ -273,9 +273,8 @@ class EE {
 
     /**
      * Массив загруженных контентов
-     * array of EE_Content
      *
-     * @var array
+     * @var array<EE_AContent>
      */
     private $_contentArray = [];
 

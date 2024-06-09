@@ -7,16 +7,21 @@
 abstract class EE_AContent implements EE_IContent {
 
     /**
-     * Получить аргумент из запроса (POST, GET, FILES).
+     * Получить входящий аргумент
      * Если аргумента нет - будет EE_Exception
      *
-     * @param string $name
+     * @param string $key
      * @param mixed $typing
      *
      * @return mixed
      */
-    public function getArgument($name, $typing = false, $argType = false) {
-        $x = EE::Get()->getRequest()->getArgument($name, $argType);
+    public function getArgument($key, $typing = false, $argType = false) {
+        if (isset($this->_argumentArray[$key])) {
+            $x = $this->_argumentArray[$key];
+        } else {
+            $x = EE::Get()->getRequest()->getArgument($key, $argType);
+        }
+
         if ($typing) {
             $x = StringUtils_Typing::TypeString($x, $typing);
         }
@@ -27,19 +32,19 @@ abstract class EE_AContent implements EE_IContent {
      * Безопасно получить аргумент.
      * Если аргумента нет - будет false.
      *
-     * @param string $name
+     * @param string $key
      * @param mixed $typing
      *
-     * @see getArgument()
-     *
      * @return mixed
+     *@see getArgument()
+     *
      */
-    public function getArgumentSecure($name, $typing = false, $argType = false) {
-        $x = EE::Get()->getRequest()->getArgumentSecure($name, $argType);
-        if ($typing) {
-            $x = StringUtils_Typing::TypeString($x, $typing);
+    public function getArgumentSecure($key, $typing = false, $argType = false) {
+        try {
+            return $this->getArgument($key, $typing, $argType);
+        } catch (Exception $exception) {
+            return false;
         }
-        return $x;
     }
 
     /**
@@ -49,7 +54,19 @@ abstract class EE_AContent implements EE_IContent {
      * @return array
      */
     public function getArgumentArray() {
-        return EE::Get()->getRequest()->getArgumentArray();
+        return $this->_argumentArray;
+    }
+
+    public function setArgument($key, $value) {
+        if (!$key) {
+            throw new EE_Exception("Invalid argument key");
+        }
+
+        $this->_argumentArray[$key] = $value;
+    }
+
+    public function unsetArgument($key) {
+        unset($this->_argumentArray[$key]);
     }
 
     /**
@@ -118,14 +135,13 @@ abstract class EE_AContent implements EE_IContent {
     /**
      * Отрисовать контент (отрендерить в html-код).
      *
-     * @return string
+     * @return mixed
      */
     public function render() {
         $event = Events::Get()->generateEvent('EE:content.process:before');
         $event->setContent($this);
         $event->notify();
 
-        // @todo может ли контент что-то вернуть?
         $this->process();
 
         // вызываем все пост-процессоры
@@ -136,51 +152,14 @@ abstract class EE_AContent implements EE_IContent {
         return $this->getValueArray();
     }
 
-    /**
-     * Получить поле контента.
-     * Поля - это те же value, но они не передаются в шаблонизатор
-     *
-     * @param string $key
-     * @return mixed
-     */
-    public function getField($key) {
-        if ($key && isset($this->_fieldArray[$key])) {
-            return $this->_fieldArray[$key];
-        }
-        return false;
-    }
-
-    /**
-     * Задать поле контента.
-     * Поля - это те же value, но они не передаются в шаблонизатор
-     *
-     * @param string $key
-     * @param mixed $value
-     */
-    public function setField($key, $value) {
-        $this->_fieldArray[$key] = $value;
-    }
-
-    /**
-     * Задать поля контента массово.
-     *
-     * @param array $fieldArray
-     */
-    public function setFieldArray($fieldArray) {
-        if (!$this->_fieldArray) {
-            $this->_fieldArray = $fieldArray;
-        } else {
-            $this->_fieldArray = array_merge($this->_fieldArray, $fieldArray);
-        }
-    }
-
     public function clear() {
         $this->_valueArray = [];
-        $this->_fieldArray = [];
+        $this->_argumentArray = [];
     }
 
     protected $_valueArray = [];
 
-    protected $_fieldArray = [];
+    // массив локальных аргументов
+    protected $_argumentArray = [];
 
 }

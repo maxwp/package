@@ -69,9 +69,7 @@ class EE_AContentSmarty extends EE_AContent implements EE_IContent {
         }
 
         $this->_controlArray[$controlName] = $controlValue;
-        unset($this->_controlUnsetArray[$controlName]);
 
-        $this->setValue('arg_'.$controlName, $controlValue);
         $this->setValue('control_'.$controlName, htmlspecialchars($controlValue));
     }
 
@@ -88,24 +86,6 @@ class EE_AContentSmarty extends EE_AContent implements EE_IContent {
             throw new EE_Exception("Empty control value name. Nothing to unset");
         }
         unset($this->_controlArray[$controlName]);
-        $this->_controlUnsetArray[$controlName] = true;
-    }
-
-    /**
-     * Доступно ли значение control-value
-     * true - доступно
-     * false - явно стерто
-     *
-     * @param string $controlName
-     *
-     * @return bool
-     */
-    public function isControlValue($controlName) {
-        if (isset($this->_controlUnsetArray[$controlName])) {
-            return false;
-        } else {
-            return true;
-        }
     }
 
     public function process() {
@@ -118,32 +98,24 @@ class EE_AContentSmarty extends EE_AContent implements EE_IContent {
      * @return string
      */
     public function render() {
-        parent::render();
-
-        // если html-файла нет - то нет смысла продолжать
-        $file = $this->getField('filehtml');
-        if (!$file) {
-            return '';
-        }
-
-        // получаем все параметры, которые надо передать в smarty
-        $a = $this->getValueArray();
-
-        $arguments = EE::Get()->getRequest()->getArgumentArray();
-        foreach ($arguments as $name => $value) {
+        // берем все аргументы и экранируем их, передаем в качестве control_xxx
+        // я делаю это перед вызовом process(), это позволит внутри process()
+        // менять эти control-значения или стирать их
+        $argumentArray = EE::Get()->getRequest()->getArgumentArray();
+        foreach ($argumentArray as $key => $value) {
             if (is_array($value)) {
                 continue;
             }
-            $a['arg_'.$name] = $value;
-            if ($this->isControlValue($name)) {
-                $a['control_'.$name] = htmlspecialchars($value);
-            }
+            $a['control_'.$key] = htmlspecialchars($value);
         }
 
-        // передаем все параметры еще раз, в виде массива
-        $a['contentValueArray'] = $a;
+        parent::render();
 
-        // @todo стоит ли события переносить в EE?
+        // если html-файла нет - то нет смысла продолжать
+        $file = $this->getValue('filehtml');
+        if (!$file) {
+            return '';
+        }
 
         // рендерим контент
         $event = Events::Get()->generateEvent('EE:content.render:before');
@@ -151,6 +123,8 @@ class EE_AContentSmarty extends EE_AContent implements EE_IContent {
         $event->setRenderHTML('');
         $event->notify();
 
+        // получаем все параметры, которые надо передать в smarty
+        $a = $this->getValueArray();
         $html = EE_Smarty::Get()->fetch($file, $a);
 
         // генерируем событие afterRender
@@ -159,7 +133,7 @@ class EE_AContentSmarty extends EE_AContent implements EE_IContent {
         $event->setRenderHTML($html);
         $event->notify();
 
-        // достаем новый $html из события
+        // достаем новый html из события
         $html = $event->getRenderHTML();
 
         return $html;
@@ -169,17 +143,14 @@ class EE_AContentSmarty extends EE_AContent implements EE_IContent {
         parent::clear();
 
         $this->_controlArray = [];
-        $this->_controlUnsetArray = [];
 
         // заполняем только одно поле - filehtml
         if ($this->_filehtml) {
-            $this->setField('filehtml', $this->_filehtml);
+            $this->setValue('filehtml', $this->_filehtml);
         }
     }
 
     private $_controlArray = [];
-
-    private $_controlUnsetArray = [];
 
     private $_filehtml = false;
 
