@@ -47,7 +47,7 @@ class EE {
 
         // по системе роутинга определяем что у нас за контент
         try {
-            $className = $routing->matchClassName($request);
+            $className = $routing->matchContent($request);
 
             // в этой точке мы нашли класс который надо запустить,
             // причем роутинг сам должен вернуть класс или класс-404,
@@ -62,6 +62,7 @@ class EE {
             $this->getResponse()->setCode(200);
         } catch (Exception $routingException) {
             $this->getResponse()->setCode(500);
+            $this->getResponse()->setData($routingException->getMessage());
             $className = 'ee500'; // штатный контент
         }
 

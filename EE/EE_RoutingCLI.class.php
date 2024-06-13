@@ -1,7 +1,7 @@
 <?php
 class EE_RoutingCLI implements EE_IRouting {
 
-    public function matchClassName(EE_IRequest $request) {
+    public function matchContent(EE_IRequest $request) {
         $a = $request->getArgumentArray();
 
         $class = @$a[1];

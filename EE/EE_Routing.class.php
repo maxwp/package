@@ -13,7 +13,7 @@ class EE_Routing implements EE_IRouting {
      * @param EE_IRequest $request
      * @return string
      */
-    public function matchClassName(EE_IRequest $request) {
+    public function matchContent(EE_IRequest $request) {
         // $url, $args = array(), $return = false
         $url = $request->getURL();
         $args = $request->getArgumentArray();
