@@ -3,6 +3,8 @@
 /**
  * Супер-топорный построитеть SQL-запросов.
  * Экономия времени при написании кода на экранировании и тд для простых запросов.
+ *
+ * @deprecated
  */
 class SQLBuilder {
 
@@ -99,8 +101,12 @@ class SQLBuilder {
         }
 
         $getArray = [];
-        foreach ($fieldArray as $key) {
-            $getArray[] = "`".$this->_getConnection()->escapeString($key)."`";
+        if ($fieldArray == '*') {
+            $getArray[] = '*';
+        } else {
+            foreach ($fieldArray as $key) {
+                $getArray[] = "`".$this->_getConnection()->escapeString($key)."`";
+            }
         }
 
         $filterArray = [];
