@@ -10,8 +10,6 @@ if (function_exists('mb_internal_encoding')) {
 @date_default_timezone_set(date_default_timezone_get());
 
 include(__DIR__.'/ClassLoader/include.php');
-include(__DIR__.'/APIClient/include.php');
-include(__DIR__.'/APIServer/include.php');
 include(__DIR__.'/Checker/include.php');
 include(__DIR__.'/ConnectionManager/include.php');
 include(__DIR__.'/DateTime/include.php');
