@@ -155,39 +155,4 @@ class Storage_HandlerMemcached implements Storage_IHandler {
 
     private $_link;
 
-    /**
-     * @deprecated
-     */
-    public function getData($key) {
-        return $this->get($key);
-    }
-
-    /**
-     * @deprecated
-     */
-    public function setData($key, $value, $ttl = false, $parentKey = false) {
-        return $this->set($key, $value, $ttl, $parentKey);
-    }
-
-    /**
-     * @deprecated
-     */
-    public function hasData($key) {
-        return $this->has($key);
-    }
-
-    /**
-     * @deprecated
-     */
-    public function removeData($key) {
-        return $this->remove($key);
-    }
-
-    /**
-     * @deprecated
-     */
-    public function clearData() {
-        return $this->clean();
-    }
-
 }

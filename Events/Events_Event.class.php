@@ -92,6 +92,6 @@ class Events_Event {
         }
     }
 
-    private $_observerArray = array();
+    private $_observerArray = [];
 
 }

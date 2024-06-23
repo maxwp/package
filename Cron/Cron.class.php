@@ -10,11 +10,11 @@ class Cron {
         $redisLocal = new Redis();
         $redisLocal->connect('127.0.0.1');
 
-        $a = [];
-        $a['command'] = $command;
-        $a['pidfile'] = $pidfile;
+        $data = [];
+        $data['command'] = $command;
+        $data['pidfile'] = $pidfile;
 
-        $result = $redisLocal->sAdd('cron', json_encode($a));
+        $result = $redisLocal->sAdd('cron', json_encode($data));
 
         print "Added to cron: $command ($result)\n";
     }

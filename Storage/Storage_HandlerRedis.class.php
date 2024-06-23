@@ -54,9 +54,6 @@ class Storage_HandlerRedis implements Storage_IHandler {
         }
 
         $result = $this->_getRedis()->set($this->_prefix.$key, $value, $ttl);
-        /*if (!$result) {
-            var_dump($value);
-        }*/
     }
 
     /**
@@ -73,9 +70,6 @@ class Storage_HandlerRedis implements Storage_IHandler {
             }
             $result = $this->_getRedis()->mget($keyArray);
             return $result;
-            // в $result будет не ассоциативный массив, а набор по индексам
-            // массив еще нужно собрать
-            return array_combine($key, $result);
         } else {
             // single
             $x = $this->_getRedis()->get($this->_prefix.$key);

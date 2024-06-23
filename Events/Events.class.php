@@ -179,21 +179,21 @@ class Events {
      *
      * @var array
      */
-    private $_eventArray = array();
+    private $_eventArray = [];
 
     /**
      * Кеш оригинальных Events_Event объектов, из которых мы будем клонировать.
      *
-     * @var unknown_type
+     * @var array<Events_Event>
      */
-    private $_eventCloneArray = array();
+    private $_eventCloneArray = [];
 
     /**
      * Кеш наблюдателей, еще до того как вообще событие вызовется.
      *
      * @var array
      */
-    private $_observerArray = array();
+    private $_observerArray = [];
 
     /**
      * Instanse

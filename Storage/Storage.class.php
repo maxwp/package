@@ -11,15 +11,15 @@
  * Storage.
  *
  * Allows you to put and get any data from the universal storage interface.
- *
- * Data can be put to the storage with a specified key
- * or the key will be built as a md5-hash for data (if possible).
- *
- * It is possible to use handlers APC, memcache, memcached, directory,
- * SQL-table, noSQL, etc.
- *
- * Supports storages with multiple caches.
- * For example, you can write to multiple handlers.
+ *
+ * Data can be put to the storage with a specified key
+ * or the key will be built as a md5-hash for data (if possible).
+ *
+ * It is possible to use handlers APC, memcache, memcached, directory,
+ * SQL-table, noSQL, etc.
+ *
+ * Supports storages with multiple caches.
+ * For example, you can write to multiple handlers.
  *
  * ----
  *

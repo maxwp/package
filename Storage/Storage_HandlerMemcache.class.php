@@ -15,6 +15,9 @@
  * @author    Maxim Miroshnichenko <max@webproduction.ua>
  * @copyright WebProduction
  * @package   Storage
+ *
+ * @deprecated
+ * @see Storage_HandlerMemcached
  */
 class Storage_HandlerMemcache implements Storage_IHandler {
 

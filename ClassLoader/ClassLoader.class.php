@@ -62,16 +62,14 @@ class ClassLoader {
      *
      * $cache - сколько времени держать кеш (по умолчанию без кеша)
      *
-     * @todo recursive
-     *
      * @param string $dir
-     * @param int $cache
+     * @param int $allowCache
      */
-    public function registerDirectory($dir, $cache = false) {
-        if ($cache > 0) {
+    public function registerDirectory($dir, $allowCache = false) {
+        if ($allowCache > 0) {
             $cacheFile = dirname(__FILE__).'/cache/'.md5($dir);
             $mtime = @filemtime($cacheFile);
-            if ($mtime && $mtime >= time() - $cache) {
+            if ($mtime && $mtime >= time() - $allowCache) {
                 $a = file($cacheFile);
                 if ($a) {
                     foreach ($a as $x) {
@@ -90,30 +88,31 @@ class ClassLoader {
         }
 
         // записываем cache
-        if ($cache > 0) {
+        if ($allowCache > 0) {
             $cacheFile = dirname(__FILE__).'/cache/'.md5($dir);
             file_put_contents($cacheFile, implode("\n", $a), LOCK_EX);
         }
     }
 
     private function _scandir($dir) {
-        $a = array();
+        $a = [];
         $d = opendir($dir);
-        while ($x = readdir($d)) {
-            if ($x == '.') {
+        while ($name = readdir($d)) {
+            if ($name == '.') {
                 continue;
             }
-            if ($x == '..') {
+            if ($name == '..') {
                 continue;
             }
 
-            if (strpos($x, '.php')) {
-                $a[] = $dir.'/'.$x;
+            if (strpos($name, '.php')) {
+                $a[] = $dir.'/'.$name;
             }
 
-            if (is_dir($dir.'/'.$x)) {
-                $tmp = $this->_scandir($dir.'/'.$x);
+            if (is_dir($dir.'/'.$name)) {
+                $tmp = $this->_scandir($dir.'/'.$name);
                 $a = array_merge($a, $tmp);
+                unset($tmp);
             }
         }
         closedir($d);
@@ -138,6 +137,6 @@ class ClassLoader {
      *
      * @var array
      */
-    private $_classArray = array();
+    private $_classArray = [];
 
 }
