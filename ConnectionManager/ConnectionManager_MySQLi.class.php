@@ -31,6 +31,10 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
     }
 
     public function connect() {
+        // fucking report mode was enabled after php 8
+        // https://www.php.net/manual/en/mysqli-driver.report-mode.php
+        mysqli_report(MYSQLI_REPORT_OFF);
+
         $this->_linkID = new mysqli(
             $this->_hostname,
             $this->_username,
