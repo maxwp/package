@@ -60,6 +60,10 @@ class Math_Array {
      * @return float
      */
     public static function Median($a, $countLimit = false) {
+        if (!$a) {
+            return 0;
+        }
+
         $a = array_values($a);
         sort($a);
 
