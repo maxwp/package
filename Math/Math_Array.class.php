@@ -65,14 +65,13 @@ class Math_Array {
         }
 
         $a = array_values($a);
-        sort($a);
 
         // если в массиве элементов меньше чем нужно - добавляем нулей,
         // чтобы правильно расчитать медиану
         if ($countLimit > 0 && $countLimit > count($a)) {
             $diff = $countLimit - count($a);
 
-            for ($j = 1 ; $j <= $diff; $j++) {
+            for ($j = 1; $j <= $diff; $j++) {
                 $a[] = 0;
             }
         }
@@ -82,6 +81,8 @@ class Math_Array {
         if (!$count) {
             return null;
         }
+
+        sort($a);
 
         $half = floor($count / 2);
         if ($count % 2) {
