@@ -25,9 +25,19 @@ class Math_Array {
         return count($a);
     }
 
-    public static function Avg($a) {
+    public static function Avg($a, $countLimit = false) {
         if (!$a) {
             return 0;
+        }
+
+        // если в массиве элементов меньше чем нужно - добавляем нулей,
+        // чтобы правильно расчитать медиану
+        if ($countLimit > 0 && $countLimit > count($a)) {
+            $diff = $countLimit - count($a);
+
+            for ($j = 1; $j <= $diff; $j++) {
+                $a[] = 0;
+            }
         }
 
         $cnt = 0;
