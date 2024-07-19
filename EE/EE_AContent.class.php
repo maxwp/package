@@ -11,20 +11,21 @@ abstract class EE_AContent implements EE_IContent {
      * Если аргумента нет - будет EE_Exception
      *
      * @param string $key
-     * @param mixed $typing
+     * @param mixed $argType
      *
      * @return mixed
      */
-    public function getArgument($key, $typing = false, $argType = false) {
+    public function getArgument($key, $argType = false) {
         if (isset($this->_argumentArray[$key])) {
             $x = $this->_argumentArray[$key];
+
+            if ($argType) {
+                $x = StringUtils_Typing::TypeString($x, $argType);
+            }
         } else {
             $x = EE::Get()->getRequest()->getArgument($key, $argType);
         }
 
-        if ($typing) {
-            $x = StringUtils_Typing::TypeString($x, $typing);
-        }
         return $x;
     }
 
@@ -33,15 +34,15 @@ abstract class EE_AContent implements EE_IContent {
      * Если аргумента нет - будет false.
      *
      * @param string $key
-     * @param mixed $typing
+     * @param mixed $argType
      *
      * @return mixed
-     *@see getArgument()
+     * @see getArgument()
      *
      */
-    public function getArgumentSecure($key, $typing = false, $argType = false) {
+    public function getArgumentSecure($key, $argType = false) {
         try {
-            return $this->getArgument($key, $typing, $argType);
+            return $this->getArgument($key, $argType);
         } catch (Exception $exception) {
             return false;
         }

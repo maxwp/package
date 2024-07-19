@@ -12,8 +12,8 @@ class EE_RequestCLI implements EE_IRequest {
     public function getArgument($key, $argType = false) {
         global $argv;
 
-        $name = str_replace('--', '', $key);
-        if (!$name) {
+        $key = str_replace('--', '', $key);
+        if (!$key) {
             throw new EE_Exception('no arg name', 1);
         }
 
@@ -24,10 +24,10 @@ class EE_RequestCLI implements EE_IRequest {
                 $arg = str_replace('--', '', $arg);
 
                 if (preg_match("/^(.+?)=(.+?)$/ius", $arg, $r)) {
-                    if ($r[1] == $name) {
+                    if ($r[1] == $key) {
                         $returnArray[] = $r[2];
                     }
-                } elseif ($arg == $name && $argType == 'bool') {
+                } elseif ($arg == $key && $argType == 'bool') {
                     $returnArray[] = $arg;
                 }
             }
