@@ -25,7 +25,7 @@ class Storage_HandlerMemcached implements Storage_IHandler {
      * @param string $host
      * @param string $port
      */
-    public function __construct($prefix, $host = 'localhost', $port = 11211) {
+    public function __construct($prefix, $host = 'localhost', $port = 11211, $binaryProtocol = false) {
         if (!class_exists('Memcached')) {
             throw new Storage_Exception();
         }
@@ -34,6 +34,7 @@ class Storage_HandlerMemcached implements Storage_IHandler {
         $this->_host = $host;
         $this->_port = $port;
         $this->_link = null;
+        $this->_binaryProtocol = (bool) $binaryProtocol;
     }
 
     /**
@@ -60,9 +61,9 @@ class Storage_HandlerMemcached implements Storage_IHandler {
                 $keyArray = $key;
             }
 
-            $this->_getMemcached()->setMulti($keyArray, $ttl);
+            $this->getLink()->setMulti($keyArray, $ttl);
         } else {
-            $this->_getMemcached()->set($this->_prefix.$key, $value, $ttl);
+            $this->getLink()->set($this->_prefix.$key, $value, $ttl);
         }
     }
 
@@ -80,7 +81,7 @@ class Storage_HandlerMemcached implements Storage_IHandler {
                     $keyArray[$x] = $this->_prefix.$x;
                 }
 
-                $result = $this->_getMemcached()->getMulti($keyArray);
+                $result = $this->getLink()->getMulti($keyArray);
                 $a = array();
                 foreach ($result as $key => $x) {
                     $a[str_replace($this->_prefix, '', $key)] = $x;
@@ -88,11 +89,11 @@ class Storage_HandlerMemcached implements Storage_IHandler {
                 return $a;
             } else {
                 // multi without prefix
-                return $this->_getMemcached()->getMulti($key);
+                return $this->getLink()->getMulti($key);
             }
         } else {
             // single
-            $x = $this->_getMemcached()->get($this->_prefix.$key);
+            $x = $this->getLink()->get($this->_prefix.$key);
             if ($x === false) {
                 throw new Storage_Exception("Cache by key '{$key}' not found");
             }
@@ -106,7 +107,7 @@ class Storage_HandlerMemcached implements Storage_IHandler {
      * @param string $key
      */
     public function has($key) {
-        return ($this->_getMemcached()->get($this->_prefix.$key) != false);
+        return ($this->getLink()->get($this->_prefix.$key) != false);
     }
 
     /**
@@ -115,7 +116,7 @@ class Storage_HandlerMemcached implements Storage_IHandler {
      * @param string $key
      */
     public function remove($key) {
-        $this->_getMemcached()->delete($this->_prefix.$key);
+        $this->getLink()->delete($this->_prefix.$key);
     }
 
     /**
@@ -126,22 +127,17 @@ class Storage_HandlerMemcached implements Storage_IHandler {
             throw new Storage_Exception('Cannot flush all cache');
         }
 
-        $this->_getMemcached()->flush();
+        $this->getLink()->flush();
     }
 
-    public function getLink() {
-        return $this->_getMemcached();
-    }
-
-    private function _getMemcached() {
+    public function getLink() { // @todo а интерфейс есть?
         if (!$this->_link) {
             $this->_link = new Memcached();
             $this->_link->addServer($this->_host, $this->_port);
             $this->_link->setOption(Memcached::OPT_TCP_NODELAY, 1);
-
-            // эти три опции приводят к полному пиздецу, но какая именно - не понятно
-            //$this->_link->setOption(Memcached::OPT_BINARY_PROTOCOL, 1);
-            //$this->_link->setOption(Memcached::OPT_BUFFER_WRITES, 1);
+            if ($this->_binaryProtocol) {
+                $this->_link->setOption(Memcached::OPT_BINARY_PROTOCOL, 1);
+            }
             //$this->_link->setOption(Memcached::OPT_NO_BLOCK, 1);
         }
         return $this->_link;
@@ -154,5 +150,7 @@ class Storage_HandlerMemcached implements Storage_IHandler {
     private $_port;
 
     private $_link;
+
+    private $_binaryProtocol = false;
 
 }
