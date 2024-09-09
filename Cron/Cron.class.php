@@ -18,7 +18,8 @@ class Cron {
 
         $result = $this->_getRedisLocal()->sAdd('cron', json_encode($data));
 
-        print "Added to cron minute: $className (".json_encode($argumentArray).") ($result)\n";
+        $command = $this->_makeCommand($data);
+        print "Added to cron: $command ($result)\n";
     }
 
     public function process($dirpath) {
@@ -26,41 +27,47 @@ class Cron {
         while ($file = $redisLocal->sPop('cron')) {
             $data = json_decode($file, true);
 
-            $className = $data['classname'];
-            $argumentArray = $data['argumentArray'];
             $pid = $data['pid'];
 
-            if ($argumentArray) {
-                ksort($argumentArray);
-            }
-            $a = [];
-            foreach ($argumentArray as $key => $value) {
-                if (is_array($value)) {
-                    foreach ($value as $v) {
-                        $a[] = "--$key=$v";
-                    }
-                } else {
-                    $a[] = "--$key=$value";
-                }
-            }
-            $argumentString = implode(' ', $a);
-            unset($a);
+            $command = $this->_makeCommand($data);
 
             // строим имя pid'a если его нет
             if (!$pid) {
-                $pid = md5($className.$argumentString);
+                $pid = md5($command);
             }
             if (!substr_count($pid, '.pid')) {
                 $pid .= '.pid';
             }
 
-            $command = "ee-run.php $className $argumentString";
-
             $logString = "> /dev/null 2>&1 &";
             $path = "/usr/bin/flock -n $dirpath/pid/$pid /usr/bin/php $dirpath/$command $logString";
-            print $path . "\n";
+            print "Run: ".$path . "\n";
             exec($path);
         }
+    }
+
+    private function _makeCommand($data) {
+        $className = $data['classname'];
+        $argumentArray = $data['argumentArray'];
+
+        if ($argumentArray) {
+            ksort($argumentArray);
+        }
+        $a = [];
+        foreach ($argumentArray as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $v) {
+                    $a[] = "--$key=$v";
+                }
+            } else {
+                $a[] = "--$key=$value";
+            }
+        }
+        $argumentString = implode(' ', $a);
+        unset($a);
+
+        $command = "ee-run.php $className $argumentString";
+        return $command;
     }
 
     /**
