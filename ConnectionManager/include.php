@@ -23,3 +23,4 @@ ClassLoader::Get()->registerClass(__DIR__.'/ConnectionManager_MySQLi.class.php')
 ClassLoader::Get()->registerClass(__DIR__.'/ConnectionManager_PgSQL.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/ConnectionManager_PDO.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/ConnectionManager_Redis.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/ConnectionManager_SocketUDP.class.php');
