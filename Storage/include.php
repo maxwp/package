@@ -23,3 +23,4 @@ ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerMemcached.class.php')
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerMemSock.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerRedis.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerSession.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerShmop.class.php');

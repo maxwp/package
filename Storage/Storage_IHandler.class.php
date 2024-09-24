@@ -24,6 +24,8 @@ interface Storage_IHandler {
      * TTL - time-to-life, время жизни данных, если
      * хандлер поддерживает TTL
      *
+     * @todo no parent key
+     *
      * @param string $key
      * @param string $parentKey
      * @param mixed $value
@@ -44,6 +46,8 @@ interface Storage_IHandler {
      * Is data exists?
      *
      * Узнать, есть ли такой ключ
+     *
+     * @todo а нахер мне этот has?
      *
      * @param string $key
      */
