@@ -23,15 +23,13 @@ interface Storage_IHandler {
      * Записать данные.
      * TTL - time-to-life, время жизни данных, если
      * хандлер поддерживает TTL
-     *
-     * @todo no parent key
-     *
+     **
      * @param string $key
      * @param string $parentKey
      * @param mixed $value
      * @param int $ttl
      */
-    public function set($key, $value, $ttl = false, $parentKey = false);
+    public function set($key, $value, $ttl = false);
 
     /**
      * Get data from storage.
@@ -41,17 +39,6 @@ interface Storage_IHandler {
      * @param string $key
      */
     public function get($key);
-
-    /**
-     * Is data exists?
-     *
-     * Узнать, есть ли такой ключ
-     *
-     * @todo а нахер мне этот has?
-     *
-     * @param string $key
-     */
-    public function has($key);
 
     /**
      * Remove data by key

@@ -16,7 +16,7 @@
  */
 class Storage_HandlerShmop implements Storage_IHandler {
 
-    public function set($key, $value, $ttl = false, $parentKey = false) {
+    public function set($key, $value, $ttl = false) {
         if ($ttl) {
             throw new Storage_Exception("No TTL for shmop");
         }
@@ -42,10 +42,6 @@ class Storage_HandlerShmop implements Storage_IHandler {
         sem_release($sem);
 
         return $string;
-    }
-
-    public function has($key) {
-        // @todo
     }
 
     public function remove($key) {

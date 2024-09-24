@@ -17,10 +17,7 @@ ClassLoader::Get()->registerClass(__DIR__.'/Storage.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_Exception.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_IHandler.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerArray.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerCacheFiles.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerFiles.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerMemcached.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerMemSock.class.php');
+//ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerMemSock.class.php'); // @todo
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerRedis.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerSession.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Storage_HandlerShmop.class.php');

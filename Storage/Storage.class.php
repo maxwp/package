@@ -15,29 +15,9 @@
  * Data can be put to the storage with a specified key
  * or the key will be built as a md5-hash for data (if possible).
  *
- * It is possible to use handlers APC, memcache, memcached, directory,
- * SQL-table, noSQL, etc.
+ * It is possible to use handlers memcached, redis, shmop, array, etc.
  *
- * Supports storages with multiple caches.
- * For example, you can write to multiple handlers.
- *
- * ----
- *
- * Хранилище.
- *
- * Позволяет отправлять и извлекать из хранилища какие-либо данные.
- *
- * Данные можно отправить к кеш по определенному ключу,
- * либо этот ключ будет построен как md5-хеш по данным (по возможности).
- *
- * Есть возможность использовать кешеры APC, memcache, memcached, directory,
- * table in SQL-database, noSQL, etc.
- *
- * Есть поддержка множественных кешей-хранилищ.
- * Например, можно писать сразу в несколько handlerов, даже одинакового
- * класса.
- *
- * @author Maxim Miroshnichenko <max@webproduction.com.ua>
+ * @author Maxim Miroshnichenko <max@webproduction.ua>
  * @copyright WebProduction
  * @package Storage
  */
@@ -58,7 +38,7 @@ class Storage {
      */
     public static function Get($storageKey) {
         if (!$storageKey) {
-            throw new Storage_Exception("Empty Storage key.");
+            throw new Storage_Exception("Empty storage key");
         }
 
         if (!isset(self::$_InstanceArray[$storageKey])) {
@@ -82,7 +62,7 @@ class Storage {
      */
     public static function Initialize($storageKey, Storage_IHandler $handler) {
         if (!$storageKey) {
-            throw new Storage_Exception("Empty Storage key.");
+            throw new Storage_Exception("Empty storage key");
         }
 
         self::$_InstanceArray[$storageKey] = $handler;
@@ -101,7 +81,7 @@ class Storage {
     }
 
     private function __construct() {
-
+        // singleton
     }
 
     private function __clone() {
@@ -111,6 +91,6 @@ class Storage {
     /**
      * @var array<Storage_IHandler>
      */
-    private static $_InstanceArray = array();
+    private static $_InstanceArray = [];
 
 }

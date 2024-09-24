@@ -42,10 +42,7 @@ class Storage_HandlerMemSock implements Storage_IHandler {
      * @param mixed $key
      * @param mixed $value
      */
-    public function set($key, $value, $ttl = false, $parentKey = false) {
-        if (!empty($parentKey)) {
-            throw new Storage_Exception('Parent keys is not supported for memcached yet.');
-        }
+    public function set($key, $value, $ttl = false) {
         if (!empty($ttl)) {
             throw new Storage_Exception("Incorrect TTL '{$ttl}'");
         }
@@ -75,9 +72,9 @@ class Storage_HandlerMemSock implements Storage_IHandler {
      *
      * @param string $key
      */
-    public function has($key) {
+    /*public function has($key) {
         return ($this->_getMemsock()->get($this->_prefix.$key) !== false);
-    }
+    }*/
 
     /**
      * Удалить данные

@@ -27,7 +27,7 @@ class Storage_HandlerArray implements Storage_IHandler {
      * @param string $key
      * @param mixed $value
      */
-    public function set($key, $value, $ttl = false, $parentKey = false) {
+    public function set($key, $value, $ttl = false) {
         // @todo: TTL
         $this->_array[$key] = $value;
     }
@@ -39,22 +39,12 @@ class Storage_HandlerArray implements Storage_IHandler {
      * @param string $key
      */
     public function get($key) {
-        if ($this->has($key)) {
+        if (isset($this->_array[$key])) {
             return $this->_array[$key];
         }
         throw new Storage_Exception("Storage data not found by key '{$key}'");
     }
 
-    /**
-     * Has data on key or no?
-     *
-     * Узнать, есть ли такой ключ
-     *
-     * @param string $key
-     */
-    public function has($key) {
-        return isset($this->_array[$key]);
-    }
 
     /**
      * Remove data by key
