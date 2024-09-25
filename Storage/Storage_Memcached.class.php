@@ -15,7 +15,7 @@
  * @copyright WebProduction
  * @package   Storage
  */
-class Storage_HandlerMemcached implements Storage_IHandler {
+class Storage_Memcached implements Storage_IHandler {
 
     /**
      * Create memcache handler.
@@ -25,16 +25,9 @@ class Storage_HandlerMemcached implements Storage_IHandler {
      * @param string $host
      * @param string $port
      */
-    public function __construct($prefix, $host = 'localhost', $port = 11211, $binaryProtocol = false) {
-        if (!class_exists('Memcached')) {
-            throw new Storage_Exception();
-        }
-
+    public function __construct(Connection_IConnection $connection, $prefix = '') {
         $this->_prefix = $prefix;
-        $this->_host = $host;
-        $this->_port = $port;
-        $this->_link = null;
-        $this->_binaryProtocol = (bool) $binaryProtocol;
+        $this->_connection = $connection;
     }
 
     /**
@@ -103,9 +96,9 @@ class Storage_HandlerMemcached implements Storage_IHandler {
      *
      * @param string $key
      */
-    /*public function has($key) {
+    public function has($key) {
         return ($this->getLink()->get($this->_prefix.$key) != false);
-    }*/
+    }
 
     /**
      * Удалить данные
@@ -127,27 +120,25 @@ class Storage_HandlerMemcached implements Storage_IHandler {
         $this->getLink()->flush();
     }
 
-    public function getLink() { // @todo а интерфейс есть?
-        if (!$this->_link) {
-            $this->_link = new Memcached();
-            $this->_link->addServer($this->_host, $this->_port);
-            $this->_link->setOption(Memcached::OPT_TCP_NODELAY, 1);
-            if ($this->_binaryProtocol) {
-                $this->_link->setOption(Memcached::OPT_BINARY_PROTOCOL, 1);
-            }
-            //$this->_link->setOption(Memcached::OPT_NO_BLOCK, 1);
-        }
-        return $this->_link;
+    /**
+     * @return Memcached|resource
+     */
+    public function getLink() {
+        return $this->getConnection()->getLinkID();
     }
 
+    /**
+     * @return Connection_IConnection
+     */
+    public function getConnection() {
+        return $this->_connection;
+    }
+
+    /**
+     * @var Connection_IConnection
+     */
+    private $_connection;
+
     private $_prefix;
-
-    private $_host;
-
-    private $_port;
-
-    private $_link;
-
-    private $_binaryProtocol = false;
 
 }

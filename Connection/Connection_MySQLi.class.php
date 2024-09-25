@@ -35,7 +35,7 @@ implements Connection_IDatabaseAdapter {
         // https://www.php.net/manual/en/mysqli-driver.report-mode.php
         mysqli_report(MYSQLI_REPORT_OFF);
 
-        $this->_linkID = new mysqli(
+        $this->_link = new mysqli(
             $this->_hostname,
             $this->_username,
             $this->_password,
@@ -49,7 +49,7 @@ implements Connection_IDatabaseAdapter {
         }
 
         if ($this->_encoding) {
-            mysqli_set_charset($this->_linkID, $this->_encoding);
+            mysqli_set_charset($this->_link, $this->_encoding);
         }
 
         // Специальный fix для MySQL 5.7, отключает STRICT MODE
@@ -101,8 +101,8 @@ implements Connection_IDatabaseAdapter {
     }
 
     public function disconnect() {
-        if ($this->getLinkID()) {
-            $this->getLinkID()->close();
+        if ($this->_link) {
+            $this->_link->close();
         }
     }
 
@@ -112,7 +112,7 @@ implements Connection_IDatabaseAdapter {
      * @return mysqli
      */
     public function getLinkID() {
-        return $this->_linkID;
+        return $this->_link;
     }
 
     public function __destruct() {
@@ -259,7 +259,7 @@ implements Connection_IDatabaseAdapter {
 
     private $_encoding;
 
-    private $_linkID = null;
+    private $_link = null;
 
     private $_transactionCount = 0;
 

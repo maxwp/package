@@ -14,7 +14,7 @@
  * @copyright WebProduction
  * @package Storage
  */
-class Storage_HandlerShmop implements Storage_IHandler {
+class Storage_Shmop implements Storage_IHandler {
 
     public function __construct($blockSize = 128) {
         $this->_blockSize = $blockSize;

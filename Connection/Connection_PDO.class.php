@@ -21,7 +21,7 @@ implements Connection_IConnection, Connection_IDatabaseAdapter {
 
     private $_dsn;
 
-    private $_linkID = null;
+    private $_link = null;
 
     private $_queryStat = array();
 
@@ -51,7 +51,7 @@ implements Connection_IConnection, Connection_IDatabaseAdapter {
 
     public function connect() {
         try {
-            $this->_linkID = new PDO($this->_dsn);
+            $this->_link = new PDO($this->_dsn);
         } catch (Exception $e) {
             throw new Connection_Exception($e->getMessage());
         }
@@ -89,7 +89,7 @@ implements Connection_IConnection, Connection_IDatabaseAdapter {
     }
 
     public function disconnect() {
-        $this->_linkID = null;
+        $this->_link = null;
     }
 
     /**
@@ -98,7 +98,7 @@ implements Connection_IConnection, Connection_IDatabaseAdapter {
      * @return PDO
      */
     public function getLinkID() {
-        return $this->_linkID;
+        return $this->_link;
     }
 
     public function __destruct() {

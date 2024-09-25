@@ -331,6 +331,7 @@ class Smarty {
 
     private function _getFileContentFunction($filename) {
         // файл может быть в кеше memcached
+        // @todo wtf shit
         if (class_exists('Storage')) {
             try {
                 $content = Storage::Get('shop-cache')->getData('smarty-'.str_replace('//', '/', $filename));

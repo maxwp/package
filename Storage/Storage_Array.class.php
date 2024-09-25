@@ -18,7 +18,7 @@
  * @copyright WebProduction
  * @package Storage
  */
-class Storage_HandlerArray implements Storage_IHandler {
+class Storage_Array implements Storage_IHandler {
 
     /**
      * Put data to array

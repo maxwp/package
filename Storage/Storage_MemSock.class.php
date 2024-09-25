@@ -15,7 +15,7 @@
  * @copyright WebProduction
  * @package   Storage
  */
-class Storage_HandlerMemSock implements Storage_IHandler {
+class Storage_MemSock implements Storage_IHandler {
 
     /**
      * Create memcache handler.

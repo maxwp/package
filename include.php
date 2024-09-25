@@ -11,7 +11,7 @@ if (function_exists('mb_internal_encoding')) {
 
 include(__DIR__.'/ClassLoader/include.php');
 include(__DIR__.'/Checker/include.php');
-include(__DIR__.'/ConnectionManager/include.php');
+include(__DIR__.'/Connection/include.php');
 include(__DIR__.'/DateTime/include.php');
 include(__DIR__.'/Events/include.php');
 include(__DIR__.'/EE/include.php');

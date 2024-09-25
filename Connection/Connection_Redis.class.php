@@ -29,8 +29,8 @@ implements Connection_IConnection {
     }
 
     public function connect() {
-        $this->_linkID = new Redis();
-        $this->_linkID->pconnect($this->_hostname, $this->_port);
+        $this->_link = new Redis();
+        $this->_link->pconnect($this->_hostname, $this->_port);
 
         $e = $this->getLinkID()->getLastError();
         if ($e) {
@@ -39,8 +39,8 @@ implements Connection_IConnection {
     }
 
     public function disconnect() {
-        if ($this->getLinkID()) {
-            $this->getLinkID()->close();
+        if ($this->_link) {
+            $this->_link->close();
         }
     }
 
@@ -50,11 +50,11 @@ implements Connection_IConnection {
      * @return Redis
      */
     public function getLinkID() {
-        if (!$this->_linkID) {
+        if (!$this->_link) {
             $this->connect();
         }
 
-        return $this->_linkID;
+        return $this->_link;
     }
 
     public function __destruct() {
@@ -68,6 +68,6 @@ implements Connection_IConnection {
     /**
      * @var Redis
      */
-    private $_linkID = null;
+    private $_link = null;
 
 }
