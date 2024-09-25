@@ -16,6 +16,10 @@
  */
 class Storage_HandlerShmop implements Storage_IHandler {
 
+    public function __construct($blockSize = 128) {
+        $this->_blockSize = $blockSize;
+    }
+
     public function set($key, $value, $ttl = false) {
         if ($ttl) {
             throw new Storage_Exception("No TTL for shmop");
@@ -93,7 +97,7 @@ class Storage_HandlerShmop implements Storage_IHandler {
             return $this->_keyArray[$key];
         }
 
-        $this->_keyArray[$key] = crc32($key);
+        $this->_keyArray[$key] = crc32($key.$this->_blockSize);
 
         return $this->_keyArray[$key];
     }
@@ -102,7 +106,7 @@ class Storage_HandlerShmop implements Storage_IHandler {
 
     private $_semaphoreArray = [];
 
-    private $_blockSize = 128; // @todo
+    private $_blockSize;
 
     private $_memoryArray = [];
 
