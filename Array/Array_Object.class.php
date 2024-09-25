@@ -1,9 +1,9 @@
 <?php
-class Math_Array {
+class Array_Object extends ArrayObject {
 
-    public static function Max($a) {
+    public function max() {
         $max = false;
-        foreach ($a as $x) {
+        foreach ($this as $x) {
             if ($max === false || $x > $max) {
                 $max = $x;
             }
@@ -11,9 +11,9 @@ class Math_Array {
         return $max;
     }
 
-    public static function Min($a) {
+    public function min() {
         $min = false;
-        foreach ($a as $x) {
+        foreach ($this as $x) {
             if ($min === false || $x < $min) {
                 $min = $x;
             }
@@ -21,19 +21,18 @@ class Math_Array {
         return $min;
     }
 
-    public static function Count($a) {
-        return count($a);
-    }
-
-    public static function Avg($a, $countLimit = false) {
-        if (!$a) {
+    public function avg($countLimit = false) {
+        $cnt = $this->count();
+        if (!$cnt) {
             return 0;
         }
 
+        $a = $this;
+
         // если в массиве элементов меньше чем нужно - добавляем нулей,
         // чтобы правильно расчитать медиану
-        if ($countLimit > 0 && $countLimit > count($a)) {
-            $diff = $countLimit - count($a);
+        if ($countLimit > 0 && $countLimit > $cnt) {
+            $diff = $countLimit - $cnt;
 
             for ($j = 1; $j <= $diff; $j++) {
                 $a[] = 0;
@@ -50,36 +49,32 @@ class Math_Array {
         return $sum / $cnt;
     }
 
-    public static function Sum($a) {
-        if (!$a) {
+    public function sum() {
+        if (!$this->count()) {
             return 0;
         }
 
         $sum = 0;
-        foreach ($a as $x) {
+        foreach ($this as $x) {
             $sum += $x;
         }
 
         return $sum;
     }
 
-    /**
-     * Calculate array median
-     *
-     * @param $a
-     * @return float
-     */
-    public static function Median($a, $countLimit = false) {
-        if (!$a) {
+    public function median($countLimit = false) {
+        $cnt = $this->count();
+
+        if (!$cnt) {
             return 0;
         }
 
-        $a = array_values($a);
+        $a = array_values($this->getArrayCopy());
 
         // если в массиве элементов меньше чем нужно - добавляем нулей,
         // чтобы правильно расчитать медиану
-        if ($countLimit > 0 && $countLimit > count($a)) {
-            $diff = $countLimit - count($a);
+        if ($countLimit > 0 && $countLimit > $cnt) {
+            $diff = $countLimit - $cnt;
 
             for ($j = 1; $j <= $diff; $j++) {
                 $a[] = 0;
