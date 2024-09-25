@@ -14,7 +14,7 @@
  * @copyright WebProduction
  * @package ConnectionManager
  */
-interface ConnectionManager_IConnection {
+interface Connection_IConnection {
 
     /**
      * Выполнить соеденение

@@ -14,9 +14,11 @@
  * @author Maxim Miroshnichenko <max@webproduction.com.ua>
  * @copyright WebProduction
  * @package ConnectionManager
+ *
+ * @deprecated
  */
-class ConnectionManager_PgSQL
-implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
+class Connection_PgSQL
+implements Connection_IDatabaseAdapter {
 
     /**
      * Получить статистику
@@ -31,7 +33,7 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
     $encoding = 'unicode', $permanent = true) {
         // проверка
         if (!function_exists('pg_connect')) {
-            throw new ConnectionManager_Exception("PHP extension 'pgsql' not available");
+            throw new Connection_Exception("PHP extension 'pgsql' not available");
         }
 
         $this->_hostname = $hostname;
@@ -57,7 +59,7 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
         }
 
         if (pg_connection_status($this->_linkID) == PGSQL_CONNECTION_BAD) {
-            throw new ConnectionManager_Exception("Cannot connect to PgSQL-database");
+            throw new Connection_Exception("Cannot connect to PgSQL-database");
         }
 
         if ($this->_encoding) {
@@ -97,7 +99,7 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
         }
 
         if (!$result && $e = pg_last_error($this->getLinkID())) {
-            $ex = new ConnectionManager_Exception($e);
+            $ex = new Connection_Exception($e);
             $ex->setQuery($query);
             throw $ex;
         }
@@ -128,7 +130,7 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
      */
     public function fetch($queryResource) {
         if (!$queryResource) {
-            throw new ConnectionManager_Exception("No query result to fetch");
+            throw new Connection_Exception("No query result to fetch");
         }
         return pg_fetch_assoc($queryResource);
     }

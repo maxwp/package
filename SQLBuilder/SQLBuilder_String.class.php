@@ -11,7 +11,7 @@ class SQLBuilder_String {
     /**
      * @return string
      */
-    public function make(ConnectionManager_IDatabaseAdapter $connection) {
+    public function make(Connection_IDatabaseAdapter $connection) {
         return str_replace('?', "'$this->_param'", $connection->escapeString($this->_string));
     }
 

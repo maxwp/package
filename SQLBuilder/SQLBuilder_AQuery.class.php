@@ -1,7 +1,7 @@
 <?php
 abstract class SQLBuilder_AQuery {
 
-    public function __construct(ConnectionManager_IDatabaseAdapter $connection, $table) {
+    public function __construct(Connection_IDatabaseAdapter $connection, $table) {
         $this->_connection = $connection;
         $this->setTable($table);
     }
@@ -15,7 +15,7 @@ abstract class SQLBuilder_AQuery {
     }
 
     /**
-     * @return ConnectionManager_IDatabaseAdapter
+     * @return Connection_IDatabaseAdapter
      */
     public function getConnection() {
         return $this->_connection;

@@ -10,7 +10,7 @@ include(__DIR__ . '/include.php');
 include(__DIR__ . '/../../eventic.config.php');
 
 // подключаемся к redis
-$redis = ConnectionManager::Get()->getConnection('redis')->getLinkID();
+$redis = Connection::Get('redis')->getLinkID();
 
 // формируем запрос
 $url = @$_SERVER['REQUEST_URI'];

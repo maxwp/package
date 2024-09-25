@@ -1,6 +1,6 @@
 <?php
 
-$mysql = ConnectionManager::Get()->getConnectionDatabase();
+$mysql = Connection::Get('mysql');
 
 $fieldArray = [];
 $fieldArray['key1'] = 'value';

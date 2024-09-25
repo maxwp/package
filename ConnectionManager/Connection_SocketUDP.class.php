@@ -1,5 +1,5 @@
 <?php
-class ConnectionManager_SocketUDP implements ConnectionManager_IConnection {
+class Connection_SocketUDP implements Connection_IConnection {
 
     public function connect() {
         $this->_socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
@@ -37,7 +37,7 @@ class ConnectionManager_SocketUDP implements ConnectionManager_IConnection {
         if ($result === false) {
             $message = socket_strerror(socket_last_error($this->_socket));
             $this->disconnect();
-            throw new ConnectionManager_Exception($message);
+            throw new Connection_Exception($message);
         }
 
         while (1) {
@@ -49,7 +49,7 @@ class ConnectionManager_SocketUDP implements ConnectionManager_IConnection {
             if ($bytes === false) {
                 $message = socket_strerror(socket_last_error($this->_socket)) . "\n";
                 $this->disconnect();
-                throw new ConnectionManager_Exception($message);
+                throw new Connection_Exception($message);
                 break;
             }
 

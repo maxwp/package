@@ -12,7 +12,7 @@
  * @copyright WebProduction
  * @package ConnectionManager
  */
-class ConnectionManager_Exception extends Exception {
+class Connection_Exception extends Exception {
 
     public function __construct($message = '', $code = 0) {
         parent::__construct($message, $code);

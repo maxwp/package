@@ -1,7 +1,7 @@
 <?php
 class EE_Network {
 
-    public function __construct(ConnectionManager_IConnection $connection) {
+    public function __construct(Connection_IConnection $connection) {
         $this->_connection = $connection;
     }
 
@@ -28,7 +28,7 @@ class EE_Network {
     }
 
     /**
-     * @var ConnectionManager_IConnection
+     * @var Connection_IConnection
      */
     private $_connection = null;
 

@@ -39,7 +39,7 @@ class SMSQue {
      * Отправить SMS
      */
     public function send($startDate = false) {
-        $mysql = ConnectionManager::Get()->getConnectionDatabase();
+        $mysql = Connection::Get('mysql');
 
         $body = SMSQue_Smarty::FetchSmarty($this->_tplLetter, $this->getValueArray());
 
@@ -132,7 +132,7 @@ class SMSQue {
      * @param int $limit
      */
     public static function ProcessQue(SMSQue_ISender $sender, $limit = 50) {
-        $mysql = ConnectionManager::Get()->getConnectionDatabase();
+        $mysql = Connection::Get('mysql');
 
         $q = $mysql->query("
         SELECT *

@@ -11,13 +11,13 @@
  * Адаптер для соединений с базами данных.
  * По сути дополняет интерфейс ConnectionManager_IConnection
  *
- * @see ConnectionManager_IConnection
+ * @see Connection_IConnection
  *
  * @author Maxim Miroshnichenko <max@webproduction.ua>
  * @copyright WebProduction
  * @package ConnectionManager
  */
-interface ConnectionManager_IDatabaseAdapter {
+interface Connection_IDatabaseAdapter extends Connection_IConnection {
 
     /**
      * Выполнить запрос.

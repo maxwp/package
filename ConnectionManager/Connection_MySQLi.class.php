@@ -14,12 +14,12 @@
  * @copyright WebProduction
  * @package   ConnectionManager
  */
-class ConnectionManager_MySQLi
-implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
+class Connection_MySQLi
+implements Connection_IDatabaseAdapter {
 
     public function __construct($hostname, $username, $password, $database = false, $encoding = 'utf8', $port = false) {
         if (!class_exists('mysqli')) {
-            throw new ConnectionManager_Exception("PHP extension 'mysqli' not available");
+            throw new Connection_Exception("PHP extension 'mysqli' not available");
         }
 
         $this->_hostname = $hostname;
@@ -45,7 +45,7 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
 
         $e = $this->getLinkID()->connect_error;
         if ($e) {
-            throw new ConnectionManager_Exception("Cannot connect to database $this->_database@$this->_hostname: ".$e);
+            throw new Connection_Exception("Cannot connect to database $this->_database@$this->_hostname: ".$e);
         }
 
         if ($this->_encoding) {
@@ -94,7 +94,7 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
                 return $this->query($query);
             }
 
-            throw new ConnectionManager_Exception("Executing error: {$e} in query: {$query}");
+            throw new Connection_Exception("Executing error: {$e} in query: {$query}");
         }
 
         return $result;
@@ -212,7 +212,7 @@ implements ConnectionManager_IDatabaseAdapter, ConnectionManager_IConnection {
      */
     public function fetch($queryResource) {
         if (!$queryResource) {
-            throw new ConnectionManager_Exception("No query result to fetch");
+            throw new Connection_Exception("No query result to fetch");
         }
         $result = $queryResource->fetch_assoc();
         if (!$result) {

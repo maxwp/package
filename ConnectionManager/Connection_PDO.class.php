@@ -13,9 +13,11 @@
  * @author Maxim Miroshnichenko <max@webproduction.com.ua>
  * @copyright WebProduction
  * @package ConnectionManager
+ *
+ * @todo
  */
-class ConnectionManager_PDO
-implements ConnectionManager_IConnection, ConnectionManager_IDatabaseAdapter {
+class Connection_PDO
+implements Connection_IConnection, Connection_IDatabaseAdapter {
 
     private $_dsn;
 
@@ -41,7 +43,7 @@ implements ConnectionManager_IConnection, ConnectionManager_IDatabaseAdapter {
     public function __construct($dsn) {
         // проверка
         if (!class_exists('PDO')) {
-            throw new ConnectionManager_Exception("PHP extension 'PDO' not available");
+            throw new Connection_Exception("PHP extension 'PDO' not available");
         }
 
         $this->_dsn = $dsn;
@@ -51,7 +53,7 @@ implements ConnectionManager_IConnection, ConnectionManager_IDatabaseAdapter {
         try {
             $this->_linkID = new PDO($this->_dsn);
         } catch (Exception $e) {
-            throw new ConnectionManager_Exception($e->getMessage());
+            throw new Connection_Exception($e->getMessage());
         }
     }
 
@@ -82,7 +84,7 @@ implements ConnectionManager_IConnection, ConnectionManager_IDatabaseAdapter {
 
             return $result;
         } catch (Exception $e) {
-            throw new ConnectionManager_Exception($e->getMessage());
+            throw new Connection_Exception($e->getMessage());
         }
     }
 
@@ -112,7 +114,7 @@ implements ConnectionManager_IConnection, ConnectionManager_IDatabaseAdapter {
      */
     public function fetch($queryResource) {
         if (!$queryResource) {
-            throw new ConnectionManager_Exception("No PDOStatement to fetch");
+            throw new Connection_Exception("No PDOStatement to fetch");
         }
 
         return $queryResource->fetch();
@@ -126,7 +128,7 @@ implements ConnectionManager_IConnection, ConnectionManager_IDatabaseAdapter {
      */
     public function transactionStart($force = false) {
         if ($force) {
-            throw new ConnectionManager_Exception('PDO do not support force-transactions');
+            throw new Connection_Exception('PDO do not support force-transactions');
         }
         $this->getLinkID()->beginTransaction();
     }
@@ -139,7 +141,7 @@ implements ConnectionManager_IConnection, ConnectionManager_IDatabaseAdapter {
      */
     public function transactionCommit($force = false) {
         if ($force) {
-            throw new ConnectionManager_Exception('PDO do not support force-transactions');
+            throw new Connection_Exception('PDO do not support force-transactions');
         }
         $this->getLinkID()->commit();
     }
@@ -152,7 +154,7 @@ implements ConnectionManager_IConnection, ConnectionManager_IDatabaseAdapter {
      */
     public function transactionRollback($force = false) {
         if ($force) {
-            throw new ConnectionManager_Exception('PDO do not support force-transactions');
+            throw new Connection_Exception('PDO do not support force-transactions');
         }
         $this->getLinkID()->rollBack();
     }

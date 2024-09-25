@@ -57,7 +57,7 @@ class MailQue {
      * Отправить письмо
      */
     public function send($startDate = false) {
-        $mysql = ConnectionManager::Get()->getConnectionDatabase();
+        $mysql = Connection::Get('mysql');
 
         $body = MailQue_Smarty::FetchSmarty($this->_tplLetter, $this->getValueArray());
 
@@ -186,7 +186,7 @@ class MailQue {
      * @param int $limit
      */
     public static function ProcessQue(MailQue_ISender $sender, $limit = 50) {
-        $mysql = ConnectionManager::Get()->getConnectionDatabase();
+        $mysql = Connection::Get('mysql');
 
         $q = $mysql->query("
         SELECT *

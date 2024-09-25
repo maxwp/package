@@ -127,12 +127,12 @@ class SQLBuilder {
         return $s;
     }
 
-    private function __construct(ConnectionManager_IDatabaseAdapter $connection) {
+    private function __construct(Connection_IDatabaseAdapter $connection) {
         $this->_connection = $connection;
     }
 
     /**
-     * @return ConnectionManager_IDatabaseAdapter
+     * @return Connection_IDatabaseAdapter
      */
     private function _getConnection() {
         return $this->_connection;
@@ -141,7 +141,7 @@ class SQLBuilder {
     /**
      * @return SQLBuilder
      */
-    public static function Get(ConnectionManager_IDatabaseAdapter $connection) {
+    public static function Get(Connection_IDatabaseAdapter $connection) {
         return new self($connection);
     }
 

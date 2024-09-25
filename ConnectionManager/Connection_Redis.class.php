@@ -14,12 +14,12 @@
  * @copyright WebProduction
  * @package ConnectionManager
  */
-class ConnectionManager_Redis
-implements ConnectionManager_IConnection {
+class Connection_Redis
+implements Connection_IConnection {
 
     public function __construct($hostname, $port) {
         if (!class_exists('Redis')) {
-            throw new ConnectionManager_Exception("PHP extension 'Redis' not available");
+            throw new Connection_Exception("PHP extension 'Redis' not available");
         }
 
         ini_set('default_socket_timeout', -1); // for redis timeout
@@ -34,7 +34,7 @@ implements ConnectionManager_IConnection {
 
         $e = $this->getLinkID()->getLastError();
         if ($e) {
-            throw new ConnectionManager_Exception("Cannot connect to Redis: ".$e);
+            throw new Connection_Exception("Cannot connect to Redis: ".$e);
         }
     }
 
@@ -55,18 +55,6 @@ implements ConnectionManager_IConnection {
         }
 
         return $this->_linkID;
-    }
-
-    public function getLinkIDNew() {
-        $redis = new Redis();
-        $redis->connect($this->_hostname, $this->_port);
-
-        $e = $redis->getLastError();
-        if ($e) {
-            throw new ConnectionManager_Exception("Cannot connect to Redis: ".$e);
-        }
-
-        return $redis;
     }
 
     public function __destruct() {

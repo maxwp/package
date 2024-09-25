@@ -15,12 +15,12 @@
  * @copyright WebProduction
  */
 
-ClassLoader::Get()->registerClass(__DIR__.'/ConnectionManager.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/ConnectionManager_IConnection.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/ConnectionManager_IDatabaseAdapter.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/ConnectionManager_Exception.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/ConnectionManager_MySQLi.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/ConnectionManager_PgSQL.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/ConnectionManager_PDO.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/ConnectionManager_Redis.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/ConnectionManager_SocketUDP.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Connection.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Connection_IConnection.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Connection_IDatabaseAdapter.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Connection_Exception.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Connection_MySQLi.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Connection_PgSQL.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Connection_PDO.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Connection_Redis.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Connection_SocketUDP.class.php');
