@@ -62,9 +62,9 @@ class Storage_Array implements Storage_IHandler {
      * Очистить
      */
     public function clean() {
-        $this->_array = array();
+        $this->_array = [];
     }
 
-    private $_array = array();
+    private $_array = [];
 
 }
