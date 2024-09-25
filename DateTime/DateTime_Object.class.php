@@ -29,15 +29,6 @@
  */
 class DateTime_Object {
 
-    private $_timestamp;
-
-    private $_format = 'Y-m-d H:i:s';
-
-    /**
-     * @var DateTime_IClassFormat
-     */
-    private $_classformat;
-
     public function __construct($timestamp) {
         $this->_timestamp = $timestamp;
         $this->_classformat = new DateTime_ClassFormatDefault();
@@ -53,7 +44,7 @@ class DateTime_Object {
     }
 
     /**
-     * @param DateTime_ClassFormat $classformat
+     * @param DateTime_IClassFormat $classformat
      * @return DateTime_Object
      */
     public function setClassFormat(DateTime_IClassFormat $classformat) {
@@ -120,7 +111,7 @@ class DateTime_Object {
      * @param int $seconds
      * @return DateTime_Object
      */
-    public function addSeconds($seconds) {
+    public function addSecond($seconds) {
         return $this->addSomething('seconds', $seconds);
     }
 
@@ -158,86 +149,6 @@ class DateTime_Object {
     }
 
     /**
-     * Получить разницу в интервале
-     * (От первой даты отнимается вторая)
-     *
-     * @param string $interval 'y'-year 'm'-month 'd'-day 'w'-week 'd'-day 'h'-hour 'n'-minute 's'-second
-     * @param DateTime_Object $date1
-     * @param DateTime_Object $date2
-     * @return int
-     */
-    public static function DiffDate($interval, DateTime_Object $date1, DateTime_Object $date2) {
-        $timedifference = $date1->_timestamp - $date2->_timestamp;
-        switch ($interval) {
-            case 'y':
-                $arr1 = getdate($date1->_timestamp);
-                $arr2 = getdate($date2->_timestamp);
-                $retval = ($arr1['year'] - $arr2['year']);
-                if ($arr1['yday'] < $arr2['yday']) {
-                    $retval -= 1;
-                }
-                break;
-            case 'm':
-                $arr1 = getdate($date1->_timestamp);
-                $arr2 = getdate($date2->_timestamp);
-                $retval = ($arr1['year']*12+$arr1['mon'] - $arr2['year']*12-$arr2['mon']);
-                break;
-            case 'w':
-                $retval = floor($timedifference/604800);
-                break;
-            case 'd':
-                $retval = floor($timedifference/86400);
-                break;
-            case 'h':
-                $retval = floor($timedifference/3600);
-                break;
-            case 'n':
-                $retval = floor($timedifference/60);
-                break;
-            case 's':
-                $retval = $timedifference;
-                break;
-        }
-        if (!$retval) {
-            $retval = 0;
-        }
-        return $retval;
-    }
-
-    /**
-     * Вычислить разницу двух дат в днях
-     *
-     * @param DateTime_Object $date1
-     * @param DateTime_Object $date2
-     * @return int
-     */
-    public static function DiffDay(DateTime_Object $date1, DateTime_Object $date2) {
-        return self::DiffDate('d', $date1, $date2);
-    }
-
-    /**
-     * Вычислить разницу двух дат в месяцах
-     *
-     * @param DateTime_Object $date1
-     * @param DateTime_Object $date2
-     * @return int
-     */
-    public static function DiffMonth(DateTime_Object $date1, DateTime_Object $date2) {
-        return self::DiffDate('m', $date1, $date2);
-    }
-
-    /**
-     * Вычислить разницу двух дат в годах
-     *
-     * @param DateTime_Object $date1
-     * @param DateTime_Object $date2
-     * @return int
-     */
-    public static function DiffYear(DateTime_Object $date1, DateTime_Object $date2) {
-        return self::DiffDate('y', $date1, $date2);
-    }
-
-    /**
      * Привести дату в штамп времени
      *
      * @return int
@@ -248,17 +159,6 @@ class DateTime_Object {
 
     public function preview($format = 'Y-m-d H:i:s') {
         return date($format, $this->_timestamp);
-    }
-
-    /**
-     * Привести дату в штамп времени
-     *
-     * @deprecated
-     * @see getTimestamp()
-     * @return int
-     */
-    public function toTimestamp() {
-        return $this->getTimestamp();
     }
 
     /**
@@ -287,5 +187,14 @@ class DateTime_Object {
     public static function FromString($strtime) {
         return new DateTime_Object(strtotime($strtime));
     }
+
+    private $_timestamp;
+
+    private $_format = 'Y-m-d H:i:s';
+
+    /**
+     * @var DateTime_IClassFormat
+     */
+    private $_classformat;
 
 }

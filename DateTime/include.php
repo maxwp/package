@@ -22,7 +22,6 @@ ClassLoader::Get()->registerClass(__DIR__.'/DateTime_ClassFormatDefault.class.ph
 ClassLoader::Get()->registerClass(__DIR__.'/DateTime_ClassFormatPhonetic.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/DateTime_ClassFormatPhoneticFuture.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/DateTime_Object.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/DateTime_Corrector.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/DateTime_Differ.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/DateTime_Formatter.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/DateTime_Translate.class.php');

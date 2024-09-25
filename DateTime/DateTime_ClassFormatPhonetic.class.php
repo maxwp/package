@@ -65,7 +65,7 @@ class DateTime_ClassFormatPhonetic implements DateTime_IClassFormat {
     public function __toString() {
         $mode = $this->_mode;
 
-        $n = DateTime_Object::DiffDate('s', DateTime_Object::NOW(), DateTime_Object::FromTimeStamp($this->_timestamp));
+        $n = DateTime_Differ::DiffDate('s', DateTime_Object::NOW(), DateTime_Object::FromTimeStamp($this->_timestamp));
         if ($n < 0) {
             // дата в будущем
             if ($mode == 'datetime') {
@@ -79,7 +79,7 @@ class DateTime_ClassFormatPhonetic implements DateTime_IClassFormat {
             return DateTime_Translate::Get()->getTranslate('minute_ago');
         }
 
-        $n = DateTime_Object::DiffDate('n', DateTime_Object::NOW(), DateTime_Object::FromTimeStamp($this->_timestamp));
+        $n = DateTime_Differ::DiffDate('n', DateTime_Object::NOW(), DateTime_Object::FromTimeStamp($this->_timestamp));
         if ($n < 15) {
             return "$n ".DateTime_Translate::Get()->getTranslate('min_ago');
         }
@@ -104,7 +104,7 @@ class DateTime_ClassFormatPhonetic implements DateTime_IClassFormat {
             }
         }
 
-        $n = DateTime_Object::DiffDate('d', DateTime_Object::NOW(), DateTime_Object::FromTimeStamp($this->_timestamp));
+        $n = DateTime_Differ::DiffDate('d', DateTime_Object::NOW(), DateTime_Object::FromTimeStamp($this->_timestamp));
         if ($n <= 7) {
             if ($this->_language == 'ru') {
                 $day = date('N', $this->_timestamp);
