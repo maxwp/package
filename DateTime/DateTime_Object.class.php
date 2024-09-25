@@ -29,6 +29,8 @@
  */
 class DateTime_Object {
 
+    // @todo strtotime_ex
+
     public function __construct($timestamp) {
         $this->_timestamp = $timestamp;
         $this->_classformat = new DateTime_ClassFormatDefault();
@@ -159,6 +161,20 @@ class DateTime_Object {
 
     public function preview($format = 'Y-m-d H:i:s') {
         return date($format, $this->_timestamp);
+    }
+
+    /**
+     * @param mixed $datetime
+     * @return DateTime_Object
+     */
+    public static function Create($datetime = false) {
+        if (!$datetime) {
+            return new DateTime_Object(time());
+        } elseif (is_int($datetime) || is_float($datetime)) {
+            return new DateTime_Object($datetime);
+        } else {
+            return new DateTime_Object(strtotime($datetime));
+        }
     }
 
     /**
