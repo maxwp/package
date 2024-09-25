@@ -124,7 +124,7 @@ class Storage_Memcached implements Storage_IHandler {
      * @return Memcached|resource
      */
     public function getLink() {
-        return $this->getConnection()->getLinkID();
+        return $this->getConnection()->getLink();
     }
 
     /**

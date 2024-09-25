@@ -32,7 +32,7 @@ implements Connection_IConnection {
         $this->_link = new Redis();
         $this->_link->pconnect($this->_hostname, $this->_port);
 
-        $e = $this->getLinkID()->getLastError();
+        $e = $this->getLink()->getLastError();
         if ($e) {
             throw new Connection_Exception("Cannot connect to Redis: ".$e);
         }
@@ -49,7 +49,7 @@ implements Connection_IConnection {
      *
      * @return Redis
      */
-    public function getLinkID() {
+    public function getLink() {
         if (!$this->_link) {
             $this->connect();
         }

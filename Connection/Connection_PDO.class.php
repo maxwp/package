@@ -65,13 +65,13 @@ implements Connection_IConnection, Connection_IDatabaseAdapter {
      * @return PDOStatement
      */
     public function query($query) {
-        if (!$this->getLinkID()) {
+        if (!$this->getLink()) {
             $this->connect();
         }
 
         try {
             $time = microtime(true);
-            $result = $this->getLinkID()->prepare($query);
+            $result = $this->getLink()->prepare($query);
             $result->execute();
             $time = microtime(true) - $time;
 
@@ -97,7 +97,7 @@ implements Connection_IConnection, Connection_IDatabaseAdapter {
      *
      * @return PDO
      */
-    public function getLinkID() {
+    public function getLink() {
         return $this->_link;
     }
 
@@ -130,7 +130,7 @@ implements Connection_IConnection, Connection_IDatabaseAdapter {
         if ($force) {
             throw new Connection_Exception('PDO do not support force-transactions');
         }
-        $this->getLinkID()->beginTransaction();
+        $this->getLink()->beginTransaction();
     }
 
     /**
@@ -143,7 +143,7 @@ implements Connection_IConnection, Connection_IDatabaseAdapter {
         if ($force) {
             throw new Connection_Exception('PDO do not support force-transactions');
         }
-        $this->getLinkID()->commit();
+        $this->getLink()->commit();
     }
 
     /**
@@ -156,7 +156,7 @@ implements Connection_IConnection, Connection_IDatabaseAdapter {
         if ($force) {
             throw new Connection_Exception('PDO do not support force-transactions');
         }
-        $this->getLinkID()->rollBack();
+        $this->getLink()->rollBack();
     }
 
     /**
@@ -178,10 +178,10 @@ implements Connection_IConnection, Connection_IDatabaseAdapter {
      * @return string
      */
     public function escapeString($string) {
-        if (!$this->getLinkID()) {
+        if (!$this->getLink()) {
             $this->connect();
         }
-        return $this->getLinkID()->quote($string);
+        return $this->getLink()->quote($string);
     }
 
 }

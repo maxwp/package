@@ -31,6 +31,6 @@ interface Connection_IConnection {
      *
      * @return resource
      */
-    public function getLinkID();
+    public function getLink();
 
 }

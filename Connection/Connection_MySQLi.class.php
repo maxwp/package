@@ -43,7 +43,7 @@ implements Connection_IDatabaseAdapter {
             $this->_port
         );
 
-        $e = $this->getLinkID()->connect_error;
+        $e = $this->getLink()->connect_error;
         if ($e) {
             throw new Connection_Exception("Cannot connect to database $this->_database@$this->_hostname: ".$e);
         }
@@ -65,7 +65,7 @@ implements Connection_IDatabaseAdapter {
      * @return resource
      */
     public function query($query) {
-        if (!$this->getLinkID()) {
+        if (!$this->getLink()) {
             $this->connect();
         }
 
@@ -79,9 +79,9 @@ implements Connection_IDatabaseAdapter {
             $this->query('START TRANSACTION');
         }
 
-        $result = $this->getLinkID()->query($query);
+        $result = $this->getLink()->query($query);
 
-        $e = $this->getLinkID()->error;
+        $e = $this->getLink()->error;
         if ($e) {
             if (substr_count($e, 'MySQL server has gone away')) {
                 // пауза 1 секунду
@@ -111,7 +111,7 @@ implements Connection_IDatabaseAdapter {
      *
      * @return mysqli
      */
-    public function getLinkID() {
+    public function getLink() {
         return $this->_link;
     }
 
@@ -233,18 +233,18 @@ implements Connection_IDatabaseAdapter {
             return $string;
         }
 
-        if (!$this->getLinkID()) {
+        if (!$this->getLink()) {
             $this->connect();
         }
-        return @mysqli_real_escape_string($this->getLinkID(), $string);
+        return @mysqli_real_escape_string($this->getLink(), $string);
     }
 
     public function getLastInsertID() {
-        return $this->getLinkID()->insert_id;
+        return $this->getLink()->insert_id;
     }
 
     public function getAffectedRows() {
-        return $this->getLinkID()->affected_rows;
+        return $this->getLink()->affected_rows;
     }
 
     private $_hostname;

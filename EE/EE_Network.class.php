@@ -15,7 +15,7 @@ class EE_Network {
         $requestArray['hash'] = $hash;
         $requestArray['timeout'] = $timeout;
 
-        $redis = $this->_connection->getLinkID();
+        $redis = $this->_connection->getLink();
 
         $redis->publish($channel, json_encode($requestArray));
 

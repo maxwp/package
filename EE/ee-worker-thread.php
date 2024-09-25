@@ -12,7 +12,7 @@ include(__DIR__ . '/../../eventic.config.php');
 
 // получаем соединение с redis
 // через обертку ConnectionManager'a из-за опций и pconnect'a
-$redis = Connection::Get('redis')->getLinkID();
+$redis = Connection::Get('redis')->getLink();
 
 // вечный цикл с паузами
 // для обработки Eventic Request-ов из redis

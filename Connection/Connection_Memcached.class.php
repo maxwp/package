@@ -49,7 +49,7 @@ implements Connection_IConnection {
      *
      * @return Memcached
      */
-    public function getLinkID() {
+    public function getLink() {
         if (!$this->_link) {
             $this->connect();
         }

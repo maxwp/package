@@ -53,12 +53,12 @@ implements Connection_IDatabaseAdapter {
         $s .= "password={$this->_password}";
 
         if ($this->_permanent) {
-            $this->_linkID = pg_pconnect($s);
+            $this->_link = pg_pconnect($s);
         } else {
-            $this->_linkID = pg_connect($s);
+            $this->_link = pg_connect($s);
         }
 
-        if (pg_connection_status($this->_linkID) == PGSQL_CONNECTION_BAD) {
+        if (pg_connection_status($this->_link) == PGSQL_CONNECTION_BAD) {
             throw new Connection_Exception("Cannot connect to PgSQL-database");
         }
 
@@ -76,12 +76,12 @@ implements Connection_IDatabaseAdapter {
      * @return resource
      */
     public function query($query) {
-        if (!$this->getLinkID()) {
+        if (!$this->getLink()) {
             $this->connect();
         }
 
         $time = microtime(true);
-        $result = @pg_query($this->getLinkID(), $query);
+        $result = @pg_query($this->getLink(), $query);
         $time = microtime(true) - $time;
 
         if (PackageLoader::Get()->getMode('debug')) {
@@ -98,7 +98,7 @@ implements Connection_IDatabaseAdapter {
             $this->_queryStat[] = $statArray;
         }
 
-        if (!$result && $e = pg_last_error($this->getLinkID())) {
+        if (!$result && $e = pg_last_error($this->getLink())) {
             $ex = new Connection_Exception($e);
             $ex->setQuery($query);
             throw $ex;
@@ -108,13 +108,13 @@ implements Connection_IDatabaseAdapter {
     }
 
     public function disconnect() {
-        if ($this->getLinkID()) {
-            pg_close($this->getLinkID());
+        if ($this->getLink()) {
+            pg_close($this->getLink());
         }
     }
 
-    public function getLinkID() {
-        return $this->_linkID;
+    public function getLink() {
+        return $this->_link;
     }
 
     public function __destruct() {
@@ -205,10 +205,10 @@ implements Connection_IDatabaseAdapter {
      * @return string
      */
     public function escapeString($string) {
-        if (!$this->getLinkID()) {
+        if (!$this->getLink()) {
             $this->connect();
         }
-        return pg_escape_string($this->getLinkID(), $string);
+        return pg_escape_string($this->getLink(), $string);
     }
 
     public function getHostname() {
@@ -237,7 +237,7 @@ implements Connection_IDatabaseAdapter {
 
     private $_encoding;
 
-    private $_linkID = null;
+    private $_link = null;
 
     private $_permanent;
 

@@ -24,7 +24,7 @@ class Connection_SocketUDP implements Connection_IConnection {
         socket_close($this->_socket);
     }
 
-    public function getLinkID() {
+    public function getLink() {
         return $this->_socket;
     }
 
