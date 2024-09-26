@@ -31,8 +31,10 @@ class Storage_Shmop implements Storage_IHandler {
         $memory = $this->_getMemory($key);
 
         sem_acquire($sem);
+        //$sem->acquire();
         shmop_write($memory, $packed, 0);
         sem_release($sem);
+        //$sem->release();
     }
 
     public function get($key) {
@@ -61,7 +63,7 @@ class Storage_Shmop implements Storage_IHandler {
             return $this->_memoryArray[$key];
         }
 
-        $ipc = $this->_generateKeyIPC($key);
+        $ipc = $this->_generateIPCAddress($key);
 
         $this->_memoryArray[$key] = shmop_open(
             $ipc,
@@ -78,23 +80,28 @@ class Storage_Shmop implements Storage_IHandler {
             return $this->_semaphoreArray[$key];
         }
 
-        $ipc = $this->_generateKeyIPC($key);
+        $ipc = $this->_generateIPCAddress($key);
 
         $this->_semaphoreArray[$key] = sem_get(
             $ipc,
             1
         );
+        //$this->_semaphoreArray[$key] = new IPC_Semaphore($ipc);
 
         return $this->_semaphoreArray[$key];
     }
 
-    private function _generateKeyIPC($key) {
-        if (!$key) {
-            throw new Storage_Exception("Key not set");
-        }
+    /*private function _generateIPCAddress($key) {
+        return IPC_Addressing::Get()->generateIPCAddressByKey($key.$this->_blockSize);
+    }*/
 
+    private function _generateIPCAddress($key) {
         if (isset($this->_keyArray[$key])) {
             return $this->_keyArray[$key];
+        }
+
+        if (!$key) {
+            throw new Storage_Exception("Key not set");
         }
 
         $this->_keyArray[$key] = crc32($key.$this->_blockSize);
