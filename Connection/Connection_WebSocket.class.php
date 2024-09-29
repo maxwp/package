@@ -1,7 +1,5 @@
 <?php
-class WebSocket {
-
-    // @todo merge into Connection_xxx?
+class Connection_WebSocket {
 
     public function __construct($host, $port, $path) {
         $this->_host = $host;
@@ -56,7 +54,7 @@ class WebSocket {
 
         $this->_stream = stream_socket_client("ssl://{$this->_host}:{$this->_port}", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context);
         if (!$this->_stream) {
-            throw new WebSocket_Exception("Failed to connect to {$this->_host}:{$this->_port} - $errstr ($errno)");
+            throw new Connection_Exception("Failed to connect to {$this->_host}:{$this->_port} - $errstr ($errno)");
         }
 
         $key = base64_encode(random_bytes(16)); // Уникальный ключ для Handshake
@@ -71,7 +69,7 @@ class WebSocket {
 
         $response = $this->read(1500, false);
         if (strpos($response, '101 Switching Protocols') === false) {
-            throw new WebSocket_Exception("Handshake error: ".$response);
+            throw new Connection_Exception("Handshake error: ".$response);
         }
     }
 
