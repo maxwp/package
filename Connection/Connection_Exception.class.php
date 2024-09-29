@@ -27,10 +27,6 @@ class Connection_Exception extends Exception {
     }
 
     public function __toString() {
-        if (class_exists('DebugException')) {
-            return DebugException::Display($this, __CLASS__);
-        }
-
         $query = $this->getQuery();
         $r = '';
         if ($query) {

@@ -28,12 +28,4 @@ class TextProcessor_Exception extends Exception {
         parent::__construct($message, $code);
     }
 
-    public function __toString() {
-        if (class_exists('DebugException')) {
-            return DebugException::Display($this, __CLASS__);
-        }
-
-        return parent::__toString();
-    }
-
 }

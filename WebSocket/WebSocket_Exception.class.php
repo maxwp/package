@@ -14,7 +14,7 @@
  * @copyright WebProduction
  * @package Storage
  */
-class Storage_Exception extends Exception {
+class WebSocket_Exception extends Exception {
 
     public function __construct($message = '', $code = 0) {
         parent::__construct($message, $code);
