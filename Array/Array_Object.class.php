@@ -1,6 +1,13 @@
 <?php
 class Array_Object extends ArrayObject {
 
+    public function __construct($a = array()) {
+        if (!$a) {
+            $a = [];
+        }
+        parent::__construct($a);
+    }
+
     public function max() {
         $max = false;
         foreach ($this as $x) {
