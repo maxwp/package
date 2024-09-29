@@ -1,5 +1,5 @@
 <?php
-class Connection_WebSocket {
+class Connection_WebSocket implements Connection_IConnection {
 
     public function __construct($host, $port, $path) {
         $this->_host = $host;
