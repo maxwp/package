@@ -18,7 +18,6 @@ class Connection_WebSocket implements Connection_IConnection {
             // auto ping frame
             if ($time - $this->_tsPing >= 5) {
                 $this->_sendPingFrame($this->_stream);
-                //print "ping\n";
                 $this->_tsPing = $time;
             }
 
@@ -27,16 +26,34 @@ class Connection_WebSocket implements Connection_IConnection {
             $except = null;
 
             $num_changed_streams = stream_select($read, $write, $except, 0, $this->_streamSelectTimeout);
-            $msg = false;
+            $msgArray = false;
             if ($num_changed_streams > 0) {
-                $msg = $this->read();
+                $msgArray = $this->read();
             }
 
-            $result = $callback($msg);
+            if ($msgArray) {
+                foreach ($msgArray as $msg) {
+                    if ($msg == 'pong') {
+                        continue;
+                    }
 
-            // если что-то вернули - на выход
-            if ($result) {
-                return $result;
+                    if ($msg == 'closed') {
+                        return false;
+                    }
+
+                    $result = $callback($msg);
+
+                    // если что-то вернули - на выход
+                    if ($result) {
+                        return $result;
+                    }
+                }
+            } else {
+                $result = $callback(false);
+                // если что-то вернули - на выход
+                if ($result) {
+                    return $result;
+                }
             }
         }
     }
@@ -65,29 +82,115 @@ class Connection_WebSocket implements Connection_IConnection {
             . "Sec-WebSocket-Key: $key\r\n"
             . "Sec-WebSocket-Version: 13\r\n"
             . "\r\n";
-        $this->write($headers, false);
+        fwrite($this->_stream, $headers);
 
-        $response = $this->read(1500, false);
+        $response = fread($this->_stream, 1500);
         if (strpos($response, '101 Switching Protocols') === false) {
             throw new Connection_Exception("Handshake error: ".$response);
         }
     }
 
-    public function read($maxLength = 2000, $decode = true) {
+    public function read($maxLength = 2000) {
         $data = fread($this->_stream, $maxLength);
-
-        if ($decode && $data != 'pong') {
-            $data = $this->_decodeWebSocketMessage($data);
+        if ($data === false) {
+            return false;
         }
 
-        return $data;
+        $this->_buffer .= $data;
+        return $this->_decodeMessageArray();
     }
 
-    public function write($data, $encode = true) {
-        if ($encode) {
-            $data = $this->_encodeWebSocketMessage($data);
+    private function _decodeMessageArray() {
+        $messages = [];
+        $offset = 0;
+        $bufferLength = strlen($this->_buffer);
+
+        while ($offset < $bufferLength) {
+            // Минимальный заголовок WebSocket — 2 байта
+            if ($bufferLength - $offset < 2) {
+                break;  // Недостаточно данных для заголовка
+            }
+
+            // Первый байт заголовка
+            $firstByte = ord($this->_buffer[$offset]);
+            $secondByte = ord($this->_buffer[$offset + 1]);
+
+            $opcode = $firstByte & 0x0F;  // Определяем тип фрейма
+            $isMasked = ($secondByte & 0b10000000) !== 0;  // Проверяем, замаскировано ли сообщение
+            $payloadLength = $secondByte & 0b01111111;  // Длина полезной нагрузки
+            $maskOffset = 2;
+
+            // Обработка фреймов закрытия и pong
+            if ($opcode === 0x8) { // Фрейм закрытия соединения
+                $messages[] = 'closed';
+                $offset += 2;  // Перемещаем указатель вперед, так как у фрейма закрытия может быть полезная нагрузка
+                continue;
+            } elseif ($opcode === 0xA) { // Фрейм pong
+                $messages[] = 'pong';
+                $offset += 2;  // Перемещаем указатель вперед, потому что у pong обычно нет полезной нагрузки
+                continue;
+            }
+
+            // Обработка разных значений длины полезной нагрузки
+            if ($payloadLength === 126) {
+                // Если длина указана как 126, то следующие 2 байта содержат фактическую длину
+                if ($bufferLength - $offset < 4) {
+                    break;  // Недостаточно данных для заголовка и длины
+                }
+                $payloadLength = unpack('n', substr($this->_buffer, $offset + 2, 2))[1];  // Читаем 16-битную длину
+                $maskOffset = 4;
+            } elseif ($payloadLength === 127) {
+                // Если длина указана как 127, то следующие 8 байт содержат фактическую длину
+                if ($bufferLength - $offset < 10) {
+                    break;  // Недостаточно данных для заголовка и длины
+                }
+                $payloadLength = unpack('J', substr($this->_buffer, $offset + 2, 8))[1];  // Читаем 64-битную длину
+                $maskOffset = 10;
+            }
+
+            // Проверка длины полезной нагрузки меньше 126 байт (обычный случай)
+            // Здесь payloadLength уже содержит длину полезной нагрузки (до 125 байт)
+
+            // Полная длина фрейма (заголовок + маска + полезная нагрузка)
+            $frameLength = $maskOffset + ($isMasked ? 4 : 0) + $payloadLength;
+
+            // Проверяем, хватает ли данных для полного фрейма
+            if ($bufferLength - $offset < $frameLength) {
+                break;  // Данных недостаточно, ждем больше
+            }
+
+            // Читаем маску (если сообщение замаскировано)
+            $mask = '';
+            if ($isMasked) {
+                $mask = substr($this->_buffer, $offset + $maskOffset, 4);
+            }
+
+            // Читаем полезную нагрузку
+            $payload = substr($this->_buffer, $offset + $maskOffset + ($isMasked ? 4 : 0), $payloadLength);
+
+            // Расшифровываем замаскированное сообщение (если маскировано)
+            if ($isMasked) {
+                $unmaskedPayload = '';
+                for ($i = 0; $i < $payloadLength; $i++) {
+                    $unmaskedPayload .= $payload[$i] ^ $mask[$i % 4];
+                }
+                $messages[] = $unmaskedPayload;
+            } else {
+                $messages[] = $payload;
+            }
+
+            // Сдвигаем указатель на следующий фрейм
+            $offset += $frameLength;
         }
 
+        // Удаляем обработанные данные из буфера
+        $this->_buffer = substr($this->_buffer, $offset);
+
+        return $messages;
+    }
+
+    public function write($data) {
+        $data = $this->_encodeWebSocketMessage($data);
         fwrite($this->_stream, $data);
     }
 
@@ -105,57 +208,6 @@ class Connection_WebSocket implements Connection_IConnection {
         }
 
         return $this->_stream;
-    }
-
-    /**
-     * Функция для декодирования сообщений WebSocket с проверкой типа фрейма
-     *
-     * @param $data
-     * @return string
-     */
-    private function _decodeWebSocketMessage($data) {
-        $firstByte = ord($data[0]);
-        $secondByte = ord($data[1]);
-
-        $opcode = $firstByte & 0x0F; // Определяем тип фрейма
-        $isMasked = ($secondByte & 0b10000000) !== 0; // Проверяем, замаскировано ли сообщение
-        $payloadLength = $secondByte & 0b01111111; // Длина полезной нагрузки
-
-        if ($opcode === 0x8) { // Если это фрейм закрытия соединения
-            return 'closed';
-        } elseif ($opcode === 0xA) { // Если это фрейм pong
-            return 'pong';
-        }
-
-        if ($payloadLength === 126) {
-            $maskOffset = 4;
-            $payloadLength = unpack('n', substr($data, 2, 2))[1];
-        } elseif ($payloadLength === 127) {
-            $maskOffset = 10;
-            $payloadLength = unpack('J', substr($data, 2, 8))[1]; // 64-битная длина
-        } else {
-            $maskOffset = 2;
-        }
-
-        // Читаем маску
-        $mask = '';
-        if ($isMasked) {
-            $mask = substr($data, $maskOffset, 4);
-        }
-
-        // Читаем полезную нагрузку
-        $payload = substr($data, $maskOffset + ($isMasked ? 4 : 0), $payloadLength);
-
-        // Расшифровываем замаскированное сообщение
-        if ($isMasked) {
-            $unmaskedPayload = '';
-            for ($i = 0; $i < strlen($payload); $i++) {
-                $unmaskedPayload .= $payload[$i] ^ $mask[$i % 4];
-            }
-            return $unmaskedPayload;
-        }
-
-        return $payload;
     }
 
     private function _sendPingFrame($socket) {
@@ -222,5 +274,7 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_stream;
     private $_streamSelectTimeout = 500000; // 500 ms
     private $_tsPing = 0;
+
+    private $_buffer = '';
 
 }
