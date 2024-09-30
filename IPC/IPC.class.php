@@ -15,29 +15,17 @@ class IPC {
         return self::$_SemaphoreArray[$key];
     }
 
+    public static function GetMemory($key, $blockSize = 128) {
+        if (isset(self::$_MemoryArray[$key])) {
+            return self::$_MemoryArray[$key];
+        }
+
+        $ipcAddress = IPC_Addressing::Get()->generateIPCAddressByKey($key.$blockSize);
+        self::$_MemoryArray[$key] = new IPC_Memory($ipcAddress, $blockSize);
+        return self::$_MemoryArray[$key];
+    }
+
     private static $_SemaphoreArray = [];
-
-    /*public function getSemaphore($key) {
-        if (isset($this->_semaphoreArray[$key])) {
-            return $this->_semaphoreArray[$key];
-        }
-
-        $ipcAddress = IPC_Addressing::Get()->generateIPCAddressByKey($key);
-        $this->_semaphoreArray[$key] = new IPC_Semaphore($ipcAddress);
-        return $this->_semaphoreArray[$key];
-    }
-
-    private $_semaphoreArray = [];
-
-    public static function Get() {
-        if (!self::$_Instance) {
-            $classname = __CLASS__;
-            self::$_Instance = new $classname();
-        }
-
-        return self::$_Instance;
-    }
-
-    private static $_Instance;*/
+    private static $_MemoryArray = [];
 
 }

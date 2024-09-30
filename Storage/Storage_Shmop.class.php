@@ -25,27 +25,21 @@ class Storage_Shmop implements Storage_IHandler {
             throw new Storage_Exception("No TTL for shmop");
         }
 
-        $packed = pack('L', strlen($value)) . $value;
+        $sem = IPC::GetSemaphore($key);
+        $memory = IPC::GetMemory($key, $this->_blockSize);
 
-        $sem = $this->_getSemaphore($key);
-        $memory = $this->_getMemory($key);
-
-        sem_acquire($sem);
-        //$sem->acquire();
-        shmop_write($memory, $packed, 0);
-        sem_release($sem);
-        //$sem->release();
+        $sem->acquire();
+        $memory->setString($value);
+        $sem->release();
     }
 
     public function get($key) {
-        $sem = $this->_getSemaphore($key);
-        $memory = $this->_getMemory($key);
+        $sem = IPC::GetSemaphore($key);
+        $memory = IPC::GetMemory($key, $this->_blockSize);
 
-        sem_acquire($sem);
-        $packed_length = shmop_read($memory, 0, 4);
-        $length = unpack('L', $packed_length)[1];
-        $string = shmop_read($memory, 4, $length);
-        sem_release($sem);
+        $sem->acquire();
+        $string = $memory->getString();
+        $sem->release();
 
         return $string;
     }
@@ -58,63 +52,6 @@ class Storage_Shmop implements Storage_IHandler {
         // @todo
     }
 
-    private function _getMemory($key) {
-        if (isset($this->_memoryArray[$key])) {
-            return $this->_memoryArray[$key];
-        }
-
-        $ipc = $this->_generateIPCAddress($key);
-
-        $this->_memoryArray[$key] = shmop_open(
-            $ipc,
-            "c",
-            0644,
-            $this->_blockSize
-        );
-
-        return $this->_memoryArray[$key];
-    }
-
-    private function _getSemaphore($key) {
-        if (isset($this->_semaphoreArray[$key])) {
-            return $this->_semaphoreArray[$key];
-        }
-
-        $ipc = $this->_generateIPCAddress($key);
-
-        $this->_semaphoreArray[$key] = sem_get(
-            $ipc,
-            1
-        );
-        //$this->_semaphoreArray[$key] = new IPC_Semaphore($ipc);
-
-        return $this->_semaphoreArray[$key];
-    }
-
-    /*private function _generateIPCAddress($key) {
-        return IPC_Addressing::Get()->generateIPCAddressByKey($key.$this->_blockSize);
-    }*/
-
-    private function _generateIPCAddress($key) {
-        if (isset($this->_keyArray[$key])) {
-            return $this->_keyArray[$key];
-        }
-
-        if (!$key) {
-            throw new Storage_Exception("Key not set");
-        }
-
-        $this->_keyArray[$key] = crc32($key.$this->_blockSize);
-
-        return $this->_keyArray[$key];
-    }
-
-    private $_keyArray = [];
-
-    private $_semaphoreArray = [];
-
-    private $_blockSize;
-
-    private $_memoryArray = [];
+    private $_blockSize = 128;
 
 }
