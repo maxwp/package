@@ -22,6 +22,16 @@ class IPC_Memory {
         shmop_write($this->_memory, $packed, 0);
     }
 
+    public function getInt64u() {
+        $packed = shmop_read($this->_memory, 0, 8);
+        return unpack('Q', $packed)[1];
+    }
+
+    public function setInt64u($value) {
+        $packed = pack('Q', $value);
+        shmop_write($this->_memory, $packed, 0);
+    }
+
     private $_memory;
 
 }
