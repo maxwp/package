@@ -19,6 +19,16 @@ class Connection_WebSocket implements Connection_IConnection {
             if ($time - $this->_tsPing >= 5) {
                 $this->_sendPingFrame($this->_stream);
                 $this->_tsPing = $time;
+                // дедлайн до которого должен прийти pong
+                $this->_tsPong = $time + $this->_pingPongDeadline;
+            }
+
+            if ($this->_tsPong > 0 && $time > $this->_tsPong) {
+                // если задан дедлайн pong,
+                // и время уже больше этого дедлайна, то это означает что pong не пришет
+                // и мы идем на выход
+                print "no pong - exit\n";
+                return true;
             }
 
             $read = [$this->_stream];
@@ -34,11 +44,13 @@ class Connection_WebSocket implements Connection_IConnection {
             if ($msgArray) {
                 foreach ($msgArray as $msg) {
                     if ($msg == 'pong') {
+                        // запоминаем когда пришел pong
+                        $this->_tsPong = 0;
                         continue;
                     }
 
                     if ($msg == 'closed') {
-                        return false;
+                        return true;
                     }
 
                     $result = $callback($msg);
@@ -274,6 +286,8 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_stream;
     private $_streamSelectTimeout = 500000; // 500 ms
     private $_tsPing = 0;
+    private $_tsPong = 0;
+    private $_pingPongDeadline = 3;
 
     private $_buffer = '';
 
