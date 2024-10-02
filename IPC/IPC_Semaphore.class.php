@@ -8,8 +8,8 @@ class IPC_Semaphore {
         );
     }
 
-    public function acquire() {
-        return sem_acquire($this->_semaphore);
+    public function acquire($nonBlocking = false) {
+        return sem_acquire($this->_semaphore, $nonBlocking);
     }
 
     public function release() {
