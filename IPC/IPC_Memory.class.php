@@ -22,6 +22,16 @@ class IPC_Memory {
         shmop_write($this->_memory, $packed, 0);
     }
 
+    public function getBool() {
+        $packed = shmop_read($this->_memory, 0, 1);
+        return (bool) unpack('c', $packed)[1];
+    }
+
+    public function setBool($value) {
+        $packed = pack('c', $value ? 1 : 0);
+        shmop_write($this->_memory, $packed, 0);
+    }
+
     public function getInt64u() {
         $packed = shmop_read($this->_memory, 0, 8);
         return unpack('Q', $packed)[1];
