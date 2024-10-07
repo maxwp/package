@@ -44,6 +44,19 @@ class Storage_Shmop implements Storage_IHandler {
         return $string;
     }
 
+    public function incr($key, $value) {
+        $sem = IPC::GetSemaphore($key);
+        $memory = IPC::GetMemory($key, $this->_blockSize);
+
+        $sem->acquire();
+        $string = (float) $memory->getString();
+        $newValue = $string + $value;
+        $memory->setString($newValue.'');
+        $sem->release();
+
+        return $newValue;
+    }
+
     public function remove($key) {
         // @todo
     }
