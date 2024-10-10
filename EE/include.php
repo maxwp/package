@@ -24,6 +24,7 @@ ClassLoader::Get()->registerClass($path.'EE_RequestCLI.class.php');
 ClassLoader::Get()->registerClass($path.'EE_ResponseCLI.class.php');
 ClassLoader::Get()->registerClass($path.'EE_RoutingCLI.class.php');
 ClassLoader::Get()->registerClass($path.'EE_AContent.class.php');
+ClassLoader::Get()->registerClass($path.'EE_AContentCli.class.php');
 ClassLoader::Get()->registerClass($path.'EE_AContentSmarty.class.php');
 ClassLoader::Get()->registerClass($path.'EE_Network.class.php');
 ClassLoader::Get()->registerClass($path.'EE_RequestRemote.class.php');
