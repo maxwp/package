@@ -341,17 +341,15 @@ class Smarty {
             }
         }
 
-        $md5 = $filename;
-
-        if (isset($this->_fileContentArray[$md5])) {
-            return $this->_fileContentArray[$md5];
+        if (isset($this->_fileContentArray[$filename])) {
+            return $this->_fileContentArray[$filename];
         }
 
         $code = file_get_contents($filename);
         if (substr_count($code, '<?php')) {
             $code = ltrim($code, '<?php'); // @todo: бывают жесткие глюки
         }
-        $this->_fileContentArray[$md5] = $code;
+        $this->_fileContentArray[$filename] = $code;
 
         return $code;
     }

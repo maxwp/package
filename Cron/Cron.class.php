@@ -33,7 +33,7 @@ class Cron {
 
             // строим имя pid'a если его нет
             if (!$pid) {
-                $pid = md5($command);
+                $pid = hash('fnv1a64', $command);
             }
             if (!substr_count($pid, '.pid')) {
                 $pid .= '.pid';

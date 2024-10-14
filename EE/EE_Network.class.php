@@ -6,7 +6,7 @@ class EE_Network {
     }
 
     public function execute($channel, $content, $argumentArray, $timeout = 10) {
-        $hash = md5($channel.$content.microtime(true).rand());
+        $hash = hash('murmur3f', $channel.$content.microtime(true).rand());
 
         $requestArray = [];
         $requestArray['content'] = $content;

@@ -67,7 +67,7 @@ class ClassLoader {
      */
     public function registerDirectory($dir, $allowCache = false) {
         if ($allowCache > 0) {
-            $cacheFile = dirname(__FILE__).'/cache/'.md5($dir);
+            $cacheFile = dirname(__FILE__).'/cache/'.hash('fnv1a64', $dir);
             $mtime = @filemtime($cacheFile);
             if ($mtime && $mtime >= time() - $allowCache) {
                 $a = file($cacheFile);
@@ -89,7 +89,7 @@ class ClassLoader {
 
         // записываем cache
         if ($allowCache > 0) {
-            $cacheFile = dirname(__FILE__).'/cache/'.md5($dir);
+            $cacheFile = dirname(__FILE__).'/cache/'.hash('fnv1a64', $dir);
             file_put_contents($cacheFile, implode("\n", $a), LOCK_EX);
         }
     }

@@ -22,7 +22,7 @@ $request['cookie'] = $_COOKIE;
 $request['timeout'] = $timeout;
 
 // хеш запроса, нужно чтобы был уникален
-$hash = md5(microtime(true).serialize($request));
+$hash = hash('murmur3f', microtime(true).serialize($request));
 $request['hash'] = $hash;
 
 // отправляем в redis запрос

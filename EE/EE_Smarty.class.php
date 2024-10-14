@@ -31,7 +31,7 @@ class EE_Smarty {
      * @return string
      */
     public function fetchString($html, $assignArray, $ex = false) {
-        $file = $this->getComplileDirectory().md5($html).'.tpl';
+        $file = $this->getComplileDirectory().hash('murmur3f', $html).'.tpl';
         file_put_contents($file, $html, LOCK_EX);
 
         $smarty = $this->getSmarty();
