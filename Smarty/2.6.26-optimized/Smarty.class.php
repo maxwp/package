@@ -294,33 +294,42 @@ class Smarty {
 
         $code = $this->_getFileContentFunction($resource_name);
 
-
+        // if empty html code
         if (!$code) {
             return $code;
         }
 
+        // if no smarty
         if (!substr_count($code, $this->left_delimiter)) {
             return $code;
         }
 
         $_smarty_old_error_level = error_reporting(error_reporting() & ~E_NOTICE);
 
-        $_smarty_compile_path = $this->_get_auto_filename(
-        $this->compile_dir,
-        $resource_name).'.php';
+        $resource_compiled_path = $this->_get_auto_filename($this->compile_dir, $resource_name).'.php';
 
         ob_start();
-        if ($this->_is_compiled($resource_name, $_smarty_compile_path)
-        || $this->_compile_resource($resource_name, $_smarty_compile_path)) {
-            //include($_smarty_compile_path); // @todo
-            $code = $this->_getFileContentFunction($_smarty_compile_path);
+
+        // есть скомпилированное?
+        $ok = $this->_is_compiled($resource_name, $resource_compiled_path);
+
+        // если нет - пробуем скомпилировать
+        if (!$ok) {
+            $ok = $this->_compile_resource($resource_name, $resource_compiled_path);
+        }
+
+        // есть что вызывать?
+        if ($ok) {
+            $code = $this->_getFileContentFunction($resource_compiled_path);
             eval($code);
         }
+
         $_smarty_results = ob_get_contents();
         ob_end_clean();
 
         error_reporting($_smarty_old_error_level);
 
+        // @todo wtf
         if ($this->_exceptionCode && $this->_exception) {
             throw new ServiceUtils_Exception('error_smarty');
         }
@@ -330,31 +339,21 @@ class Smarty {
 
 
     private function _getFileContentFunction($filename) {
-        // файл может быть в кеше memcached
-        // @todo wtf shit
-        if (class_exists('Storage')) {
-            try {
-                $content = Storage::Get('shop-cache')->getData('smarty-'.str_replace('//', '/', $filename));
-                return $content;
-            } catch (Exception $storageEx) {
-
-            }
-        }
-
         if (isset($this->_fileContentArray[$filename])) {
             return $this->_fileContentArray[$filename];
         }
 
         $code = file_get_contents($filename);
-        if (substr_count($code, '<?php')) {
-            $code = ltrim($code, '<?php'); // @todo: бывают жесткие глюки
+        if (str_starts_with($code, '<?php')) {
+            $code = substr($code, 5);
         }
+
         $this->_fileContentArray[$filename] = $code;
 
         return $code;
     }
 
-    private $_fileContentArray = array();
+    private $_fileContentArray = [];
 
     /**
      * get filepath of requested plugin
@@ -378,23 +377,29 @@ class Smarty {
      * @return boolean
      */
     private function _is_compiled($resource_name, $compile_path) {
-        if (isset($this->_is_compliled_Array[$resource_name])) {
-            return $this->_is_compliled_Array[$resource_name];
+        if (isset($this->_isСompliledArray[$resource_name])) {
+            return $this->_isСompliledArray[$resource_name];
         }
 
-        $m1 = @filemtime($resource_name);
         $m2 = @filemtime($compile_path);
 
+        // если скомпилированного файла нет - то нихуя дальше не проверяем,
+        if ($m2) {
+            $m1 = false;
+        } else {
+            $m1 = @filemtime($resource_name);
+        }
+
         if ($m1 === false || $m2 === false || $m1 >= $m2) {
-            $this->_is_compliled_Array[$resource_name] = false;
+            $this->_isСompliledArray[$resource_name] = false;
             return false;
         }
 
-        $this->_is_compliled_Array[$resource_name] = true;
+        $this->_isСompliledArray[$resource_name] = true;
         return true;
     }
 
-    private $_is_compliled_Array = array();
+    private $_isСompliledArray = [];
 
     /**
      * Compile the template
@@ -405,14 +410,14 @@ class Smarty {
      * @return boolean
      */
     private function _compile_resource($resource_name, $compile_path) {
-        $_source_content = file_get_contents($resource_name); // @todo
+        $_source_content = file_get_contents($resource_name);
 
         $_compiled_content = $this->_compile_source($resource_name, $_source_content);
         if ($_compiled_content) {
             file_put_contents(
-            $compile_path,
-            $_compiled_content,
-            LOCK_EX
+                $compile_path,
+                $_compiled_content,
+                LOCK_EX
             );
 
             return true;
@@ -470,24 +475,9 @@ class Smarty {
      *
      * @param string $auto_base
      * @param string $auto_source
-     * @param string $auto_id
-     * @return string
-     * @staticvar string|null
-     * @staticvar string|null
      */
-    private function _get_auto_filename($auto_base, $auto_source/* = null, $auto_id = null*/) {
-        $_compile_dir_sep =  '^';
-        $_return = $auto_base . DIRECTORY_SEPARATOR;
-
-        $_filename = urlencode(basename($auto_source));
-        $_crc32 = sprintf('%08X', crc32($auto_source));
-        // prepend %% to avoid name conflicts with
-        // with $params['auto_id'] names
-        $_crc32 = substr($_crc32, 0, 2) . $_compile_dir_sep .
-        substr($_crc32, 0, 3) . $_compile_dir_sep . $_crc32;
-        $_return .= '%%' . $_crc32 . '%%' . $_filename;
-
-        return $_return;
+    private function _get_auto_filename($auto_base, $auto_source) {
+        return $auto_base . DIRECTORY_SEPARATOR.hash("fnv1a64", $auto_source).'.php';
     }
 
     /**

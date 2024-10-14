@@ -303,7 +303,7 @@ class Smarty_Compiler extends Smarty {
         }
         $compiled_content = '';
 
-        $tag_guard = '%%%SMARTYOTG' . md5(uniqid(rand(), true)) . '%%%';
+        $tag_guard = '%%%SMARTYOTG' . hash('murmur3f', microtime(true) + rand()) . '%%%';
 
         /* Interleave the compiled contents and text blocks to get the final result. */
         for ($i = 0, $for_max = count($compiled_tags); $i < $for_max; $i++) {
@@ -2044,7 +2044,7 @@ class Smarty_Compiler extends Smarty {
             return '';
         }
         if (!isset($this->_cache_serial)) {
-            $this->_cache_serial = md5(uniqid('Smarty'));
+            $this->_cache_serial = hash('murmur3f', microtime(true) + rand());
         }
         $_ret = 'if ($this->caching && !$this->_cache_including): echo \'{nocache:'
             . $this->_cache_serial . '#' . $this->_nocache_count
