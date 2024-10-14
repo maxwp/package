@@ -306,7 +306,7 @@ class Smarty {
 
         $_smarty_old_error_level = error_reporting(error_reporting() & ~E_NOTICE);
 
-        $resource_compiled_path = $this->_get_auto_filename($this->compile_dir, $resource_name).'.php';
+        $resource_compiled_path = $this->_get_auto_filename($this->compile_dir, $resource_name);
 
         ob_start();
 
@@ -384,7 +384,7 @@ class Smarty {
         $m2 = @filemtime($compile_path);
 
         // если скомпилированного файла нет - то нихуя дальше не проверяем,
-        if ($m2) {
+        if (!$m2) {
             $m1 = false;
         } else {
             $m1 = @filemtime($resource_name);
