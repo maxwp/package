@@ -377,8 +377,8 @@ class Smarty {
      * @return boolean
      */
     private function _is_compiled($resource_name, $compile_path) {
-        if (isset($this->_isСompliledArray[$resource_name])) {
-            return $this->_isСompliledArray[$resource_name];
+        if (isset($this->_isCompliledArray[$resource_name])) {
+            return $this->_isCompliledArray[$resource_name];
         }
 
         $m2 = @filemtime($compile_path);
@@ -391,15 +391,15 @@ class Smarty {
         }
 
         if ($m1 === false || $m2 === false || $m1 >= $m2) {
-            $this->_isСompliledArray[$resource_name] = false;
+            $this->_isCompliledArray[$resource_name] = false;
             return false;
         }
 
-        $this->_isСompliledArray[$resource_name] = true;
+        $this->_isCompliledArray[$resource_name] = true;
         return true;
     }
 
-    private $_isСompliledArray = [];
+    private $_isCompliledArray = [];
 
     /**
      * Compile the template
