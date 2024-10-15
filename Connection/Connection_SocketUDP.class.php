@@ -47,7 +47,7 @@ class Connection_SocketUDP implements Connection_IConnection {
         if ($result === false) {
             $message = socket_strerror(socket_last_error($this->getLink()));
             $this->disconnect();
-            throw new Connection_Exception($message);
+            throw new Connection_Exception($message.' port='.$port);
         }
 
         while (1) {
