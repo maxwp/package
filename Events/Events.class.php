@@ -71,6 +71,7 @@ class Events {
         }
 
         // если событие еще не ициниировано (new-clone)
+        // @todo тут надо исправить, потому что в SQLObject 1B постоянно дергается hasEvent, а событие может быть не иницирован
         if (!is_object($this->_eventArray[$name])) {
             // и если на него нет обработчиков
             if (empty($this->_observerArray[$name])) {
