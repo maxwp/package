@@ -153,6 +153,7 @@ abstract class EE_AContent implements EE_IContent {
         return $this->getValueArray();
     }
 
+    // @todo rename
     public function clear() {
         $this->_valueArray = [];
         $this->_argumentArray = [];
