@@ -89,7 +89,7 @@ class Storage {
     }
 
     /**
-     * @var array<Storage_IHandler>
+     * @var Storage_IHandler[] $_InstanceArray
      */
     private static $_InstanceArray = [];
 

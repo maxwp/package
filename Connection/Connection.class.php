@@ -60,7 +60,7 @@ class Connection {
     }
 
     /**
-     * @var array<Connection_IConnection>
+     * @var Connection_IConnection[] $_InstanceArray
      */
     private static $_InstanceArray = [];
 

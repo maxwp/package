@@ -185,7 +185,7 @@ class Events {
     /**
      * Кеш оригинальных Events_Event объектов, из которых мы будем клонировать.
      *
-     * @var array<Events_Event>
+     * @var Events_Event[] $_eventCloneArray
      */
     private $_eventCloneArray = [];
 
