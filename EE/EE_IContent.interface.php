@@ -11,4 +11,6 @@ interface EE_IContent {
 
     public function getValueArray();
 
+    public function reset();
+
 }

@@ -98,20 +98,6 @@ class EE_Response implements EE_IResponse {
         return $this->_headerArray;
     }
 
-    /**
-     * @deprecated
-     */
-    public function setBody($content) {
-        $this->setData($content);
-    }
-
-    /**
-     * @deprecated
-     */
-    public function getBody() {
-        return $this->getData();
-    }
-
     public function __construct() {
         // задаем идентификационный заголовок
         $this->setHeader('X-Powered-By', 'Eventic');

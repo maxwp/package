@@ -31,17 +31,20 @@ while (1) {
             $hash = $request['hash'];
 
             // создаем request
+            // @todo создавать конированием
             $eeRequest = new EE_Request($request['url'], $request['host'], $request['get'], $request['post'], $request['files'], $request['cookie']);
 
-            // получаем resoonce
-            $eeResponse = EE::Get()->execute($eeRequest);
+            // @todo создавать конированием
+            $eeResponse = new EE_Response();
 
-            $responseArray = array();
+            EE::Get()->execute($eeRequest, $eeResponse);
+
+            $responseArray = [];
             $responseArray['hash'] = $hash;
             $responseArray['code'] = $eeResponse->getCode();
             $responseArray['cookieArray'] = $eeResponse->getCookieArray();
             $responseArray['headerArray'] = $eeResponse->getHeaderArray();
-            $responseArray['body'] = $eeResponse->getBody();
+            $responseArray['body'] = $eeResponse->getData();
 
             $redis->lPush('eventic-response-'.$hash, json_encode($responseArray));
             $redis->expire('eventic-response-'.$hash, 5); // чтобы не забивалась память
@@ -49,7 +52,7 @@ while (1) {
             print "Response code ".$eeResponse->getCode()."\n";
 
             $t = microtime(true) - $t;
-            print "rount ts = $t\n";
+            print "round ts = $t\n";
         } catch (Exception $e) {
             print $e;
         }

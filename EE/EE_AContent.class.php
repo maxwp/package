@@ -70,6 +70,11 @@ abstract class EE_AContent implements EE_IContent {
         unset($this->_argumentArray[$key]);
     }
 
+
+    public function unsetArgumentArray() {
+        $this->_argumentArray = [];
+    }
+
     /**
      * Установить значение в контент.
      * Если secure - то автоматически делается htmlspecialchars
@@ -88,6 +93,14 @@ abstract class EE_AContent implements EE_IContent {
 
     public function setValueSecure($key, $value) {
         $this->setValue($key, htmlspecialchars($value));
+    }
+
+    public function unsetValue($key) {
+        unset($this->_valueArray[$key]);
+    }
+
+    public function unsetValueArray() {
+        $this->_valueArray = [];
     }
 
     /**
@@ -153,10 +166,9 @@ abstract class EE_AContent implements EE_IContent {
         return $this->getValueArray();
     }
 
-    // @todo rename
-    public function clear() {
-        $this->_valueArray = [];
-        $this->_argumentArray = [];
+    public function reset() {
+        $this->unsetArgumentArray();
+        $this->unsetValueArray();
     }
 
     protected $_valueArray = [];

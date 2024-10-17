@@ -24,7 +24,7 @@ $request['files'] = $_FILES;
 $request['cookie'] = $_COOKIE;
 $request['timeout'] = 10;
 
-$hash = hash('murmur3f', microtime(true).serialize($request));
+$hash = hash('murmur3f', microtime(true) + rand());
 $request['hash'] = $hash;
 
 // создаем request

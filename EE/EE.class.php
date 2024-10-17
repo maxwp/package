@@ -98,7 +98,7 @@ class EE {
         // очищаем все контенты,
         // это нужно следующего запуска движка в режиме non-stop
         foreach ($this->_contentArray as $content) {
-            $content->clear();
+            $content->reset();
         }
 
         // очищаем объекты request/response
@@ -142,6 +142,7 @@ class EE {
      * @return EE_IRouting
      */
     public function getRouting() {
+        // @todo эти все проверки надо делать init в самом начале и не задрачивать потом ifами код
         if (!$this->_routing) {
             throw new EE_Exception('Routing object not set');
         }
@@ -186,7 +187,7 @@ class EE {
      * Вернуть готовое html-содержимое контента и всех его вложений
      * с учетом иерархии
      *
-     * @param EE_AContent $content
+     * @param EE_IContent $content
      * @return string
      */
     public function renderTree(EE_IContent $content) {
@@ -212,7 +213,7 @@ class EE {
      * @param string $className
      * @param bool $cache Сохранить ли объект во внутреннем кеш-pool'e?
      *
-     * @return EE_AContent
+     * @return EE_IContent
      */
     public function getContent($className, $cache = true) {
         if (!$className) {
@@ -275,7 +276,7 @@ class EE {
     /**
      * Массив загруженных контентов
      *
-     * @var array<EE_AContent>
+     * @var EE_IContent[] $_contentArray
      */
     private $_contentArray = [];
 

@@ -88,6 +88,10 @@ class EE_AContentSmarty extends EE_AContent implements EE_IContent {
         unset($this->_controlArray[$controlName]);
     }
 
+    public function unsetControlValueArray() {
+        $this->_controlArray = [];
+    }
+
     public function process() {
 
     }
@@ -139,10 +143,10 @@ class EE_AContentSmarty extends EE_AContent implements EE_IContent {
         return $html;
     }
 
-    public function clear() {
-        parent::clear();
+    public function reset() {
+        parent::reset();
 
-        $this->_controlArray = [];
+        $this->unsetControlValueArray();
 
         // заполняем только одно поле - filehtml
         if ($this->_filehtml) {
