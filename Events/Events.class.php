@@ -24,6 +24,9 @@
  */
 class Events {
 
+    // @todo переписать Events чтобы события не надо было регистрировать, а можно было просто цепляться на key и
+    // от него делать notify всего что там висит.
+
     /**
      * Получить событие
      *
@@ -41,9 +44,13 @@ class Events {
         // если событие еще не инициировано - то инициируем его
         if (!is_object($this->_eventArray[$name])) {
             $classname = $this->_eventArray[$name];
+            // @todo отказаться от clone, потому что в php8 оно только усложняет ситуцию.
+            // Это имело бы смысл, если бы внутри события Event был конструктор с кучей говна.
             $this->_eventArray[$name] = $this->_cloneEvent($classname);
 
             // вешаем на него все обработчики, если они есть
+            // @todo массовый link observer-ов
+            // @todo сообщить в OneBox
             if (isset($this->_observerArray[$name])) {
                 foreach ($this->_observerArray[$name] as $x) {
                     $this->_eventArray[$name]->addObserver($x[0], $x[1]);

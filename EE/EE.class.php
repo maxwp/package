@@ -10,6 +10,7 @@ class EE {
 
     private function __construct() {
         // регистрация событий которые понимает Eventic Engine
+        // @todo попрравить на нормальный :class
         Events::Get()->addEvent('EE:content.process:before', 'EE_Event_ContentProcess');
         Events::Get()->addEvent('EE:content.process:after', 'EE_Event_ContentProcess');
         Events::Get()->addEvent('EE:content.render:before', 'EE_Event_ContentRender');
