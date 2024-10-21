@@ -2,19 +2,39 @@
 class IPC_Memory {
 
     public function __construct($ipcAddress, $blockSize = 128) {
+        $this->_blockSize = $blockSize;
+
         $this->_memory = shmop_open(
             $ipcAddress,
             "c",
             0644,
-            $blockSize
+            $this->_blockSize
         );
+    }
+
+    /**
+     * Получить значение всего блока памяти как есть
+     *
+     * @return string
+     */
+    public function getValue() {
+        return shmop_read($this->_memory, 0, $this->_blockSize);
+    }
+
+    /**
+     * Записать значение в блок памяти
+     *
+     * @param $value
+     * @return void
+     */
+    public function setValue($value) {
+        shmop_write($this->_memory, $value, 0);
     }
 
     public function getString() {
         $packed_length = shmop_read($this->_memory, 0, 4);
         $length = unpack('L', $packed_length)[1];
-        $string = shmop_read($this->_memory, 4, $length);
-        return $string;
+        return shmop_read($this->_memory, 4, $length);
     }
 
     public function setString($value) {
@@ -43,5 +63,7 @@ class IPC_Memory {
     }
 
     private $_memory;
+
+    private $_blockSize;
 
 }
