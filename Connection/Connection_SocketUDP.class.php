@@ -33,8 +33,8 @@ class Connection_SocketUDP implements Connection_IConnection {
         return $this->_socket;
     }
 
-    public function write($message, $host, $port) {
-        return socket_sendto($this->_socket, $message, strlen($message), 0, $host, $port);
+    public function write($message, $messageSize, $host, $port) {
+        return socket_sendto($this->_socket, $message, $messageSize, 0, $host, $port);
     }
 
     /**
@@ -55,7 +55,7 @@ class Connection_SocketUDP implements Connection_IConnection {
             $fromIP = '';
             $fromPort = 0;
 
-            $bytes = socket_recvfrom($this->_socket, $buf, $length, 0, $fromIP, $portPort);
+            $bytes = socket_recvfrom($this->_socket, $buf, $length, 0, $fromIP, $fromPort);
             if ($bytes === false) {
                 $message = socket_strerror(socket_last_error($this->_socket)) . "\n";
                 $this->disconnect();
