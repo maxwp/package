@@ -9,15 +9,15 @@ class Connection_SocketUDP implements Connection_IConnection {
     }
 
     public function setNonBlocking() {
-        socket_set_nonblock($this->getLink());
+        socket_set_nonblock($this->_socket);
     }
 
     public function setBufferSizeRead($size) {
-        socket_set_option($this->getLink(), SOL_SOCKET, SO_RCVBUF, $size);
+        socket_set_option($this->_socket, SOL_SOCKET, SO_RCVBUF, $size);
     }
 
     public function setBufferSizeWrite($size) {
-        socket_set_option($this->getLink(), SOL_SOCKET, SO_SNDBUF, $size);
+        socket_set_option($this->_socket, SOL_SOCKET, SO_SNDBUF, $size);
     }
 
     public function disconnect() {
@@ -34,7 +34,7 @@ class Connection_SocketUDP implements Connection_IConnection {
     }
 
     public function write($message, $host, $port) {
-        return socket_sendto($this->getLink(), $message, strlen($message), 0, $host, $port);
+        return socket_sendto($this->_socket, $message, strlen($message), 0, $host, $port);
     }
 
     /**
@@ -43,9 +43,9 @@ class Connection_SocketUDP implements Connection_IConnection {
      * @param int $length
      */
     public function read($port, callable $callback, $length = 1024) {
-        $result = socket_bind($this->getLink(), '0.0.0.0', $port);
+        $result = socket_bind($this->_socket, '0.0.0.0', $port);
         if ($result === false) {
-            $message = socket_strerror(socket_last_error($this->getLink()));
+            $message = socket_strerror(socket_last_error($this->_socket));
             $this->disconnect();
             throw new Connection_Exception($message.' port='.$port);
         }
@@ -55,7 +55,7 @@ class Connection_SocketUDP implements Connection_IConnection {
             $fromIP = '';
             $fromPort = 0;
 
-            $bytes = socket_recvfrom($this->getLink(), $buf, $length, 0, $fromIP, $portPort);
+            $bytes = socket_recvfrom($this->_socket, $buf, $length, 0, $fromIP, $portPort);
             if ($bytes === false) {
                 $message = socket_strerror(socket_last_error($this->_socket)) . "\n";
                 $this->disconnect();
