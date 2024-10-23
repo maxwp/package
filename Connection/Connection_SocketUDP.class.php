@@ -4,6 +4,9 @@ class Connection_SocketUDP implements Connection_IConnection {
     public function connect() {
         $this->_socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 
+        //socket_set_option($this->_socket, IPPROTO_IP, IP_MTU_DISCOVER, IP_PMTUDISC_WANT);
+        //socket_set_option($this->_socket, SOL_SOCKET, SO_REUSEADDR, 1);
+
         $this->setBufferSizeRead(50 * 1024 * 1024);
         $this->setBufferSizeWrite(50 * 1024 * 1024);
     }
