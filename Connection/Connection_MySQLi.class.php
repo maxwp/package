@@ -83,17 +83,6 @@ implements Connection_IDatabaseAdapter {
 
         $e = $this->getLink()->error;
         if ($e) {
-            if (substr_count($e, 'MySQL server has gone away')) {
-                // пауза 1 секунду
-                sleep(1);
-
-                // переподключаемся
-                $this->connect();
-
-                // выполняем запрос еще раз
-                return $this->query($query);
-            }
-
             throw new Connection_Exception("Executing error: {$e} in query: {$query}");
         }
 
