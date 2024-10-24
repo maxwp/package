@@ -12,6 +12,14 @@ class IPC_Memory {
         );
     }
 
+    public function read($offset, $length) {
+        return shmop_read($this->_memory, $offset, $length);
+    }
+
+    public function write($value, $offset) {
+        return shmop_write($this->_memory, $value, $offset);
+    }
+
     /**
      * Получить значение всего блока памяти как есть
      *
