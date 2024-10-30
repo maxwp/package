@@ -104,4 +104,21 @@ class Array_Object extends ArrayObject {
         }
     }
 
+    public function variance() {
+        $n = $this->count();
+        if ($n === 0) {
+            return 0;
+        }
+
+        $mean = $this->avg(); // Среднее значение
+        $sumOfSquares = 0;
+
+        $a = $this->getArrayCopy();
+        foreach ($a as $num) {
+            $sumOfSquares += pow($num - $mean, 2); // Квадраты разностей
+        }
+
+        return $sumOfSquares / $n; // Дисперсия
+    }
+
 }

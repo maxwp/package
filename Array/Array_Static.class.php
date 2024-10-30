@@ -20,6 +20,11 @@ class Array_Static {
         return $a->avg($countLimit);
     }
 
+    public static function Variance($a) {
+        $a = new Array_Object($a);
+        return $a->variance();
+    }
+
     public static function Sum($a) {
         $a = new Array_Object($a);
         return $a->sum();
