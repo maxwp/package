@@ -16,11 +16,11 @@ class Connection_WebSocket implements Connection_IConnection {
             $time = time();
 
             // auto ping frame
-            if ($time - $this->_tsPing >= 5) {
+            if ($time - $this->_tsPing >= $this->_pingInterval) {
                 $this->_sendPingFrame($this->_stream);
                 $this->_tsPing = $time;
                 // дедлайн до которого должен прийти pong
-                $this->_tsPong = $time + $this->_pingPongDeadline;
+                $this->_tsPong = $time + $this->_pongDeadline;
             }
 
             if ($this->_tsPong > 0 && $time > $this->_tsPong) {
@@ -287,7 +287,8 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_streamSelectTimeout = 500000; // 500 ms
     private $_tsPing = 0;
     private $_tsPong = 0;
-    private $_pingPongDeadline = 3;
+    private $_pingInterval = 1;
+    private $_pongDeadline = 3;
 
     private $_buffer = '';
 
