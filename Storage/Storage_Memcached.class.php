@@ -19,14 +19,10 @@ class Storage_Memcached implements Storage_IHandler {
 
     /**
      * Create memcache handler.
-     * Prefix - string key to identify storage.
      *
-     * @param string $prefix
-     * @param string $host
-     * @param string $port
+     * @param Connection_IConnection $connection
      */
-    public function __construct(Connection_IConnection $connection, $prefix = '') {
-        $this->_prefix = $prefix;
+    public function __construct(Connection_IConnection $connection) {
         $this->_connection = $connection;
     }
 
@@ -42,18 +38,9 @@ class Storage_Memcached implements Storage_IHandler {
         }
 
         if (is_array($key)) {
-            if ($this->_prefix) {
-                $keyArray = array();
-                foreach ($key as $k => $v) {
-                    $keyArray[$this->_prefix.$k] = $v;
-                }
-            } else {
-                $keyArray = $key;
-            }
-
-            $this->getLink()->setMulti($keyArray, $ttl);
+            $this->getLink()->setMulti($key, $ttl);
         } else {
-            $this->getLink()->set($this->_prefix.$key, $value, $ttl);
+            $this->getLink()->set($key, $value, $ttl);
         }
     }
 
@@ -64,26 +51,10 @@ class Storage_Memcached implements Storage_IHandler {
      */
     public function get($key) {
         if (is_array($key)) {
-            // multi with prefix
-            if ($this->_prefix) {
-                $keyArray = array();
-                foreach ($key as $x) {
-                    $keyArray[$x] = $this->_prefix.$x;
-                }
-
-                $result = $this->getLink()->getMulti($keyArray);
-                $a = array();
-                foreach ($result as $key => $x) {
-                    $a[str_replace($this->_prefix, '', $key)] = $x;
-                }
-                return $a;
-            } else {
-                // multi without prefix
-                return $this->getLink()->getMulti($key);
-            }
+            return $this->getLink()->getMulti($key);
         } else {
             // single
-            $x = $this->getLink()->get($this->_prefix.$key);
+            $x = $this->getLink()->get($key);
             if ($x === false) {
                 throw new Storage_Exception("Cache by key '{$key}' not found");
             }
@@ -97,7 +68,7 @@ class Storage_Memcached implements Storage_IHandler {
      * @param string $key
      */
     public function has($key) {
-        return ($this->getLink()->get($this->_prefix.$key) != false);
+        return ($this->getLink()->get($key) != false);
     }
 
     /**
@@ -106,17 +77,13 @@ class Storage_Memcached implements Storage_IHandler {
      * @param string $key
      */
     public function remove($key) {
-        $this->getLink()->delete($this->_prefix.$key);
+        $this->getLink()->delete($key);
     }
 
     /**
      * Очистить кеш
      */
     public function clean() {
-        if ($this->_prefix) {
-            throw new Storage_Exception('Cannot flush all cache');
-        }
-
         $this->getLink()->flush();
     }
 
@@ -138,7 +105,5 @@ class Storage_Memcached implements Storage_IHandler {
      * @var Connection_IConnection
      */
     private $_connection;
-
-    private $_prefix;
 
 }
