@@ -1,15 +1,13 @@
 <?php
 /**
- * WebProduction Packages
- * Copyright (C) 2007-2014 WebProduction <webproduction.ua>
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
+ *
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
 /**
  * Вычислятор разниц между датами
- *
- * @copyright WebProduction
- * @author Max
- * @package DateTime
  */
 class DateTime_Differ {
 

@@ -1,21 +1,14 @@
 <?php
 
 /**
- * WebProduction Packages
- * Copyright (C) 2007-2012 WebProduction <webproduction.ua>
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
  *
- * This program is commercial software; you can not redistribute it and/or
- * modify it.
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
 /**
  * Класс-проверщик различных данных на корректность
- *
- * @author Maxim Miroshnichenko <max@webproduction.com.ua>
- *
- * @copyright WebProduction
- *
- * @package Checker
  */
 class Checker {
 

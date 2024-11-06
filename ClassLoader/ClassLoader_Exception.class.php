@@ -1,16 +1,13 @@
 <?php
 /**
- * WebProduction Packages
- * @copyright (C) 2007-2012 WebProduction <webproduction.com.ua>
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
  *
- * This program is commercial software;
- * you can not distribute it and/or modify it.
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
 /**
- * @author Maxim Miroshnichenko <max@webproduction.com.ua>
- * @copyright WebProduction
- * @package ClassLoader
+ * ClassLoader exception
  */
 class ClassLoader_Exception extends Exception {
 

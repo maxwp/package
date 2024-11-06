@@ -1,17 +1,11 @@
 <?php
 /**
- * WebProduction Packages
- * Copyright (C) 2007-2012 WebProduction <webproduction.com.ua>
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
  *
- * This program is commercial software; you can not redistribute it and/or
- * modify it.
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
-/**
- * @author Maxim Miroshnichenko <max@webproduction.com.ua>
- * @copyright WebProduction
- * @package ConnectionManager
- */
 class Connection_Exception extends Exception {
 
     public function __construct($message = '', $code = 0) {

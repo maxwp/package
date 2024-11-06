@@ -1,4 +1,10 @@
 <?php
+/**
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
+ *
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
+ */
 
 // default locale
 setlocale(LC_ALL, 'en_EN.utf8');

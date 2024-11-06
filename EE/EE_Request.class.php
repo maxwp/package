@@ -1,11 +1,14 @@
 <?php
 /**
- * Реализация класса работающего с запросом
- * для древовидной структуры сайта
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
  *
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
- * @copyright WebProduction
- * @package EE
+ */
+
+/**
+ * Реализация класса работающего с запросом
+ * для древовидной структуры сайта
  */
 class EE_Request implements EE_IRequest {
 

@@ -1,8 +1,13 @@
 <?php
 /**
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
+ *
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
- * @copyright WebProduction
- * @package EE
+ */
+
+/**
+ * Routing
  */
 class EE_Routing implements EE_IRouting {
 

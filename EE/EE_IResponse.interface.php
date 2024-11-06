@@ -1,4 +1,14 @@
 <?php
+/**
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
+ *
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
+ */
+
+/**
+ * Response interface
+ */
 interface EE_IResponse {
 
     public function getCode();

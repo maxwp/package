@@ -1,19 +1,13 @@
 <?php
 /**
- * WebProduction Packages
- * Copyright (C) 2007-2012 WebProduction <webproduction.com.ua>
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
  *
- * This program is commercial software; you can not redistribute it and/or
- * modify it.
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
 /**
  * Адаптер для соеденения с любой базой через стандартный php PDO-класс.
- *
- * @author Maxim Miroshnichenko <max@webproduction.com.ua>
- * @copyright WebProduction
- * @package ConnectionManager
- *
  * @todo
  */
 class Connection_PDO

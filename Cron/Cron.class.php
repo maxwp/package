@@ -1,8 +1,13 @@
 <?php
 /**
- * @author Maxim Miroshnichenko <max@webproduction.ua>
- * @copyright WebProduction
- * @package Package
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
+ *
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
+ */
+
+/**
+ * Cron supervisor
  */
 class Cron {
 

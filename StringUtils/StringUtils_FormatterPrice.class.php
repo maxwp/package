@@ -1,8 +1,9 @@
 <?php
 /**
- * Форматирование цены
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
  *
- * @package StringUtils
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
 class StringUtils_FormatterPrice {

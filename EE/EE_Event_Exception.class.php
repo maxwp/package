@@ -1,10 +1,13 @@
 <?php
 /**
- * Событие, которое возникает если в Engine есть не отловленный Exception
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
  *
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
- * @copyright WebProduction
- * @package EE
+ */
+
+/**
+ * Событие, которое возникает если в Engine есть не отловленный Exception
  */
 class EE_Event_Exception extends Events_Event {
 

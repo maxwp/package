@@ -1,11 +1,9 @@
 <?php
 /**
- * WebProduction Packages
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
  *
- * @copyright (C) 2007-2016 WebProduction <webproduction.ua>
- *
- * This program is free software; you can not redistribute it and/or
- * modify it.
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
 /**

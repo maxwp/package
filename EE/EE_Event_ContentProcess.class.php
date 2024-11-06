@@ -1,11 +1,14 @@
 <?php
 /**
- * Событие, которое вызывается до и после обработки контента
- * (до и после вызова метода EE_Content->process())
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
  *
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
- * @copyright WebProduction
- * @package EE
+ */
+
+/**
+ * Событие, которое вызывается до и после обработки контента
+ * (до и после вызова метода EE_Content->process())
  */
 class EE_Event_ContentProcess extends Events_Event {
 

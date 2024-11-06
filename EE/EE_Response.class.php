@@ -1,12 +1,15 @@
 <?php
 /**
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
+ *
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
+ */
+
+/**
  * Система ответа в Engine.
  * Позволяет удобно устанавливать ответы заголовки HTTP-ответа.
  * Например, настройки cache, gzip, last-modified, body, ...
- *
- * @author Maxim Miroshnichenko <max@miroshnichenko.org>
- * @copyright WebProduction
- * @package EE
  *
  * @todo rename to EE_ResponseHTTP
  */

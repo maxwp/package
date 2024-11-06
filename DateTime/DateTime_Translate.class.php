@@ -1,16 +1,13 @@
 <?php
 /**
- * WebProduction Packages
- * Copyright (C) 2007-2011 WebProduction <webproduction.ua>
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
  *
- * This program is commercial software; you can not redistribute it and/or
- * modify it.
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
 /**
- * @author Oleksii Golub <avator@webproduction.ua>
- * @copyright WebProduction
- * @package DateTime
+ * Old translate syste, for DT
  */
 class DateTime_Translate {
 

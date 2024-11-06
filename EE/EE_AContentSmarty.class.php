@@ -1,8 +1,13 @@
 <?php
 /**
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
+ *
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
- * @copyright WebProduction
- * @package EE
+ */
+
+/**
+ * Content for Web Smarty
  */
 class EE_AContentSmarty extends EE_AContent implements EE_IContent {
 
@@ -128,8 +133,7 @@ class EE_AContentSmarty extends EE_AContent implements EE_IContent {
         $event->notify();
 
         // получаем все параметры, которые надо передать в smarty
-        $a = $this->getValueArray();
-        $html = EE_Smarty::Get()->fetch($file, $a);
+        $html = EE_Smarty::Get()->fetch($file, $this->getValueArray());
 
         // генерируем событие afterRender
         $event = Events::Get()->generateEvent('EE:content.render:after');

@@ -1,21 +1,14 @@
 <?php
 /**
- * WebProduction Packages
- * Copyright (C) 2007-2015 WebProduction <webproduction.ua>
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
  *
- * This program is commercial software; you can not redistribute it and/or
- * modify it.
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
 /**
  * Адаптер для соединений с базами данных.
  * По сути дополняет интерфейс ConnectionManager_IConnection
- *
- * @see Connection_IConnection
- *
- * @author Maxim Miroshnichenko <max@webproduction.ua>
- * @copyright WebProduction
- * @package ConnectionManager
  */
 interface Connection_IDatabaseAdapter extends Connection_IConnection {
 

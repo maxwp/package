@@ -1,10 +1,13 @@
 <?php
 /**
- * Событие, которое вызывается после рендеринга контента шаблонизатором
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
  *
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
- * @copyright WebProduction
- * @package EE
+ */
+
+/**
+ * Событие, которое вызывается после рендеринга контента шаблонизатором
  */
 class EE_Event_ContentRender extends EE_Event_ContentProcess {
 

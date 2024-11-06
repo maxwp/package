@@ -1,10 +1,13 @@
 <?php
 /**
- * Smarty template engine for wpp Engine
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
  *
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
- * @copyright WebProduction
- * @package EE
+ */
+
+/**
+ * Smarty template engine for wpp Engine. Ultra optimized
  */
 class EE_Smarty {
 

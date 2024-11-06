@@ -1,4 +1,11 @@
 <?php
+/**
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
+ *
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
+ */
+
 class Array_Object extends ArrayObject {
 
     public function __construct($a = array()) {

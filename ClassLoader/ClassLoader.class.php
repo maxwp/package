@@ -1,10 +1,13 @@
 <?php
+/**
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
+ *
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
+ */
 
 /**
  * Загрузчик классов по требованию
- *
- * @author Maxim Miroshnichenko <max@miroshnichenko.org>
- * @package ClassLoader
  */
 class ClassLoader {
 

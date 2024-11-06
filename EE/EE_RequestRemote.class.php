@@ -1,4 +1,14 @@
 <?php
+/**
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
+ *
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
+ */
+
+/**
+ * Remote request
+ */
 class EE_RequestRemote implements EE_IRequest {
 
     public function __construct($content, $argumentArray) {

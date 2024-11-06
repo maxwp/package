@@ -1,13 +1,14 @@
 <?php
 /**
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
+ *
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
+ */
+
+/**
  * Подсветка ссылок, nl2br, htmlspecialchars, подсветка email,
  * сворачивание цитат и тд.
- *
- * @author Maxim Miroshnichenko <max@webproduction.ua>
- * 
- * @copyright WebProduction
- * 
- * @package TextProcessor
  */
 class TextProcessor_ActionTextToHTML implements TextProcessor_IAction {
 

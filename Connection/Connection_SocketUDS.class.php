@@ -1,4 +1,11 @@
 <?php
+/**
+ * Eventic Packages
+ * Copyright (C) 2007-2025 WebProduction
+ *
+ * @author Maxim Miroshnichenko <max@miroshnichenko.org>
+ */
+
 class Connection_SocketUDS implements Connection_IConnection {
 
     public function connect() {
