@@ -116,9 +116,7 @@ class Connection_WebSocket implements Connection_IConnection {
         }
 
         $this->_buffer .= $data;
-        $msgArray = $this->_decodeMessageArray();
-        var_dump(strlen($this->_buffer));
-        return $msgArray;
+        return $this->_decodeMessageArray();
     }
 
     private function _decodeMessageArray() {
