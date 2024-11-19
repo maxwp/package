@@ -115,12 +115,15 @@ class EE_Request implements EE_IRequest {
 
         // очищаем массивы GET/POST/FILES,
         // чтобы не повадно было с ними работать :-)
-        //$_FILES = array();
-        //$_GET = array();
-        //$_POST = array();
-        //$_SERVER['argv'] = array();
-        //$_SERVER['QUERY_STRING'] = '';
-        //$_SERVER['REDIRECT_QUERY_STRING'] = '';
+        $_FILES = [];
+        $_GET = [];
+        $_POST = [];
+        $_ENV = [];
+        $_REQUEST = [];
+        $_SERVER['argv'] = [];
+        $_SERVER['QUERY_STRING'] = '';
+        $_SERVER['REDIRECT_QUERY_STRING'] = '';
+        //$GLOBALS = []; // в php8 запрещено его менять
     }
 
     /**
