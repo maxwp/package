@@ -176,9 +176,9 @@ abstract class EE_AContent implements EE_IContent {
         $this->unsetValueArray();
     }
 
-    protected $_valueArray = [];
+    private $_valueArray = [];
 
     // массив локальных аргументов
-    protected $_argumentArray = [];
+    private $_argumentArray = [];
 
 }
