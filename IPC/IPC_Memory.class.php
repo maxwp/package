@@ -46,6 +46,17 @@ class IPC_Memory {
         shmop_write($this->_memory, $value, 0);
     }
 
+    public function setDouble($value) {
+        $packed = pack('d', (float) $value);
+        shmop_write($this->_memory, $packed, 0);
+    }
+
+    public function getDouble() {
+        $packed = shmop_read($this->_memory, 0, 8);
+        $unpacked = unpack('d', $packed);
+        return $unpacked[1];
+    }
+
     public function getString() {
         $packed_length = shmop_read($this->_memory, 0, 4);
         $length = unpack('L', $packed_length)[1];
