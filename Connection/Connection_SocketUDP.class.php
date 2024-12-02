@@ -74,7 +74,12 @@ class Connection_SocketUDP implements Connection_IConnection {
 
             // @todo возможно callback переделать на interface
             // вызываем callback
-            $callback($buf, $fromIP, $fromPort);
+            $result = $callback($buf, $fromIP, $fromPort);
+
+            // если есть какой-то результат - на выход
+            if ($result) {
+                break;
+            }
         }
     }
 
