@@ -11,7 +11,7 @@
  */
 class Cron {
 
-    public function run($className, $argumentArray = [], $uniquePID = false) {
+    public function run($className, $argumentArray = [], $uniquePID = false, $logFile = false) {
         if (!is_subclass_of($className, EE_AContent::class)) {
             throw new Exception("Class $className does not extend EE_AContent");
         }
@@ -20,6 +20,7 @@ class Cron {
         $data['classname'] = $className;
         $data['argumentArray'] = $argumentArray;
         $data['pid'] = $uniquePID;
+        $data['logFile'] = $logFile;
 
         $result = $this->_getRedisLocal()->sAdd('cron', json_encode($data));
 
@@ -33,6 +34,7 @@ class Cron {
             $data = json_decode($file, true);
 
             $pid = $data['pid'];
+            $logFile = $data['logFile'];
 
             $command = $this->_makeCommand($data);
 
@@ -44,7 +46,12 @@ class Cron {
                 $pid .= '.pid';
             }
 
-            $logString = "> /dev/null 2>&1 &";
+            if ($logFile) {
+                $logString = ">> $dirpath/log/$logFile 2>&1 &";
+            } else {
+                $logString = "> /dev/null 2>&1 &";
+            }
+
             $path = "/usr/bin/flock -n $dirpath/pid/$pid /usr/bin/php $dirpath/$command $logString";
             print "Run: ".$path . "\n";
             exec($path);
