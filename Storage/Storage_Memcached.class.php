@@ -36,9 +36,9 @@ class Storage_Memcached implements Storage_IHandler {
         }
 
         if (is_array($key)) {
-            $this->getLink()->setMulti($key, $ttl);
+            return $this->getLink()->setMulti($key, $ttl);
         } else {
-            $this->getLink()->set($key, $value, $ttl);
+            return $this->getLink()->set($key, $value, $ttl);
         }
     }
 

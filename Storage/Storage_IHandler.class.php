@@ -27,6 +27,7 @@ interface Storage_IHandler {
      * @param string $parentKey
      * @param mixed $value
      * @param int $ttl
+     * @return bool
      */
     public function set($key, $value, $ttl = false);
 
