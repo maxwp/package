@@ -39,7 +39,7 @@ class EE_AContentSmarty extends EE_AContent implements EE_IContent {
         if (!$controlName) {
             throw new EE_Exception("Empty control value name. Nothing to get");
         }
-        if (isset($this->_controlArray[$controlName])) {
+        if (isset($this->_controlArray[$controlName]) && $argType != 'file') {
             return $this->_controlArray[$controlName];
         }
         $value = EE::Get()->getRequest()->getArgumentSecure($controlName, $argType);

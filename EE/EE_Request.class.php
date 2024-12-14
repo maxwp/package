@@ -51,24 +51,6 @@ class EE_Request implements EE_IRequest {
     }
 
     /**
-     * Снять экранирование с массива, рекурсивно
-     *
-     * @param array $a
-     *
-     * @return array
-     */
-    protected function _unescapeArray($a) {
-        foreach ($a as $k => $v) {
-            if (is_array($v)) {
-                $a[$k] = $this->_unescapeArray($v);
-            } else {
-                $a[$k] = stripslashes($v);
-            }
-        }
-        return $a;
-    }
-
-    /**
      * Установка аргументов передаваемых странице посредством суперглобальных массивов
      * Здесь происходит очистка суперглобальных массивов
      * Должен вызываться при старте
@@ -102,11 +84,6 @@ class EE_Request implements EE_IRequest {
         }
 
         $a = array_merge(array_merge($files, $GETArray), $POSTArray);
-
-        /*if (get_magic_quotes_gpc()) {
-            // если включены magic quotes - вручную снимаем экранирование
-            $a = $this->_unescapeArray($a);
-        }*/
 
         $this->arguments = $a;
         $this->argumentsPost = $POSTArray;
@@ -240,6 +217,11 @@ class EE_Request implements EE_IRequest {
             }
         } elseif ($argType == 'file') {
             if (!isset($this->argumentsFile[$key])) {
+                throw new EE_Exception("Argument {$key} is missing");
+            }
+
+            if (empty($this->argumentsFile[$key]['tmp_name'])
+                || !is_uploaded_file($this->argumentsFile[$key]['tmp_name'])) {
                 throw new EE_Exception("Argument {$key} is missing");
             }
         } else {
