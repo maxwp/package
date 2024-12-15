@@ -15,6 +15,7 @@ ClassLoader::Get()->registerClass(__DIR__.'/EE_IResponse.interface.php');
 ClassLoader::Get()->registerClass(__DIR__.'/EE_IContent.interface.php');
 ClassLoader::Get()->registerClass(__DIR__.'/EE_IRouting.interface.php');
 ClassLoader::Get()->registerClass(__DIR__.'/EE_Request.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/EE_RequestFile.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/EE_Response.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/EE_Routing.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/EE_RequestCLI.class.php');

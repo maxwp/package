@@ -60,25 +60,17 @@ class EE_Request implements EE_IRequest {
      * @author Vova (found bugs)
      */
     protected function _setArguments($GETArray, $POSTArray, $FILESArray) {
-        $files = array();
+        $files = [];
         foreach ($FILESArray as $file => $val) {
             if (is_array($val['tmp_name'])) {
                 foreach ($val['tmp_name'] as $key => $name) {
                     if (is_uploaded_file($val['tmp_name'][$key])) {
-                        $files[$file]['name'][$key] = $val['name'][$key];
-                        $files[$file]['type'][$key] = $val['type'][$key];
-                        $files[$file]['tmp_name'][$key] = $val['tmp_name'][$key];
-                        $files[$file]['error'][$key] = $val['error'][$key];
-                        $files[$file]['size'][$key] = $val['size'][$key];
+                        $files[$file][$key] = new EE_RequestFile($val['tmp_name'][$key], $val['name'][$key]);
                     }
                 }
             } else {
                 if (is_uploaded_file($val['tmp_name'])) {
-                    $files[$file]['name'] = $val['name'];
-                    $files[$file]['type'] = $val['type'];
-                    $files[$file]['tmp_name'] = $val['tmp_name'];
-                    $files[$file]['error'] = $val['error'];
-                    $files[$file]['size'] = $val['size'];
+                    $files[$file] = new EE_RequestFile($val['tmp_name'], $val['name']);
                 }
             }
         }
