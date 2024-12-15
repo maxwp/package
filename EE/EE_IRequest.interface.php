@@ -11,6 +11,7 @@
  */
 interface EE_IRequest {
 
+    // @todo шо тут делать?
     //public function getURL();
 
     //public function getHost();
@@ -22,5 +23,11 @@ interface EE_IRequest {
     public function getArgumentSecure($key, $argType = false);
 
     //public function getCOOKIEArray();
+
+    const ARG_TYPE_FILE = 'file';
+    const ARG_TYPE_GET = 'get';
+    const ARG_TYPE_POST = 'post';
+    const ARG_TYPE_PUT = 'put';
+    const ARG_TYPE_DELETE = 'delete';
 
 }

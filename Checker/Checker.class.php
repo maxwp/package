@@ -82,7 +82,7 @@ class Checker {
      * Проверить номер icq на корректность ввода
      *
      * @param mixed $icq
-     *
+     * @deprecated
      * @return bool
      */
     public static function CheckICQ($icq) {
@@ -215,7 +215,7 @@ class Checker {
 
         $x = @strtotime($datetime);
 
-        //если дата меньше 1970 - false
+        // если дата меньше 1970 - false
         if (!$x || $x < '-2211759589') {
             return false;
         }
@@ -434,6 +434,7 @@ class Checker {
             return true;
         }
 
+        // @todo wtf
         return false;
     }
 

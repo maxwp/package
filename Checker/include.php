@@ -1,2 +1,2 @@
 <?php
-ClassLoader::Get()->registerClass(dirname(__FILE__).'/Checker.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Checker.class.php');

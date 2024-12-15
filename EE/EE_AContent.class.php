@@ -24,6 +24,8 @@ abstract class EE_AContent implements EE_IContent {
         if (isset($this->_argumentArray[$key])) {
             $x = $this->_argumentArray[$key];
 
+            // @todo тут жопа с типизацией, потому что где-то используется get/post/file
+            // а где-то string/array/bool
             if ($argType) {
                 $x = StringUtils_Typing::TypeString($x, $argType);
             }

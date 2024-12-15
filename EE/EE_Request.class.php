@@ -85,10 +85,10 @@ class EE_Request implements EE_IRequest {
 
         $a = array_merge(array_merge($files, $GETArray), $POSTArray);
 
-        $this->arguments = $a;
-        $this->argumentsPost = $POSTArray;
-        $this->argumentsGet = $GETArray;
-        $this->argumentsFile = $FILESArray;
+        $this->_argumentArray = $a;
+        $this->_argumentsPost = $POSTArray;
+        $this->_argumentsGet = $GETArray;
+        $this->_argumentsFile = $FILESArray;
 
         // очищаем массивы GET/POST/FILES,
         // чтобы не повадно было с ними работать :-)
@@ -192,7 +192,7 @@ class EE_Request implements EE_IRequest {
      * @return array
      */
     public function getArgumentArray() {
-        return $this->arguments;
+        return $this->_argumentArray;
     }
 
     /**
@@ -207,30 +207,34 @@ class EE_Request implements EE_IRequest {
     public function getArgument($key, $argType = false) {
         $argType = strtolower($argType);
 
-        if ($argType == 'post') {
-            if (!isset($this->argumentsPost[$key])) {
+        if ($argType == self::ARG_TYPE_POST) {
+            if (!isset($this->_argumentsPost[$key])) {
                 throw new EE_Exception("Argument {$key} is missing");
             }
-        } elseif ($argType == 'get') {
-            if (!isset($this->argumentsGet[$key])) {
+        } elseif ($argType == self::ARG_TYPE_GET) {
+            if (!isset($this->_argumentsGet[$key])) {
                 throw new EE_Exception("Argument {$key} is missing");
             }
-        } elseif ($argType == 'file') {
-            if (!isset($this->argumentsFile[$key])) {
+        } elseif ($argType == self::ARG_TYPE_PUT) {
+            // @todo
+        } elseif ($argType == self::ARG_TYPE_DELETE) {
+            // @todo
+        } elseif ($argType == self::ARG_TYPE_FILE) {
+            if (!isset($this->_argumentsFile[$key])) {
                 throw new EE_Exception("Argument {$key} is missing");
             }
 
-            if (empty($this->argumentsFile[$key]['tmp_name'])
-                || !is_uploaded_file($this->argumentsFile[$key]['tmp_name'])) {
+            if (empty($this->_argumentsFile[$key]['tmp_name'])
+                || !is_uploaded_file($this->_argumentsFile[$key]['tmp_name'])) {
                 throw new EE_Exception("Argument {$key} is missing");
             }
         } else {
-            if (!isset($this->arguments[$key])) {
+            if (!isset($this->_argumentArray[$key])) {
                 throw new EE_Exception("Argument {$key} is missing");
             }
         }
 
-        return $this->arguments[$key];
+        return $this->_argumentArray[$key];
     }
 
     /**
@@ -243,7 +247,7 @@ class EE_Request implements EE_IRequest {
      * @author Max
      */
     public function setArgument($key, $value) {
-        $this->arguments[$key] = $value;
+        $this->_argumentArray[$key] = $value;
     }
 
     /**
@@ -258,25 +262,29 @@ class EE_Request implements EE_IRequest {
     public function getArgumentSecure($key, $argType = false) {
         $argType = strtolower($argType);
 
-        if ($argType == 'post') {
-            if (!isset($this->argumentsPost[$key])) {
+        if ($argType == self::ARG_TYPE_POST) {
+            if (!isset($this->_argumentsPost[$key])) {
                 return false;
             }
-        } elseif ($argType == 'get') {
-            if (!isset($this->argumentsGet[$key])) {
+        } elseif ($argType == self::ARG_TYPE_GET) {
+            if (!isset($this->_argumentsGet[$key])) {
                 return false;
             }
-        } elseif ($argType == 'file') {
-            if (!isset($this->argumentsFile[$key])) {
+        } elseif ($argType == self::ARG_TYPE_PUT) {
+            // @todo
+        } elseif ($argType == self::ARG_TYPE_DELETE) {
+            // @todo
+        } elseif ($argType == self::ARG_TYPE_FILE) {
+            if (!isset($this->_argumentsFile[$key])) {
                 return false;
             }
         } else {
-            if (!isset($this->arguments[$key])) {
+            if (!isset($this->_argumentArray[$key])) {
                 return false;
             }
         }
 
-        return $this->arguments[$key];
+        return $this->_argumentArray[$key];
     }
 
     /**
@@ -336,16 +344,18 @@ class EE_Request implements EE_IRequest {
      *
      * @var array
      */
-    protected $arguments = array();
-    protected $argumentsGet = array();
-    protected $argumentsPost = array();
-    protected $argumentsFile = array();
+    protected $_argumentArray = [];
+    protected $_argumentsGet = array();
+    protected $_argumentsPost = array();
+    protected $_argumentsFile = array();
 
     private $_cookie = array();
 
     /**
      * Локальная часть URL
      *
+     * @todo
+     * @deprecated
      * @var string
      */
     protected $local = false;
