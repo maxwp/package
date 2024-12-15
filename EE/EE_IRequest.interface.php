@@ -24,10 +24,11 @@ interface EE_IRequest {
 
     //public function getCOOKIEArray();
 
-    const ARG_TYPE_FILE = 'file';
-    const ARG_TYPE_GET = 'get';
-    const ARG_TYPE_POST = 'post';
-    const ARG_TYPE_PUT = 'put';
-    const ARG_TYPE_DELETE = 'delete';
+    const ARG_SOURCE_FILE = 'file';
+    const ARG_SOURCE_GET = 'get';
+    const ARG_SOURCE_POST = 'post';
+    const ARG_SOURCE_PUT = 'put';
+    const ARG_SOURCE_DELETE = 'delete';
+    const ARG_SOURCE_CLI = 'cli';
 
 }

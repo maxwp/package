@@ -207,19 +207,19 @@ class EE_Request implements EE_IRequest {
     public function getArgument($key, $argType = false) {
         $argType = strtolower($argType);
 
-        if ($argType == self::ARG_TYPE_POST) {
+        if ($argType == self::ARG_SOURCE_POST) {
             if (!isset($this->_argumentsPost[$key])) {
                 throw new EE_Exception("Argument {$key} is missing");
             }
-        } elseif ($argType == self::ARG_TYPE_GET) {
+        } elseif ($argType == self::ARG_SOURCE_GET) {
             if (!isset($this->_argumentsGet[$key])) {
                 throw new EE_Exception("Argument {$key} is missing");
             }
-        } elseif ($argType == self::ARG_TYPE_PUT) {
+        } elseif ($argType == self::ARG_SOURCE_PUT) {
             // @todo
-        } elseif ($argType == self::ARG_TYPE_DELETE) {
+        } elseif ($argType == self::ARG_SOURCE_DELETE) {
             // @todo
-        } elseif ($argType == self::ARG_TYPE_FILE) {
+        } elseif ($argType == self::ARG_SOURCE_FILE) {
             if (!isset($this->_argumentsFile[$key])) {
                 throw new EE_Exception("Argument {$key} is missing");
             }
@@ -262,19 +262,19 @@ class EE_Request implements EE_IRequest {
     public function getArgumentSecure($key, $argType = false) {
         $argType = strtolower($argType);
 
-        if ($argType == self::ARG_TYPE_POST) {
+        if ($argType == self::ARG_SOURCE_POST) {
             if (!isset($this->_argumentsPost[$key])) {
                 return false;
             }
-        } elseif ($argType == self::ARG_TYPE_GET) {
+        } elseif ($argType == self::ARG_SOURCE_GET) {
             if (!isset($this->_argumentsGet[$key])) {
                 return false;
             }
-        } elseif ($argType == self::ARG_TYPE_PUT) {
+        } elseif ($argType == self::ARG_SOURCE_PUT) {
             // @todo
-        } elseif ($argType == self::ARG_TYPE_DELETE) {
+        } elseif ($argType == self::ARG_SOURCE_DELETE) {
             // @todo
-        } elseif ($argType == self::ARG_TYPE_FILE) {
+        } elseif ($argType == self::ARG_SOURCE_FILE) {
             if (!isset($this->_argumentsFile[$key])) {
                 return false;
             }
