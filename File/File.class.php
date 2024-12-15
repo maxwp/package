@@ -8,6 +8,10 @@ class File {
         $this->_path = $path;
     }
 
+    public function getPath() {
+        return $this->_path;
+    }
+
     public function isExists() {
         return file_exists($this->_path);
     }

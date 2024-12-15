@@ -16,7 +16,7 @@ class EE_RequestFile extends File {
     }
 
     public function isUploaded() {
-        return is_uploaded_file($this->_path);
+        return is_uploaded_file($this->getPath());
     }
 
     private $_name;
