@@ -20,22 +20,12 @@ class EE_RequestRemote implements EE_IRequest {
         return $this->_argumentArray;
     }
 
-    public function getArgument($key, $argType = false) {
+    public function getArgument($key, $type = false, $source = false) {
         if (isset($this->_argumentArray[$key])) {
             return $this->_argumentArray[$key];
         }
 
         throw new EE_Exception("No argument $key");
-    }
-
-    public function getArgumentSecure($key, $argType = false) {
-        try {
-            return $this->getArgument($key, $argType);
-        } catch (Exception $e) {
-
-        }
-
-        return false;
     }
 
     private $_argumentArray = [];

@@ -5,8 +5,12 @@ $routing = new EE_RoutingCLI();
 $request = new EE_RequestCLI();
 $response = new EE_ResponseCLI();
 
-if ($request->getArgumentSecure('print', 'bool')) {
-    define('EE_PRINT', true);
+try {
+    if ($request->getArgument('print', 'bool')) {
+        define('EE_PRINT', true);
+    }
+} catch (EE_Exception $e) {
+
 }
 
 EE::Get()->setRouting($routing);

@@ -14,13 +14,17 @@ class EE_RequestCLI implements EE_IRequest {
     public function getArgumentArray() {
         global $argv;
 
-        // @todo надо красиво перебрать все аргументы
+        // @todo надо красиво перебрать все CLI-аргументы
 
         return $argv;
     }
 
-    public function getArgument($key, $argType = false) {
+    public function getArgument($key, $type = false, $source = false) {
         global $argv;
+
+        if ($source && $source != self::ARG_SOURCE_CLI) {
+            throw new EE_Exception("Cli has only source CLI arguments");
+        }
 
         $key = str_replace('--', '', $key);
         if (!$key) {
@@ -28,7 +32,7 @@ class EE_RequestCLI implements EE_IRequest {
         }
 
         $returnArray = [];
-        for ($j = 1; $j < 100; $j++) {
+        for ($j = 1; $j <= 100; $j++) {
             $arg = @$argv[$j];
             if ($arg) {
                 $arg = str_replace('--', '', $arg);
@@ -37,18 +41,20 @@ class EE_RequestCLI implements EE_IRequest {
                     if ($r[1] == $key) {
                         $returnArray[] = $r[2];
                     }
-                } elseif ($arg == $key && $argType == 'bool') {
+                } elseif ($arg == $key && $type == 'bool') {
                     $returnArray[] = $arg;
                 }
             }
         }
 
+        // @todo to StringUtils_Typing? or EE_Typing?
+        // @todo type на константы тоже
         if ($returnArray) {
-            if ($argType === 'string') {
+            if ($type === 'string') {
                 return implode(';', $returnArray);
-            } elseif ($argType == 'array') {
+            } elseif ($type == 'array') {
                 return $returnArray;
-            } elseif ($argType == 'bool') {
+            } elseif ($type == 'bool') {
                 return (bool) $returnArray[0];
             } elseif (count($returnArray) == 1) {
                 return $returnArray[0];
@@ -60,13 +66,4 @@ class EE_RequestCLI implements EE_IRequest {
         throw new EE_Exception('No argument '.$key);
     }
 
-    public function getArgumentSecure($key, $argType = false) {
-        try {
-            return $this->getArgument($key, $argType);
-        } catch (Exception $e) {
-
-        }
-
-        return false;
-    }
 }

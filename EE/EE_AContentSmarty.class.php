@@ -97,6 +97,10 @@ class EE_AContentSmarty extends EE_AContent implements EE_IContent {
         $this->_controlArray = [];
     }
 
+    public function setValueSecure($key, $value) {
+        $this->setValue($key, htmlspecialchars($value));
+    }
+
     public function process() {
 
     }

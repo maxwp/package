@@ -20,13 +20,13 @@ class StringUtils_Typing {
      * @return mixed
      */
     public static function TypeString($value, $typing) {
+        $typing = strtolower($typing);
+
         if ($typing == 'string') {
             $value = (string) $value;
-        }
-        if ($typing == 'int') {
+        } elseif ($typing == 'int') {
             $value = (int) $value;
-        }
-        if ($typing == 'bool') {
+        } elseif ($typing == 'bool') {
             if ($value == 'true') {
                 $value = true;
             } elseif ($value == 'false') {
@@ -34,28 +34,24 @@ class StringUtils_Typing {
             } else {
                 $value = (bool) $value;
             }
-        }
-        if ($typing == 'array') {
+        } elseif ($typing == 'array') {
             if (!$value) {
                 $value = array();
             } elseif (!is_array($value)) {
                 $value = (array) $value;
             }
-        }
-        if ($typing == 'float') {
+        } elseif ($typing == 'float') {
             $value = preg_replace("/[^0-9\.\,]/ius", '', $value);
             $value = str_replace(',', '.', $value);
             $value = (float) $value;
-        }
-        if ($typing == 'date') {
+        } elseif ($typing == 'date') {
             $x = strtotime($value);
             if (!$x || $x < 0) {
                 $value = '';
             } else {
                 $value = date('Y-m-d', $x);
             }
-        }
-        if ($typing == 'datetime') {
+        } elseif ($typing == 'datetime') {
             $x = strtotime($value);
             if (!$x || $x < 0) {
                 $value = '';
@@ -63,13 +59,7 @@ class StringUtils_Typing {
                 $value = date('Y-m-d H:i:s', $x);
             }
         }
-        if ($typing == 'file') {
-            if (isset($value['tmp_name'])) {
-                $value = $value['tmp_name'];
-            } else {
-                $value = false;
-            }
-        }
+
         return $value;
     }
 

@@ -6,11 +6,9 @@
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
-/**
- * Реализация класса работающего с запросом
- * для древовидной структуры сайта
- */
 class EE_Request implements EE_IRequest {
+
+    // @todo допилить и убрать старое говно
 
     public function __construct($url, $host, $GET, $POST, $FILES, $COOKIE) {
         // сначала задаем хост
@@ -60,27 +58,29 @@ class EE_Request implements EE_IRequest {
      * @author Vova (found bugs)
      */
     protected function _setArguments($GETArray, $POSTArray, $FILESArray) {
-        $files = [];
-        foreach ($FILESArray as $file => $val) {
+        $this->_argumentArray = [];
+
+        foreach ($FILESArray as $key => $val) {
             if (is_array($val['tmp_name'])) {
-                foreach ($val['tmp_name'] as $key => $name) {
-                    if (is_uploaded_file($val['tmp_name'][$key])) {
-                        $files[$file][$key] = new EE_RequestFile($val['tmp_name'][$key], $val['name'][$key]);
+                foreach ($val['tmp_name'] as $key2 => $name) {
+                    if (is_uploaded_file($val['tmp_name'][$key2])) {
+                        $this->_argumentArray[$key][$key2] = [new EE_RequestFile($val['tmp_name'][$key2], $val['name'][$key2]), self::ARG_SOURCE_FILE];
                     }
                 }
             } else {
                 if (is_uploaded_file($val['tmp_name'])) {
-                    $files[$file] = new EE_RequestFile($val['tmp_name'], $val['name']);
+                    $files[$key] = [new EE_RequestFile($val['tmp_name'], $val['name']), self::ARG_SOURCE_FILE];
                 }
             }
         }
 
-        $a = array_merge(array_merge($files, $GETArray), $POSTArray);
+        foreach ($GETArray as $key => $value) {
+            $this->_argumentArray[$key] = [$value, self::ARG_SOURCE_GET];
+        }
 
-        $this->_argumentArray = $a;
-        $this->_argumentsPost = $POSTArray;
-        $this->_argumentsGet = $GETArray;
-        $this->_argumentsFile = $FILESArray;
+        foreach ($POSTArray as $key => $value) {
+            $this->_argumentArray[$key] = [$value, self::ARG_SOURCE_POST];
+        }
 
         // очищаем массивы GET/POST/FILES,
         // чтобы не повадно было с ними работать :-)
@@ -103,12 +103,12 @@ class EE_Request implements EE_IRequest {
      */
     protected function _setTotalUrl($url) {
         $temp = explode('?', $url);
-        $this->totalURL = $temp[0];
-        while (substr_count($this->totalURL, '//')) {
-            $this->totalURL = str_replace('//', '/', $this->totalURL);
+        $this->_totalURL = $temp[0];
+        while (substr_count($this->_totalURL, '//')) {
+            $this->_totalURL = str_replace('//', '/', $this->_totalURL);
         }
         if (isset($temp[1])) {
-            $this->stringGET = $temp[1];
+            $this->_stringGET = $temp[1];
         }
     }
 
@@ -119,7 +119,7 @@ class EE_Request implements EE_IRequest {
      * @author Ramm
      */
     protected function _setHost($host) {
-        $this->host = $host;
+        $this->_host = $host;
     }
 
     /**
@@ -137,7 +137,7 @@ class EE_Request implements EE_IRequest {
      * @return string
      */
     public function getMatchURL() {
-        $url = $this->totalURL;
+        $url = $this->_totalURL;
 
         if ($this->local) {
             $url = preg_replace("/^".str_replace('/', '\/', preg_quote($this->local))."/", '', $url);
@@ -153,7 +153,7 @@ class EE_Request implements EE_IRequest {
      * @return string
      */
     public function getTotalURL() {
-        return $this->totalURL;
+        return $this->_totalURL;
     }
 
     /**
@@ -162,7 +162,7 @@ class EE_Request implements EE_IRequest {
      * @return string
      */
     public function getGETString() {
-        return $this->stringGET;
+        return $this->_stringGET;
     }
 
     public function getURL() {
@@ -175,7 +175,7 @@ class EE_Request implements EE_IRequest {
      * @return string
      */
     public function getHost() {
-        return $this->host;
+        return $this->_host;
     }
 
     /**
@@ -196,37 +196,27 @@ class EE_Request implements EE_IRequest {
      *
      * @throws EE_Exception
      */
-    public function getArgument($key, $argType = false) {
-        $argType = strtolower($argType);
-
-        if ($argType == self::ARG_SOURCE_POST) {
-            if (!isset($this->_argumentsPost[$key])) {
-                throw new EE_Exception("Argument {$key} is missing");
-            }
-        } elseif ($argType == self::ARG_SOURCE_GET) {
-            if (!isset($this->_argumentsGet[$key])) {
-                throw new EE_Exception("Argument {$key} is missing");
-            }
-        } elseif ($argType == self::ARG_SOURCE_PUT) {
-            // @todo
-        } elseif ($argType == self::ARG_SOURCE_DELETE) {
-            // @todo
-        } elseif ($argType == self::ARG_SOURCE_FILE) {
-            if (!isset($this->_argumentsFile[$key])) {
-                throw new EE_Exception("Argument {$key} is missing");
-            }
-
-            if (empty($this->_argumentsFile[$key]['tmp_name'])
-                || !is_uploaded_file($this->_argumentsFile[$key]['tmp_name'])) {
-                throw new EE_Exception("Argument {$key} is missing");
-            }
-        } else {
-            if (!isset($this->_argumentArray[$key])) {
-                throw new EE_Exception("Argument {$key} is missing");
-            }
+    public function getArgument($key, $type = false, $source = false) {
+        // проверка чтобы был такой аргумент
+        if (empty($this->_argumentArray[$key])) {
+            throw new EE_Exception("Argument {$key} is missing");
         }
 
-        return $this->_argumentArray[$key];
+        // опциональная проверка на источник
+        if ($source && $this->_argumentArray[$key][1] != $source) {
+            throw new EE_Exception("Argument {$key} source is not equal to {$source}");
+        }
+
+        $value = $this->_argumentArray[$key][0];
+
+        // опциональная типизация
+        // @todo to EE_Typing***
+        if ($type) {
+            $value = StringUtils_Typing::TypeString($value, $type);
+        }
+
+        // возвращаем аргумент
+        return $value;
     }
 
     /**
@@ -240,43 +230,6 @@ class EE_Request implements EE_IRequest {
      */
     public function setArgument($key, $value) {
         $this->_argumentArray[$key] = $value;
-    }
-
-    /**
-     * Возвращает аргумент по ключу.
-     * Без генерации исключения.
-     * В случае его отсутствия - тогда вернет false.
-     *
-     * @param string $key
-     *
-     * @return mixed
-     */
-    public function getArgumentSecure($key, $argType = false) {
-        $argType = strtolower($argType);
-
-        if ($argType == self::ARG_SOURCE_POST) {
-            if (!isset($this->_argumentsPost[$key])) {
-                return false;
-            }
-        } elseif ($argType == self::ARG_SOURCE_GET) {
-            if (!isset($this->_argumentsGet[$key])) {
-                return false;
-            }
-        } elseif ($argType == self::ARG_SOURCE_PUT) {
-            // @todo
-        } elseif ($argType == self::ARG_SOURCE_DELETE) {
-            // @todo
-        } elseif ($argType == self::ARG_SOURCE_FILE) {
-            if (!isset($this->_argumentsFile[$key])) {
-                return false;
-            }
-        } else {
-            if (!isset($this->_argumentArray[$key])) {
-                return false;
-            }
-        }
-
-        return $this->_argumentArray[$key];
     }
 
     /**
@@ -301,14 +254,7 @@ class EE_Request implements EE_IRequest {
         $this->local = $local;
     }
 
-    /**
-     * Указатель на экземпляр объекта в системе (шаблон Singleton)
-     *
-     * @var Engine_URLParser
-     */
-    protected static $Instance = null;
-
-    protected $host;
+    protected $_host;
 
     /**
      * "Чистый" URL, без get'a
@@ -317,7 +263,7 @@ class EE_Request implements EE_IRequest {
      *
      * @var string
      */
-    protected $totalURL = '';
+    protected $_totalURL = '';
 
     /**
      * Часть URL запроса содержащая GET параметры
@@ -326,22 +272,11 @@ class EE_Request implements EE_IRequest {
      *
      * @var string
      */
-    protected $stringGET = '';
+    protected $_stringGET = '';
 
-    /**
-     * Массив аргументов страници
-     * Фактически это объединение POST и GET параметров с преимуществом первых
-     *
-     * @author Ramm
-     *
-     * @var array
-     */
     protected $_argumentArray = [];
-    protected $_argumentsGet = array();
-    protected $_argumentsPost = array();
-    protected $_argumentsFile = array();
 
-    private $_cookie = array();
+    private $_cookie = [];
 
     /**
      * Локальная часть URL

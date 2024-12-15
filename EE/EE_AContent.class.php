@@ -16,24 +16,45 @@ abstract class EE_AContent implements EE_IContent {
      * Если аргумента нет - будет EE_Exception
      *
      * @param string $key
-     * @param mixed $argType
+     * @param mixed $type
      *
      * @return mixed
      */
-    public function getArgument($key, $argType = false) {
-        if (isset($this->_argumentArray[$key])) {
-            $x = $this->_argumentArray[$key];
-
-            // @todo тут жопа с типизацией, потому что где-то используется get/post/file
-            // а где-то string/array/bool
-            if ($argType) {
-                $x = StringUtils_Typing::TypeString($x, $argType);
-            }
+    public function getArgument($key, $type = false, $source = false) {
+        if ($source && $source == EE_IRequest::ARG_SOURCE_INTERNAL) {
+            // только внутренние аргументы
+            $checkInternal = true;
+            $checkExternal = false;
+        } elseif ($source && $source != EE_IRequest::ARG_SOURCE_INTERNAL) {
+            // только внешние
+            $checkInternal = false;
+            $checkExternal = true;
         } else {
-            $x = EE::Get()->getRequest()->getArgument($key, $argType);
+            // все подряд
+            $checkInternal = true;
+            $checkExternal = true;
         }
 
-        return $x;
+        // сначала проверяем внутренние
+        if ($checkInternal) {
+            if (isset($this->_argumentArray[$key])) {
+                $value = $this->_argumentArray[$key];
+
+                // опциональная типизация
+                if ($type) {
+                    $value = StringUtils_Typing::TypeString($value, $type);
+                }
+
+                return $value;
+            }
+        }
+
+        // затем проверяю внешние
+        if ($checkExternal) {
+            return EE::Get()->getRequest()->getArgument($key, $type, $source);
+        }
+
+        throw new EE_Exception("Argument {$key} not found");
     }
 
     /**
@@ -41,23 +62,22 @@ abstract class EE_AContent implements EE_IContent {
      * Если аргумента нет - будет false.
      *
      * @param string $key
-     * @param mixed $argType
+     * @param mixed $type
      *
      * @return mixed
      * @see getArgument()
      *
      */
-    public function getArgumentSecure($key, $argType = false) {
+    public function getArgumentSecure($key, $type = false, $source = false) {
         try {
-            return $this->getArgument($key, $argType);
+            return $this->getArgument($key, $type, $source);
         } catch (Exception $exception) {
             return false;
         }
     }
 
     /**
-     * Получить все возможные аргументы.
-     * Вернется ассоциативный массив key-value.
+     * Получить все внутренние аргументы
      *
      * @return array
      */
@@ -65,6 +85,14 @@ abstract class EE_AContent implements EE_IContent {
         return $this->_argumentArray;
     }
 
+    /**
+     * Задать внутренних аргумент контенту
+     *
+     * @param $key
+     * @param $value
+     * @return void
+     * @throws EE_Exception
+     */
     public function setArgument($key, $value) {
         if (!$key) {
             throw new EE_Exception("Invalid argument key");
@@ -76,7 +104,6 @@ abstract class EE_AContent implements EE_IContent {
     public function unsetArgument($key) {
         unset($this->_argumentArray[$key]);
     }
-
 
     public function unsetArgumentArray() {
         $this->_argumentArray = [];
@@ -90,16 +117,13 @@ abstract class EE_AContent implements EE_IContent {
      * @param mixed $value
      */
     public function setValue($key, $value) {
+        // @todo скорее всего будет отрефакторено при разделении Smarty vs Content based on EE_DataBus
+
         if (!$key) {
             throw new EE_Exception("Empty key name. Nothing to set");
         }
 
-
         $this->_valueArray[$key] = $value;
-    }
-
-    public function setValueSecure($key, $value) {
-        $this->setValue($key, htmlspecialchars($value));
     }
 
     public function unsetValue($key) {
@@ -118,7 +142,7 @@ abstract class EE_AContent implements EE_IContent {
      */
     public function getValue($key) {
         if (!$key) {
-            throw new EE_Exception("Empty key name. Nothing to get");
+            throw new EE_Exception('Empty key name');
         }
 
         if (isset($this->_valueArray[$key])) {
@@ -180,7 +204,9 @@ abstract class EE_AContent implements EE_IContent {
 
     private $_valueArray = [];
 
-    // массив локальных аргументов
+    /**
+     * массив внутренних аргументов
+     */
     private $_argumentArray = [];
 
 }

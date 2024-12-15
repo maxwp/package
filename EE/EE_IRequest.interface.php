@@ -18,17 +18,16 @@ interface EE_IRequest {
 
     public function getArgumentArray();
 
-    public function getArgument($key, $argType = false);
-
-    public function getArgumentSecure($key, $argType = false);
+    public function getArgument($key, $type = false, $source = false);
 
     //public function getCOOKIEArray();
 
     const ARG_SOURCE_FILE = 'file';
     const ARG_SOURCE_GET = 'get';
     const ARG_SOURCE_POST = 'post';
-    const ARG_SOURCE_PUT = 'put';
-    const ARG_SOURCE_DELETE = 'delete';
+    const ARG_SOURCE_PUT = 'put'; // @todo
+    const ARG_SOURCE_DELETE = 'delete'; // @todo
     const ARG_SOURCE_CLI = 'cli';
+    const ARG_SOURCE_INTERNAL = 'internal';
 
 }
