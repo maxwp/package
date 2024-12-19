@@ -43,7 +43,7 @@ class Array_Static {
      * @param $a
      * @return float
      */
-    public static function Median($a, $countLimit = false) {
+    public static function Med($a, $countLimit = false) {
         $a = new Array_Object($a);
         return $a->median($countLimit);
     }
