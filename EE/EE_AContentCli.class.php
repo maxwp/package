@@ -41,6 +41,13 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
         }
     }
 
-    // @todo print_s (sprintf)
+    public function print_f($s, $format, $eol = ' ') {
+        // @todo EE_PRINT
+        if (substr_count($format, '%')) {
+            print sprintf($format, $s).$eol;
+        } else {
+            print sprintf('%1$'.$format, $s).$eol;
+        }
+    }
 
 }
