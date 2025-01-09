@@ -35,7 +35,12 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
         }
     }
 
-    // @todo print_e (callback)
+    public function print_e($callback) {
+        if (defined('EE_PRINT')) {
+            print $callback();
+        }
+    }
+
     // @todo print_s (sprintf)
 
 }
