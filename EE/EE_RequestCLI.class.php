@@ -19,9 +19,10 @@ class EE_RequestCLI implements EE_IRequest {
         return $argv;
     }
 
-    public function getArgument($key, $type = false, $source = false) {
+    public function getArgument($key, $source = false, $type = false) {
         global $argv;
 
+        // проверка на дурачка
         if ($source && $source != self::ARG_SOURCE_CLI) {
             throw new EE_Exception("Cli has only source CLI arguments");
         }
@@ -47,8 +48,8 @@ class EE_RequestCLI implements EE_IRequest {
             }
         }
 
-        // @todo to StringUtils_Typing? or EE_Typing?
-        // @todo type на константы тоже
+        // @todo тут нет больше типизации, возвращается всегда что нашлось
+        // а затем Typing уже приводит к нужному виду
         if ($returnArray) {
             if ($type === 'string') {
                 return implode(';', $returnArray);

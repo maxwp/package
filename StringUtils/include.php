@@ -26,5 +26,4 @@ ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_FormatterAddressUACN.cla
 ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_FormatterURL.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_FormatterPrice.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_MD5.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_Typing.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_Exception.class.php');

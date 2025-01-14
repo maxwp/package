@@ -8,6 +8,7 @@
  */
 
 ClassLoader::Get()->registerClass(__DIR__.'/EE_Exception.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/EE_Typing.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/EE.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/EE_Smarty.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/EE_IRequest.interface.php');

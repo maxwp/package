@@ -18,7 +18,8 @@ interface EE_IRequest {
 
     public function getArgumentArray();
 
-    public function getArgument($key, $type = false, $source = false);
+    // @todo отказаться от typing внутри EE_IRequest
+    public function getArgument($key, $source = false, $type = false);
 
     //public function getCOOKIEArray();
 

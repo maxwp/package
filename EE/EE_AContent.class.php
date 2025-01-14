@@ -27,6 +27,7 @@ abstract class EE_AContent implements EE_IContent {
             $checkExternal = false;
         } elseif ($source && $source != EE_IRequest::ARG_SOURCE_INTERNAL) {
             // только внешние
+            // (ARG_SOURCE_EXTERNAL нет, внешними считаются GET/POST/... - все что не INTERNAL)
             $checkInternal = false;
             $checkExternal = true;
         } else {
@@ -35,23 +36,30 @@ abstract class EE_AContent implements EE_IContent {
             $checkExternal = true;
         }
 
-        // сначала проверяем внутренние
+        // сначала проверяем внутренние аргументы
         if ($checkInternal) {
             if (isset($this->_argumentArray[$key])) {
                 $value = $this->_argumentArray[$key];
 
                 // опциональная типизация
                 if ($type) {
-                    $value = StringUtils_Typing::TypeString($value, $type);
+                    $value = EE_Typing::TypeString($value, $type);
                 }
 
                 return $value;
             }
         }
 
-        // затем проверяю внешние
+        // затем проверяю внешние аргументы
         if ($checkExternal) {
-            return EE::Get()->getRequest()->getArgument($key, $type, $source);
+            $value =  EE::Get()->getRequest()->getArgument($key, $source, $type);
+
+            // опциональная типизация
+            if ($type) {
+                $value = EE_Typing::TypeString($value, $type);
+            }
+
+            return $value;
         }
 
         throw new EE_Exception("Argument {$key} not found");

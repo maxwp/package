@@ -196,7 +196,7 @@ class EE_Request implements EE_IRequest {
      *
      * @throws EE_Exception
      */
-    public function getArgument($key, $type = false, $source = false) {
+    public function getArgument($key, $source = false, $type = false) {
         // проверка чтобы был такой аргумент
         if (empty($this->_argumentArray[$key])) {
             throw new EE_Exception("Argument {$key} is missing");
@@ -210,9 +210,9 @@ class EE_Request implements EE_IRequest {
         $value = $this->_argumentArray[$key][0];
 
         // опциональная типизация
-        // @todo to EE_Typing***
+        // @todo тут уже нет типизации
         if ($type) {
-            $value = StringUtils_Typing::TypeString($value, $type);
+            $value = EE_Typing::TypeString($value, $type);
         }
 
         // возвращаем аргумент

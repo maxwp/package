@@ -9,7 +9,10 @@
 /**
  * Типизирование строк
  */
-class StringUtils_Typing {
+class EE_Typing {
+
+    // @todo ultra fast typing via pack()
+    // @todo move to EE_Typing, not StringUtils
 
     /**
      * Привести строку к необходимому типу
@@ -22,11 +25,11 @@ class StringUtils_Typing {
     public static function TypeString($value, $typing) {
         $typing = strtolower($typing);
 
-        if ($typing == 'string') {
+        if ($typing == self::TYPE_STRING) {
             $value = (string) $value;
-        } elseif ($typing == 'int') {
+        } elseif ($typing == self::TYPE_INT) {
             $value = (int) $value;
-        } elseif ($typing == 'bool') {
+        } elseif ($typing == self::TYPE_BOOL) {
             if ($value == 'true') {
                 $value = true;
             } elseif ($value == 'false') {
@@ -34,24 +37,24 @@ class StringUtils_Typing {
             } else {
                 $value = (bool) $value;
             }
-        } elseif ($typing == 'array') {
+        } elseif ($typing == self::TYPE_ARRAY) {
             if (!$value) {
                 $value = array();
             } elseif (!is_array($value)) {
                 $value = (array) $value;
             }
-        } elseif ($typing == 'float') {
+        } elseif ($typing == self::TYPE_FLOAT) {
             $value = preg_replace("/[^0-9\.\,]/ius", '', $value);
             $value = str_replace(',', '.', $value);
             $value = (float) $value;
-        } elseif ($typing == 'date') {
+        } elseif ($typing == self::TYPE_DATE) {
             $x = strtotime($value);
             if (!$x || $x < 0) {
                 $value = '';
             } else {
                 $value = date('Y-m-d', $x);
             }
-        } elseif ($typing == 'datetime') {
+        } elseif ($typing == self::TYPE_DATETIME) {
             $x = strtotime($value);
             if (!$x || $x < 0) {
                 $value = '';
@@ -62,5 +65,13 @@ class StringUtils_Typing {
 
         return $value;
     }
+
+    const TYPE_STRING = 'string';
+    const TYPE_INT = 'int';
+    const TYPE_BOOL = 'bool';
+    const TYPE_FLOAT = 'float';
+    const TYPE_DATE = 'date';
+    const TYPE_DATETIME = 'datetime';
+    const TYPE_ARRAY = 'array';
 
 }
