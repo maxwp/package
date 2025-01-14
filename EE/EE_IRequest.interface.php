@@ -13,15 +13,12 @@ interface EE_IRequest {
 
     // @todo шо тут делать?
     //public function getURL();
-
     //public function getHost();
+    //public function getCOOKIEArray();
 
     public function getArgumentArray();
 
-    // @todo отказаться от typing внутри EE_IRequest
-    public function getArgument($key, $source = false, $type = false);
-
-    //public function getCOOKIEArray();
+    public function getArgument($key, $source = false);
 
     const ARG_SOURCE_FILE = 'file';
     const ARG_SOURCE_GET = 'get';

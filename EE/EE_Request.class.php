@@ -128,7 +128,7 @@ class EE_Request implements EE_IRequest {
      * @return string
      */
     public function getLocal() {
-        return $this->local;
+        return $this->_local;
     }
 
     /**
@@ -139,8 +139,8 @@ class EE_Request implements EE_IRequest {
     public function getMatchURL() {
         $url = $this->_totalURL;
 
-        if ($this->local) {
-            $url = preg_replace("/^".str_replace('/', '\/', preg_quote($this->local))."/", '', $url);
+        if ($this->_local) {
+            $url = preg_replace("/^".str_replace('/', '\/', preg_quote($this->_local))."/", '', $url);
         }
 
         return $url;
@@ -196,7 +196,7 @@ class EE_Request implements EE_IRequest {
      *
      * @throws EE_Exception
      */
-    public function getArgument($key, $source = false, $type = false) {
+    public function getArgument($key, $source = false) {
         // проверка чтобы был такой аргумент
         if (empty($this->_argumentArray[$key])) {
             throw new EE_Exception("Argument {$key} is missing");
@@ -207,16 +207,7 @@ class EE_Request implements EE_IRequest {
             throw new EE_Exception("Argument {$key} source is not equal to {$source}");
         }
 
-        $value = $this->_argumentArray[$key][0];
-
-        // опциональная типизация
-        // @todo тут уже нет типизации
-        if ($type) {
-            $value = EE_Typing::TypeString($value, $type);
-        }
-
-        // возвращаем аргумент
-        return $value;
+        return $this->_argumentArray[$key][0];
     }
 
     /**
@@ -247,11 +238,9 @@ class EE_Request implements EE_IRequest {
 
     /**
      * Задать локальную часть URL'a, которую необходимо отбрасывать при анализе
-     *
-     * @param string $local
      */
     public function setLocal($local) {
-        $this->local = $local;
+        $this->_local = $local;
     }
 
     protected $_host;
@@ -285,6 +274,6 @@ class EE_Request implements EE_IRequest {
      * @deprecated
      * @var string
      */
-    protected $local = false;
+    protected $_local = false;
 
 }

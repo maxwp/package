@@ -19,7 +19,7 @@ class EE_RequestCLI implements EE_IRequest {
         return $argv;
     }
 
-    public function getArgument($key, $source = false, $type = false) {
+    public function getArgument($key, $source = false) {
         global $argv;
 
         // проверка на дурачка
@@ -35,31 +35,28 @@ class EE_RequestCLI implements EE_IRequest {
         $returnArray = [];
         for ($j = 1; $j <= 100; $j++) {
             $arg = @$argv[$j];
-            if ($arg) {
-                $arg = str_replace('--', '', $arg);
+            if (!$arg) {
+                continue;
+            }
 
-                if (preg_match("/^(.+?)=(.+?)$/ius", $arg, $r)) {
-                    if ($r[1] == $key) {
-                        $returnArray[] = $r[2];
-                    }
-                } elseif ($arg == $key && $type == 'bool') {
-                    $returnArray[] = $arg;
+            $arg = str_replace('--', '', $arg);
+
+            if (preg_match("/^(.+?)=(.+?)$/ius", $arg, $r)) {
+                if ($r[1] == $key) {
+                    $returnArray[] = $r[2];
                 }
+            } elseif ($arg == $key) {
+                // похоже на bool
+                $returnArray[] = true;
             }
         }
 
-        // @todo тут нет больше типизации, возвращается всегда что нашлось
-        // а затем Typing уже приводит к нужному виду
         if ($returnArray) {
-            if ($type === 'string') {
-                return implode(';', $returnArray);
-            } elseif ($type == 'array') {
-                return $returnArray;
-            } elseif ($type == 'bool') {
-                return (bool) $returnArray[0];
-            } elseif (count($returnArray) == 1) {
+            // если один элемент - выдаем его
+            if (count($returnArray) == 1) {
                 return $returnArray[0];
             } else {
+                // инача массив
                 return $returnArray;
             }
         }

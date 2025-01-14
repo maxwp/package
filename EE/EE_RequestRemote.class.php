@@ -20,7 +20,7 @@ class EE_RequestRemote implements EE_IRequest {
         return $this->_argumentArray;
     }
 
-    public function getArgument($key, $source = false, $type = false) {
+    public function getArgument($key, $source = false) {
         if (isset($this->_argumentArray[$key])) {
             return $this->_argumentArray[$key];
         }
