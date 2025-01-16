@@ -40,9 +40,16 @@ class Connection_WebSocket implements Connection_IConnection {
 
             $read = [$this->_stream];
             $write = null;
-            $except = null;
+            $except = [$this->_stream];
 
             $num_changed_streams = stream_select($read, $write, $except, 0, $this->_streamSelectTimeout);
+
+            if (!empty($except)) {
+                print "stream_select except\n";
+                $this->disconnect();
+                return false;
+            }
+
             $msgArray = false;
             if ($num_changed_streams > 0) {
                 $msgArray = $this->read();
