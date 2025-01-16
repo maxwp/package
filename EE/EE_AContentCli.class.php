@@ -19,13 +19,13 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
 
     public function print_n($s = '') {
         if (defined('EE_PRINT')) {
-            print $s.PHP_EOL;
+            print "$s\n";
         }
     }
 
     public function print_t($s) {
         if (defined('EE_PRINT')) {
-            print $s."\t";
+            print "$s\t";
         }
     }
 
