@@ -21,6 +21,7 @@ abstract class EE_AContent implements EE_IContent {
      * @return mixed
      */
     public function getArgument($key, $type = false, $source = false) {
+        // @todo rename type to typing
         if ($source && $source == EE_IRequest::ARG_SOURCE_INTERNAL) {
             // только внутренние аргументы
             $checkInternal = true;
@@ -52,7 +53,7 @@ abstract class EE_AContent implements EE_IContent {
 
         // затем проверяю внешние аргументы
         if ($checkExternal) {
-            $value =  EE::Get()->getRequest()->getArgument($key, $source, $type);
+            $value =  EE::Get()->getRequest()->getArgument($key, $source);
 
             // опциональная типизация
             if ($type) {
@@ -80,7 +81,7 @@ abstract class EE_AContent implements EE_IContent {
         try {
             return $this->getArgument($key, $type, $source);
         } catch (Exception $exception) {
-            return false;
+            return EE_Typing::TypeString(false, $type);
         }
     }
 

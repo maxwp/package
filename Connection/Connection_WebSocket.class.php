@@ -8,8 +8,9 @@
 
 class Connection_WebSocket implements Connection_IConnection {
 
-    public function __construct($host, $port, $path) {
+    public function __construct($host, $port, $path, $ip = false) {
         $this->_host = $host;
+        $this->_ip = $ip;
         $this->_port = $port;
         $this->_path = $path;
     }
@@ -90,12 +91,18 @@ class Connection_WebSocket implements Connection_IConnection {
                 'tcp_nodelay' => true,  // no Nagle algorithm
             ],
             'ssl' => array(
+                'peer_name' => $this->_host,
                 'verify_peer' => false,
                 'verify_peer_name' => false
             ),
         ]);
 
-        $this->_stream = stream_socket_client("ssl://{$this->_host}:{$this->_port}", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context);
+        $connectHost = $this->_ip;
+        if (!$connectHost) {
+            $connectHost = $this->_host;
+        }
+
+        $this->_stream = stream_socket_client("ssl://{$connectHost}:{$this->_port}", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context);
         if (!$this->_stream) {
             throw new Connection_Exception("Failed to connect to {$this->_host}:{$this->_port} - $errstr ($errno)");
         }
@@ -294,7 +301,7 @@ class Connection_WebSocket implements Connection_IConnection {
         return $result;
     }
 
-    private $_host;
+    private $_host, $_ip;
     private $_port;
     private $_path;
     private $_stream;
