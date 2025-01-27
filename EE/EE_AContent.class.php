@@ -21,7 +21,6 @@ abstract class EE_AContent implements EE_IContent {
      * @return mixed
      */
     public function getArgument($key, $type = false, $source = false) {
-        // @todo rename type to typing
         if ($source && $source == EE_IRequest::ARG_SOURCE_INTERNAL) {
             // только внутренние аргументы
             $checkInternal = true;
