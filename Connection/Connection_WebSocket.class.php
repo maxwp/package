@@ -20,6 +20,10 @@ class Connection_WebSocket implements Connection_IConnection {
     }
 
     public function loop($callback) {
+        // обнуляем ts ping-pong, иначе могу зайти в вечную restart долбежку
+        $this->_tsPing = 0;
+        $this->_tsPong = 0;
+
         while (true) {
             $time = time();
 
@@ -48,7 +52,7 @@ class Connection_WebSocket implements Connection_IConnection {
             if (!empty($except)) {
                 print "stream_select except\n";
                 $this->disconnect();
-                return false;
+                return true;
             }
 
             $msgArray = false;
