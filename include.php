@@ -32,3 +32,4 @@ include(__DIR__.'/TextProcessor/include.php');
 include(__DIR__.'/Array/include.php');
 include(__DIR__.'/Cron/include.php');
 include(__DIR__.'/IPC/include.php');
+include(__DIR__.'/Pattern/include.php');
