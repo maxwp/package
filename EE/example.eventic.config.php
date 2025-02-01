@@ -7,7 +7,7 @@ session_set_cookie_params(0, '/', '.domain.com');
 @session_start();
 
 // connection to database
-Connection::Initialize(
+Connection::Register(
     'mysql',
     new Connection_MySQLi(
         '127.0.0.1', // use 127.0.0.1, not localhost!
@@ -18,7 +18,7 @@ Connection::Initialize(
 );
 
 // connection to redis
-Connection::Initialize(
+Connection::Register(
     'redis',
     new Connection_Redis(
         '127.0.0.1',

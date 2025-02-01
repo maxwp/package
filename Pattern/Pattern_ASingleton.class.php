@@ -25,6 +25,6 @@ abstract class Pattern_ASingleton {
     /**
      * @var array<Pattern_ASingleton>
      */
-    private static $_InstanceArray = [];
+    private static array $_InstanceArray = [];
 
 }
