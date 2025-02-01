@@ -19,6 +19,8 @@
  */
 class Storage_Array implements Storage_IHandler {
 
+    // @todo to RegistryArray
+
     /**
      * Put data to array
      * Записать данные в кеш.

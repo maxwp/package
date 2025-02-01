@@ -1,11 +1,11 @@
 <?php
 abstract class Pattern_ASingleton {
 
-    /**
-     * Массив для хранения экземпляров для каждого наследника.
-     * @var array
-     */
-    private static $_InstanceArray = [];
+    abstract protected function __construct();
+
+    protected function __clone() {
+        throw new Exception("Cannot clone singleton " . get_called_class());
+    }
 
     /**
      * @return static
@@ -22,6 +22,9 @@ abstract class Pattern_ASingleton {
         self::$_InstanceArray[static::class] = $object;
     }
 
-    abstract protected function __construct();
+    /**
+     * @var array<Pattern_ASingleton>
+     */
+    private static $_InstanceArray = [];
 
 }

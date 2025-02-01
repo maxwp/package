@@ -20,7 +20,7 @@
  * @copyright WebProduction
  * @package Storage
  */
-class Storage {
+class Storage extends Pattern_ARegistrySingleton {
 
     /**
      * Get storage by key.
@@ -30,66 +30,20 @@ class Storage {
      * Возможно хранение нескольких хоанилищ по разным ключам ($storageKey)
      * В случае использования ключа - хранилище должен быть инициирован явно:
      *
-     * @see Initialize()
-     *
-     * @package string $storageKey
      * @return Storage_IHandler
      */
-    public static function Get($storageKey) {
-        if (!$storageKey) {
-            throw new Storage_Exception("Empty storage key");
-        }
-
-        if (!isset(self::$_InstanceArray[$storageKey])) {
-            throw new Storage_Exception("Storage with key '{$storageKey}' not found, please, call Initialize() before.");
-        }
-
-        return self::$_InstanceArray[$storageKey];
+    public static function Get($key) {
+        return self::_Get($key);
     }
 
     /**
      * Initialize new storage.
      *
-     * Инициировать хранилище. Передается первый handler.
-     * Далее через addHandler() можно добавлять еще обработчики.
-     *
-     * @see addHandler()
-     *
-     * @param Storage_IHandler $handler
-     * @param string $storageKey
-     * @return Storage_IHandler
+     * @param Storage_IHandler $object
+     * @param string $key
      */
-    public static function Initialize($storageKey, Storage_IHandler $handler) {
-        if (!$storageKey) {
-            throw new Storage_Exception("Empty storage key");
-        }
-
-        self::$_InstanceArray[$storageKey] = $handler;
-        return $handler;
+    public static function Register(string $key, $object) {
+        self::_Register($key, $object, 'Storage_IHandler');
     }
-
-    /**
-     * Remove all storage pull
-     * Очистить весь реестр Storage-ей
-     *
-     * @access public
-     * @static
-     */
-    public static function Reset() {
-        self::$_InstanceArray = array();
-    }
-
-    private function __construct() {
-        // singleton
-    }
-
-    private function __clone() {
-
-    }
-
-    /**
-     * @var Storage_IHandler[] $_InstanceArray
-     */
-    private static $_InstanceArray = [];
 
 }
