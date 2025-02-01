@@ -21,10 +21,12 @@
  * @copyright WebProduction
  * @package   Events
  */
-class Events {
+class Events extends Pattern_ASingleton {
 
     // @todo переписать Events чтобы события не надо было регистрировать, а можно было просто цепляться на key и
     // от него делать notify всего что там висит.
+
+    // @todo pattern model
 
     /**
      * Получить событие
@@ -154,18 +156,6 @@ class Events {
     }
 
     /**
-     * Получить систему событий (Events)
-     *
-     * @return Events
-     */
-    public static function Get() {
-        if (!self::$_Instance) {
-            self::$_Instance = new self();
-        }
-        return self::$_Instance;
-    }
-
-    /**
      * Создать событие с таким классом.
      * Так как clone быстрее чем new, то мы кешируем.
      *
@@ -202,11 +192,7 @@ class Events {
      */
     private $_observerArray = [];
 
-    /**
-     * Instanse
-     *
-     * @var Events
-     */
-    private static $_Instance = null;
+    public function __construct() {
 
+    }
 }

@@ -9,7 +9,7 @@
 /**
  * Cron supervisor
  */
-class Cron {
+class Cron extends Pattern_ASingleton {
 
     public function run($className, $argumentArray = [], $uniquePID = false, $logFile = false) {
         if (!is_subclass_of($className, EE_AContent::class)) {
@@ -97,18 +97,8 @@ class Cron {
 
     private $_redis;
 
-    /**
-     * @return Cron
-     */
-    public static function Get() {
-        if (!self::$_Instance) {
-            $classname = __CLASS__;
-            self::$_Instance = new $classname();
-        }
+    public function __construct() {
 
-        return self::$_Instance;
     }
-
-    private static $_Instance;
 
 }
