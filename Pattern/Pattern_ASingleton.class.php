@@ -19,7 +19,7 @@ abstract class Pattern_ASingleton {
     }
 
     public static function Set($object) {
-        self::$_InstanceArray[$object::class] = $object;
+        self::$_InstanceArray[static::class] = $object;
     }
 
     abstract protected function __construct();
