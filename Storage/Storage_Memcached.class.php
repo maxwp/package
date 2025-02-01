@@ -30,7 +30,15 @@ class Storage_Memcached implements Storage_IHandler {
      * @param mixed $key
      * @param mixed $value
      */
-    public function set($key, $value, $ttl = false) {
+    public function set($key, $value) {
+        if (is_array($key)) {
+            return $this->getLink()->setMulti($key);
+        } else {
+            return $this->getLink()->set($key, $value);
+        }
+    }
+
+    public function setEx($key, $value, $ttl) {
         if ($ttl && $ttl < 0) {
             throw new Storage_Exception("Incorrect TTL '{$ttl}'");
         }
@@ -103,5 +111,4 @@ class Storage_Memcached implements Storage_IHandler {
      * @var Connection_IConnection
      */
     private $_connection;
-
 }

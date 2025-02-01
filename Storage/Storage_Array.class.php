@@ -17,55 +17,10 @@
  * @copyright WebProduction
  * @package Storage
  */
-class Storage_Array implements Storage_IHandler {
+class Storage_Array extends Pattern_RegistryArray implements Storage_IHandler {
 
-    // @todo to RegistryArray
-
-    /**
-     * Put data to array
-     * Записать данные в кеш.
-     *
-     * @param string $key
-     * @param mixed $value
-     */
-    public function set($key, $value, $ttl = false) {
-        // @todo: TTL
-        $this->_array[$key] = $value;
+    public function setEx($key, $value, $ttl) {
+        throw new Exception("TTL not supported");
     }
-
-    /**
-     * Get data by key
-     * Получить данные по ключу
-     *
-     * @param string $key
-     */
-    public function get($key) {
-        if (isset($this->_array[$key])) {
-            return $this->_array[$key];
-        }
-        throw new Storage_Exception("Storage data not found by key '{$key}'");
-    }
-
-
-    /**
-     * Remove data by key
-     * Удалить данные
-     *
-     * @param string $key
-     */
-    public function remove($key) {
-        unset($this->_array[$key]);
-    }
-
-    /**
-     * Clean all storage
-     *
-     * Очистить
-     */
-    public function clean() {
-        $this->_array = [];
-    }
-
-    private $_array = [];
 
 }

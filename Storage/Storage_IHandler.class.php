@@ -16,20 +16,29 @@
 interface Storage_IHandler {
 
     /**
-     * Put data to storage.
-     * TTL - time to life (if handler supported).
-     *
-     * Записать данные.
-     * TTL - time-to-life, время жизни данных, если
-     * хандлер поддерживает TTL
+     * Put data to storage handler.
      **
      * @param string $key
-     * @param string $parentKey
      * @param mixed $value
-     * @param int $ttl
-     * @return bool
+     * @return bool @todo
      */
-    public function set($key, $value, $ttl = false);
+    public function set($key, $value);
+
+    /**
+     * Put data to storage handler.
+     * TTL - time to life (if handler supported).
+     **
+     * @param string $key
+     * @param mixed $value
+     * @return bool @todo
+     */
+    public function setEx($key, $value, $ttl);
+
+    /**
+     * @param $key
+     * @return bool @todo
+     */
+    public function has($key);
 
     /**
      * Get data from storage.
@@ -37,6 +46,7 @@ interface Storage_IHandler {
      * Получить данные по ключу
      *
      * @param string $key
+     * @throws Exception @todo
      */
     public function get($key);
 
@@ -46,13 +56,12 @@ interface Storage_IHandler {
      * Удалить данные
      *
      * @param string $key
+     * @return bool @todo
      */
     public function remove($key);
 
     /**
      * Clean all data in handler
-     *
-     * Очистить
      */
     public function clean();
 

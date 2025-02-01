@@ -14,7 +14,7 @@
  * @copyright WebProduction
  * @package   Storage
  */
-class Storage_HandlerRedis implements Storage_IHandler {
+class Storage_Redis implements Storage_IHandler {
 
     /**
      * Create memcache handler.
@@ -35,20 +35,16 @@ class Storage_HandlerRedis implements Storage_IHandler {
         $this->_link = null;
     }
 
-    /**
-     * Записать данные в кеш.
-     *
-     * @param string $key
-     * @param mixed $value
-     */
-    public function set($key, $value, $ttl = false) {
-        if ($ttl && $ttl < 0) {
+    public function set($key, $value) {
+        $this->_getRedis()->set($this->_prefix.$key, $value);
+    }
+
+    public function setEx($key, $value, $ttl) {
+        if ($ttl <= 0) {
             throw new Storage_Exception("Incorrect TTL '{$ttl}'");
-        } else {
-            $ttl = null;
         }
 
-        $result = $this->_getRedis()->set($this->_prefix.$key, $value, $ttl);
+        $this->_getRedis()->set($this->_prefix.$key, $value, $ttl);
     }
 
     /**
@@ -80,9 +76,9 @@ class Storage_HandlerRedis implements Storage_IHandler {
      *
      * @param string $key
      */
-    /*public function has($key) {
+    public function has($key) {
         return ($this->_getRedis()->get($this->_prefix.$key) != false);
-    }*/
+    }
 
     /**
      * Удалить данные
@@ -97,13 +93,8 @@ class Storage_HandlerRedis implements Storage_IHandler {
      * Очистить кеш
      */
     public function clean() {
+        // @todo а нужно ли? а можно ли сделать?
         throw new Storage_Exception('Cannot remove all');
-
-        /*if ($this->_prefix) {
-            throw new Storage_Exception('Cannot flush all cache');
-        }*/
-
-        //$this->_getRedis()->del();
     }
 
     private function _getRedis() {
@@ -121,5 +112,4 @@ class Storage_HandlerRedis implements Storage_IHandler {
     private $_port;
 
     private $_link;
-
 }

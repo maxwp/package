@@ -19,17 +19,17 @@ class Storage_Shmop implements Storage_IHandler {
         $this->_blockSize = $blockSize;
     }
 
-    public function set($key, $value, $ttl = false) {
-        if ($ttl) {
-            throw new Storage_Exception("No TTL for shmop");
-        }
-
+    public function set($key, $value) {
         $sem = IPC::GetSemaphore($key);
         $memory = IPC::GetMemory($key, $this->_blockSize);
 
         $sem->acquire();
         $memory->setString($value);
         $sem->release();
+    }
+
+    public function setEx($key, $value, $ttl) {
+        throw new Storage_Exception("No TTL for shmop");
     }
 
     public function get($key) {
@@ -56,6 +56,10 @@ class Storage_Shmop implements Storage_IHandler {
         return $newValue;
     }
 
+    public function has($key) {
+        // @todo
+    }
+
     public function remove($key) {
         // @todo
     }
@@ -65,5 +69,4 @@ class Storage_Shmop implements Storage_IHandler {
     }
 
     private $_blockSize = 128;
-
 }

@@ -7,7 +7,7 @@
  */
 
 /**
- * Storage handler: memcached.
+ * @deprecated
  *
  * @author    Maxim Miroshnichenko <max@webproduction.ua>
  * @copyright WebProduction
