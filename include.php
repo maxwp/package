@@ -15,6 +15,7 @@ if (function_exists('mb_internal_encoding')) {
 // fix for Mac OS X PHP 5.3 default
 @date_default_timezone_set(date_default_timezone_get());
 
+include(__DIR__.'/Pattern/include.php');
 include(__DIR__.'/ClassLoader/include.php');
 include(__DIR__.'/File/include.php');
 include(__DIR__.'/Checker/include.php');
@@ -32,4 +33,3 @@ include(__DIR__.'/TextProcessor/include.php');
 include(__DIR__.'/Array/include.php');
 include(__DIR__.'/Cron/include.php');
 include(__DIR__.'/IPC/include.php');
-include(__DIR__.'/Pattern/include.php');

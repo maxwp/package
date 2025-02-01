@@ -9,9 +9,9 @@
 /**
  * Загрузчик классов по требованию
  */
-class ClassLoader {
+class ClassLoader extends Pattern_ASingleton {
 
-    private function __construct() {
+    protected function __construct() {
         spl_autoload_register(array($this, 'loadClass'));
     }
 
@@ -31,7 +31,7 @@ class ClassLoader {
     }
 
     /**
-     * Получить файлы
+     * Получить загруженные классы
      *
      * @return array
      */
@@ -46,6 +46,8 @@ class ClassLoader {
      * @param string $file
      */
     public function registerClass($file) {
+        // @todo internal registry array?
+
         $file = str_replace('//', '/', $file);
 
         $hash = basename($file);
@@ -124,22 +126,10 @@ class ClassLoader {
     }
 
     /**
-     * @return ClassLoader
-     */
-    public static function Get() {
-        if (!self::$_Instance) {
-            self::$_Instance = new self();
-        }
-        return self::$_Instance;
-    }
-
-    private static $_Instance = null;
-
-    /**
      * Список зарегистрированный классов
      *
      * @var array
      */
-    private $_classArray = [];
+    private array $_classArray = [];
 
 }
