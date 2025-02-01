@@ -9,9 +9,9 @@
 /**
  * Движок Eventic Engine
  */
-class EE {
+class EE extends Pattern_ASingleton {
 
-    private function __construct() {
+    protected function __construct() {
         // регистрация событий которые понимает Eventic Engine
         // @todo попрравить на нормальный :class
         Events::Get()->addEvent('EE:content.process:before', 'EE_Event_ContentProcess');
@@ -251,25 +251,6 @@ class EE {
     public function isContentLoaded($content) {
         return isset($this->_contentArray[$content]);
     }
-
-    /**
-     * Получить объект движка Eventic Engine
-     *
-     * @return EE
-     */
-    public static function Get() {
-        if (!self::$_Instance) {
-            self::$_Instance = new self();
-        }
-        return self::$_Instance;
-    }
-
-    /**
-     * Instance of Eventic Engine
-     *
-     * @var EE
-     */
-    private static $_Instance = false;
 
     private $_request = null;
 

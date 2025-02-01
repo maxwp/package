@@ -12,7 +12,6 @@
 class EE_Typing {
 
     // @todo ultra fast typing via pack()
-    // @todo move to EE_Typing, not StringUtils
 
     /**
      * Привести строку к необходимому типу
