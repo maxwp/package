@@ -12,15 +12,6 @@
 class Connection_MySQLi
 implements Connection_IDatabaseAdapter {
 
-    /**
-     * @param $key
-     * @return Connection_MySQLi
-     * @throws Connection_Exception
-     */
-    public static function Get($key) {
-        return Connection::Get($key);
-    }
-
     public function __construct($hostname, $username, $password, $database = false, $encoding = 'utf8', $port = false) {
         if (!class_exists('mysqli')) {
             throw new Connection_Exception("PHP extension 'mysqli' not available");

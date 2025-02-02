@@ -8,15 +8,6 @@
 
 class Connection_SocketUDS implements Connection_IConnection {
 
-    /**
-     * @param $key
-     * @return Connection_SocketUDS
-     * @throws Connection_Exception
-     */
-    public static function Get($key) {
-        return Connection::Get($key);
-    }
-
     public function connect() {
         // @todo шо делать с sock file?
 

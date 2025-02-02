@@ -12,15 +12,6 @@
 class Connection_Memcached
 implements Connection_IConnection {
 
-    /**
-     * @param $key
-     * @return Connection_Memcached
-     * @throws Connection_Exception
-     */
-    public static function Get($key) {
-        return Connection::Get($key);
-    }
-
     public function __construct($host = 'localhost', $port = 11211, $binaryProtocol = false) {
         if (!class_exists('Memcached')) {
             throw new Connection_Exception("PHP extension 'Memcached' not available");

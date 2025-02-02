@@ -8,15 +8,6 @@
 
 class Connection_SocketUDP implements Connection_IConnection {
 
-    /**
-     * @param $key
-     * @return Connection_SocketUDP
-     * @throws Connection_Exception
-     */
-    public static function Get($key) {
-        return Connection::Get($key);
-    }
-
     public function connect() {
         $this->_socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 

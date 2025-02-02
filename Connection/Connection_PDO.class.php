@@ -13,15 +13,6 @@
 class Connection_PDO
 implements Connection_IConnection, Connection_IDatabaseAdapter {
 
-    /**
-     * @param $key
-     * @return Connection_PDO
-     * @throws Connection_Exception
-     */
-    public static function Get($key) {
-        return Connection::Get($key);
-    }
-
     private $_dsn;
 
     private $_link = null;

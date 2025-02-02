@@ -12,15 +12,39 @@
  */
 class Connection extends Pattern_ARegistrySingleton {
 
-    // @todo как возвращать типизированные коннекторы?
-    // @todo как инициализировать типизированные коннкторы?
-
     /**
      * @param $key
      * @return Connection_IConnection
      * @throws Connection_Exception
      */
     public static function Get(string $key) {
+        return self::_Get($key);
+    }
+
+    /**
+     * @param $key
+     * @return Connection_MySQLi
+     * @throws Connection_Exception
+     */
+    public static function GetMySQLi(string $key = 'mysql') {
+        return self::_Get($key);
+    }
+
+    /**
+     * @param $key
+     * @return Connection_Redis
+     * @throws Connection_Exception
+     */
+    public static function GetRedis(string $key = 'redis') {
+        return self::_Get($key);
+    }
+
+    /**
+     * @param $key
+     * @return Connection_Memcached
+     * @throws Connection_Exception
+     */
+    public static function GetMemcached(string $key = 'memcached') {
         return self::_Get($key);
     }
 

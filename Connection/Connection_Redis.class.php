@@ -12,15 +12,6 @@
 class Connection_Redis
 implements Connection_IConnection {
 
-    /**
-     * @param $key
-     * @return Connection_Redis
-     * @throws Connection_Exception
-     */
-    public static function Get($key) {
-        return Connection::Get($key);
-    }
-
     public function __construct($hostname, $port) {
         if (!class_exists('Redis')) {
             throw new Connection_Exception("PHP extension 'Redis' not available");
