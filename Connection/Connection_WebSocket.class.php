@@ -8,6 +8,15 @@
 
 class Connection_WebSocket implements Connection_IConnection {
 
+    /**
+     * @param $key
+     * @return Connection_WebSocket
+     * @throws Connection_Exception
+     */
+    public static function Get($key) {
+        return Connection::Get($key);
+    }
+
     public function __construct($host, $port, $path, $ip = false) {
         $this->_host = $host;
         $this->_ip = $ip;
