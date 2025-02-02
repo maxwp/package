@@ -26,7 +26,7 @@ class Connection extends Pattern_ARegistrySingleton {
      * @return Connection_MySQLi
      * @throws Connection_Exception
      */
-    public static function GetMySQLi(string $key = 'mysql') {
+    public static function GetMySQL(string $key = 'mysql') {
         return self::_Get($key);
     }
 

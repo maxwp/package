@@ -37,6 +37,33 @@ class Storage extends Pattern_ARegistrySingleton {
     }
 
     /**
+     * @param string $key
+     * @return Storage_Redis
+     * @throws Storage_Exception
+     */
+    public static function GetRedis(string $key = 'redis') {
+        return self::_Get($key);
+    }
+
+    /**
+     * @param string $key
+     * @return Storage_Memcached
+     * @throws Storage_Exception
+     */
+    public static function GetMemcached(string $key = 'memcached') {
+        return self::_Get($key);
+    }
+
+    /**
+     * @param string $key
+     * @return Storage_Shmop
+     * @throws Storage_Exception
+     */
+    public static function GetShmop(string $key = 'shmop') {
+        return self::_Get($key);
+    }
+
+    /**
      * Initialize new storage.
      *
      * @param Storage_IHandler $object
