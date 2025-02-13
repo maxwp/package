@@ -9,6 +9,8 @@
 class Connection_SocketUDP implements Connection_IConnection {
 
     public function connect() {
+        // @todo лучше вынести в конструктор? Потому что у UDP нет коннекта и метод connect выглядит не красиво
+
         $this->_socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 
         //socket_set_option($this->_socket, IPPROTO_IP, IP_MTU_DISCOVER, IP_PMTUDISC_WANT);
