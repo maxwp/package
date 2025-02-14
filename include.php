@@ -6,7 +6,10 @@
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
-// @todo кидать ошибку если не php8+, потому что работать не будет
+// кидать ошибку если не php8+, потому что работать не будет
+if (PHP_MAJOR_VERSION < 8) {
+    throw new Exception("Eventic packages needs PHP 8+");
+}
 
 // default locale
 setlocale(LC_ALL, 'en_EN.utf8');

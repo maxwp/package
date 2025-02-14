@@ -26,6 +26,10 @@ class Pattern_RegistryArray {
         $this->_registryArray = [];
     }
 
+    public function getArray() {
+        return $this->_registryArray;
+    }
+
     private array $_registryArray = [];
 
 }
