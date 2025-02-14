@@ -6,6 +6,8 @@
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
+// @todo кидать ошибку если не php8+, потому что работать не будет
+
 // default locale
 setlocale(LC_ALL, 'en_EN.utf8');
 if (function_exists('mb_internal_encoding')) {

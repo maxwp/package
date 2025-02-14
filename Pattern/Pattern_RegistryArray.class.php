@@ -6,7 +6,7 @@ class Pattern_RegistryArray {
      * @return mixed
      */
     public function get($key) {
-        // @todo это будет работать только в php8+
+        // это будет работать только в php8+
         return $this->_registryArray[$key] ?? throw new Exception("Key '{$key}' not found");
     }
 
