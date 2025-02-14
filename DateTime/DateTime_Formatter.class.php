@@ -136,7 +136,7 @@ class DateTime_Formatter {
         return DateTime_Object::FromString($datetime)->setFormat('H:i')->__toString();
     }
 
-    public static  function  DatePhoneticMonthRus($date, $language = false) {
+    public static function DatePhoneticMonthRus($date, $language = false) {
         $date = DateTime_Object::FromString($date)->setFormat('d-m-Y');
         $date = explode('-', $date);
         $str = @$date[0];
@@ -171,6 +171,88 @@ class DateTime_Formatter {
         }
         $str .= ' '.@$date[2];
         return $str;
+    }
+
+    /**
+     * Форматирование интервала
+     *
+     * @param $dateFrom
+     * @param $dateTo
+     * @return array
+     */
+    public static function IntervalDateFromDateTo($dateFrom, $dateTo) {
+        if (preg_match("/^(\d+)m$/ius", $dateTo, $r)) {
+            $dateTo = DateTime_Object::Create($dateFrom)->addDay(+$r[1])->__toString();
+        }
+
+        if (preg_match("/^(\d+)h$/ius", $dateTo, $r)) {
+            $dateTo = DateTime_Object::Create($dateFrom)->addDay(+$r[1])->__toString();
+        }
+
+        if (preg_match("/^(\d+)d$/ius", $dateTo, $r)) {
+            $dateTo = DateTime_Object::Create($dateFrom)->addDay(+$r[1])->__toString();
+        }
+
+        if ($dateFrom == 'day') {
+            $dateFrom = date('Y-m-d');
+            $dateTo = DateTime_Object::Create($dateFrom)->addDay(+1)->__toString();
+        }
+
+        if ($dateFrom == 'week') {
+            $dateFrom = DateTime_Object::Create()->addDay(-6)->__toString();
+            $dateTo = DateTime_Object::Create()->__toString();
+        }
+
+        if ($dateFrom == 'month') {
+            $dateFrom = date('Y-m-01');
+            $dateTo = DateTime_Object::Create($dateFrom)->addMonth(+1)->__toString();
+        }
+
+        if ($dateFrom == 'month-1') {
+            $dateFrom = date('Y-m-01');
+            $dateTo = DateTime_Object::Create()->addDay(-1)->setFormat('Y-m-d')->__toString();
+        }
+
+        if ($dateFrom == 'year') {
+            $dateFrom = date('Y-01-01');
+            $dateTo = DateTime_Object::Create($dateFrom)->addMonth(+12)->__toString();
+        }
+
+        if ($dateFrom == 'lifetime') {
+            //$dateFrom = '2019-11-10';
+            $dateFrom = '2022-05-09';
+            $dateTo = date('Y-12-31');
+        }
+
+        if (preg_match("/^(\d+)m$/ius", $dateFrom, $r)) {
+            $dateFrom = DateTime_Object::Create()->addMinute(-$r[1])->__toString();
+            $dateTo = DateTime_Object::Create()->addDay(+1)->__toString();
+        }
+
+        if (preg_match("/^(\d+)h$/ius", $dateFrom, $r)) {
+            $dateFrom = DateTime_Object::Create()->addHour(-$r[1])->__toString();
+            $dateTo = DateTime_Object::Create()->addDay(+1)->__toString();
+        }
+
+        if (preg_match("/^(\d+)d$/ius", $dateFrom, $r)) {
+            $dateFrom = DateTime_Object::Create()->addDay(-$r[1])->setFormat('Y-m-d')->__toString();
+            $dateTo = DateTime_Object::Create()->addDay(+1)->__toString();
+        }
+
+        if (!$dateFrom) {
+            $dateFrom = DateTime_Object::Create()->addDay(-1)->__toString();
+        }
+
+        if (!$dateTo) {
+            $dateTo = DateTime_Object::Create($dateFrom)->addDay(+1)->__toString();
+        }
+
+        $now = date('Y-m-d H:i:s');
+        if ($dateTo >= $now) {
+            $dateTo = $now;
+        }
+
+        return array($dateFrom, $dateTo);
     }
 
 }
