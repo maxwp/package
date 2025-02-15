@@ -8,7 +8,7 @@ $request = new EE_RequestCLI();
 $response = new EE_ResponseCLI();
 
 try {
-    if ($request->getArgument('print', false, 'bool')) {
+    if ($request->getArgument('print', false)) {
         define('EE_PRINT', true);
     }
 } catch (EE_Exception $e) {

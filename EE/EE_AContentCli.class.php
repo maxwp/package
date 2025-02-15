@@ -12,37 +12,37 @@
 abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
 
     public function print($s) {
-        if (defined('EE_PRINT')) {
+        if (defined('EE_PRINT') || $this->_print) {
             print $s;
         }
     }
 
     public function print_n($s = '') {
-        if (defined('EE_PRINT')) {
+        if (defined('EE_PRINT') || $this->_print) {
             print "$s\n";
         }
     }
 
     public function print_t($s) {
-        if (defined('EE_PRINT')) {
+        if (defined('EE_PRINT') || $this->_print) {
             print "$s\t";
         }
     }
 
     public function print_r($a) {
-        if (defined('EE_PRINT')) {
+        if (defined('EE_PRINT') || $this->_print) {
             print_r($a);
         }
     }
 
     public function print_e($callback) {
-        if (defined('EE_PRINT')) {
+        if (defined('EE_PRINT') || $this->_print) {
             print $callback();
         }
     }
 
     public function print_f($s, $format, $eol = ' ') {
-        if (defined('EE_PRINT')) {
+        if (defined('EE_PRINT') || $this->_print) {
             if (substr_count($format, '%')) {
                 print sprintf($format, $s) . $eol;
             } else {
@@ -50,5 +50,11 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
             }
         }
     }
+
+    protected function _setPrintMode(bool $mode = true) {
+        $this->_print = $mode;
+    }
+
+    private bool $_print = false;
 
 }
