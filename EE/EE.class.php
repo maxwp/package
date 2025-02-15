@@ -23,6 +23,8 @@ class EE extends Pattern_ASingleton {
         Events::Get()->addEvent('EE:execute:before', 'Events_Event');
         Events::Get()->addEvent('EE:execute:exception', 'EE_Event_Exception');
         Events::Get()->addEvent('EE:execute:after', 'Events_Event');
+
+        $this->_contentRegistryArray = new Pattern_RegistryArray();
     }
 
     /**
@@ -101,7 +103,7 @@ class EE extends Pattern_ASingleton {
 
         // очищаем все контенты,
         // это нужно следующего запуска движка в режиме non-stop
-        foreach ($this->_contentArray as $content) {
+        foreach ($this->_contentRegistryArray->getArray() as $content) {
             $content->reset();
         }
 
@@ -111,9 +113,13 @@ class EE extends Pattern_ASingleton {
         $this->_response = false;
     }
 
-    private function _run($className) {
-        // @todo generics
-
+    /**
+     * @template T of EE_IContent
+     * @param class-string<T> $className
+     * @return string
+     * @throws EE_Exception
+     */
+    private function _run(string $className) {
         // получаем объект
         $content = $this->getContent($className);
 
@@ -216,41 +222,31 @@ class EE extends Pattern_ASingleton {
      *
      * @template T of EE_IContent
      * @param class-string<T> $className
-     * @param bool $cache
      * @return T
      */
-    public function getContent(string $className, $cache = true) {
+    public function getContent(string $className) {
         if (!$className) {
             throw new EE_Exception('Empty className');
         }
 
-        if (is_object($className)) {
-            throw new EE_Exception('Classname is an object');
+        if ($this->_contentRegistryArray->has($className)) {
+            return $this->_contentRegistryArray->get($className);
         }
 
-        // @todo to registry
-        if (empty($this->_contentArray[$className])) {
-            $content = new $className();
-
-            // кешируем объект
-            if ($cache) {
-                $this->_contentArray[$className] = $content;
-            }
-
-            return $content;
-        }
-
-        return $this->_contentArray[$className];
+        $content = new $className();
+        $this->_contentRegistryArray->set($className, $content);
+        return $content;
     }
 
     /**
      * Узнать, был ли загружен/вызван контент
      *
-     * @param string $content
+     * @template T of EE_IContent
+     * @param class-string<T> $className
      * @return bool
      */
-    public function isContentLoaded($content) {
-        return isset($this->_contentArray[$content]);
+    public function isContentLoaded(string $className) {
+        return $this->_contentRegistryArray->has($className);
     }
 
     private $_request = null;
@@ -262,9 +258,9 @@ class EE extends Pattern_ASingleton {
     /**
      * Массив загруженных контентов
      *
-     * @var EE_IContent[] $_contentArray
+     * @var Pattern_RegistryArray
      */
-    private $_contentArray = [];
+    private $_contentRegistryArray;
 
     private $_contentCurrent;
 
