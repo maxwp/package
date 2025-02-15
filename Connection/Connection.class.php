@@ -52,4 +52,6 @@ class Connection extends Pattern_ARegistrySingleton {
         self::_Register($key, $object, 'Connection_IConnection');
     }
 
+    protected static $_ExceptionClass = Connection_Exception::class;
+
 }

@@ -4,7 +4,7 @@ abstract class Pattern_ASingleton {
     abstract protected function __construct();
 
     protected function __clone() {
-        throw new Exception("Cannot clone singleton " . get_called_class());
+        throw new Pattern_Exception("Cannot clone singleton " . get_called_class());
     }
 
     /**

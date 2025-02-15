@@ -7,7 +7,7 @@ class Pattern_RegistryArray {
      */
     public function get($key) {
         // это будет работать только в php8+
-        return $this->_registryArray[$key] ?? throw new Exception("Key '{$key}' not found");
+        return $this->_registryArray[$key] ?? throw new $this->_exceptionClass("Key '{$key}' not found");
     }
 
     public function set($key, $value) {
@@ -30,6 +30,12 @@ class Pattern_RegistryArray {
         return $this->_registryArray;
     }
 
+    public function setExceptionClass(string $className) {
+        $this->_exceptionClass = $className;
+    }
+
     private array $_registryArray = [];
+
+    private string $_exceptionClass = Pattern_Exception::class;
 
 }

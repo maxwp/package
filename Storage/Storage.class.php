@@ -73,4 +73,6 @@ class Storage extends Pattern_ARegistrySingleton {
         self::_Register($key, $object, 'Storage_IHandler');
     }
 
+    protected static $_ExceptionClass = Storage_Exception::class;
+
 }

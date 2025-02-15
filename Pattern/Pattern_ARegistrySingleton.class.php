@@ -6,40 +6,47 @@ abstract class Pattern_ARegistrySingleton {
 
     protected static function _Get(string $key) {
         if (!$key) {
-            throw new Exception("Empty key");
+            throw new static::$_ExceptionClass("Empty key");
         }
 
-        if (!isset(self::$_ObjectArray[$key])) {
-            throw new Storage_Exception("Key '{$key}' not found, please, call Register() first");
+        $class = static::class;
+
+        if (empty(static::$_ObjectArray[$class][$key])) {
+            throw new static::$_ExceptionClass("Key '{$key}' not found, please, call Register() first");
         }
 
-        return self::$_ObjectArray[$key];
+        return self::$_ObjectArray[$class][$key];
     }
 
     protected static function _Register(string $key, Object $object, $type = false) {
         if (!$key) {
-            throw new Storage_Exception("Empty key");
+            throw new static::$_ExceptionClass("Empty key");
         }
         if ($type && !($object instanceof $type)) {
-            throw new Storage_Exception("Invalid type: needs $type");
+            throw new static::$_ExceptionClass("Invalid type: needs $type");
         }
 
-        self::$_ObjectArray[$key] = $object; // @todo стоит ли лепить RegistryArray?
+        $class = static::class;
+
+        self::$_ObjectArray[$class][$key] = $object; // @todo стоит ли лепить RegistryArray?
         return $object;
     }
 
     public static function Reset() {
-        self::$_ObjectArray = [];
+        $class = static::class;
+        self::$_ObjectArray[$class] = [];
     }
 
-    private function __construct() {
+    protected function __construct() {
         // singleton
     }
 
     private function __clone() {
-        throw new Exception("Cannot clone singleton " . get_called_class());
+        throw new Pattern_Exception("Cannot clone singleton " . get_called_class());
     }
 
     private static $_ObjectArray = [];
+
+    protected static $_ExceptionClass = Pattern_Exception::class;
 
 }
