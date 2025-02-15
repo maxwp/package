@@ -112,6 +112,8 @@ class EE extends Pattern_ASingleton {
     }
 
     private function _run($className) {
+        // @todo generics
+
         // получаем объект
         $content = $this->getContent($className);
 
@@ -185,8 +187,6 @@ class EE extends Pattern_ASingleton {
         return $this->_contentCurrent;
     }
 
-    private $_contentCurrent;
-
     /**
      * Вернуть готовое html-содержимое контента и всех его вложений
      * с учетом иерархии
@@ -228,6 +228,7 @@ class EE extends Pattern_ASingleton {
             throw new EE_Exception('Classname is an object');
         }
 
+        // @todo to registry
         if (empty($this->_contentArray[$className])) {
             $content = new $className();
 
@@ -264,5 +265,7 @@ class EE extends Pattern_ASingleton {
      * @var EE_IContent[] $_contentArray
      */
     private $_contentArray = [];
+
+    private $_contentCurrent;
 
 }
