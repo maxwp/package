@@ -214,12 +214,12 @@ class EE extends Pattern_ASingleton {
     /**
      * Вернуть объект имени класса
      *
-     * @param string $className
-     * @param bool $cache Сохранить ли объект во внутреннем кеш-pool'e?
-     *
-     * @return EE_IContent
+     * @template T of EE_IContent
+     * @param class-string<T> $className
+     * @param bool $cache
+     * @return T
      */
-    public function getContent($className, $cache = true) {
+    public function getContent(string $className, $cache = true) {
         if (!$className) {
             throw new EE_Exception('Empty className');
         }
