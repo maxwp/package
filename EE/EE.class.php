@@ -67,6 +67,7 @@ class EE extends Pattern_ASingleton {
             // по умолчанию ставится код 200, но в процессе его можно поменять
             $this->getResponse()->setCode(200);
         } catch (Exception $routingException) {
+            // @todo определение ответа 200 или 500 это часть routing machine, а не движка
             $this->getResponse()->setCode(500);
             $this->getResponse()->setData($routingException->getMessage());
             $className = 'ee500'; // штатный контент
@@ -236,6 +237,17 @@ class EE extends Pattern_ASingleton {
         $content = new $className();
         $this->_contentRegistryArray->set($className, $content);
         return $content;
+    }
+
+    /**
+     * Принудительно задать контент для подмены на этот класс
+     *
+     * @param string $className
+     * @param EE_IContent $content
+     * @return void
+     */
+    public function setContent(string $className, EE_IContent $content) {
+        $this->_contentRegistryArray->set($className, $content);
     }
 
     /**

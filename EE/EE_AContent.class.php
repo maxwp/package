@@ -52,7 +52,7 @@ abstract class EE_AContent implements EE_IContent {
 
         // затем проверяю внешние аргументы
         if ($checkExternal) {
-            $value =  EE::Get()->getRequest()->getArgument($key, $source);
+            $value = EE::Get()->getRequest()->getArgument($key, $source);
 
             // опциональная типизация
             if ($type) {
@@ -210,11 +210,12 @@ abstract class EE_AContent implements EE_IContent {
         $this->unsetValueArray();
     }
 
-    private $_valueArray = [];
+    private array $_valueArray = [];
 
     /**
      * массив внутренних аргументов
+     * @todo registry?
      */
-    private $_argumentArray = [];
+    private array $_argumentArray = [];
 
 }
