@@ -8,6 +8,10 @@
 
 class Array_Static {
 
+    // @todo внутрь одного метода можно сразу запихнуть подсчет min/max/avg/med/var
+    // и обнулять статистику только при изменении массива
+    // это особенно актуально для Array_Static, потому что он сука static
+
     public static function Max($a) {
         $a = new Array_Object($a);
         return $a->max();
