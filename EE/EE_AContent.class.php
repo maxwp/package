@@ -183,6 +183,9 @@ abstract class EE_AContent implements EE_IContent {
         return $this->_valueArray;
     }
 
+    // @todo возможно отказаться от требования к обязательному методу process(), потому что не удобно писать сервисы
+    // @todo но с другой стороны без явного process не ясна точка старта для Web & Cli
+    // @todo возможно заменить на main()
     abstract public function process();
 
     /**
