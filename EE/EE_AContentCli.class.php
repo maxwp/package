@@ -55,6 +55,21 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
         $this->_print = $mode;
     }
 
+    public function setWorkTimeLimit(float $seconds) {
+        $this->_workTimeLimit = microtime(true) + $seconds;
+    }
+
+    public function checkWorkTimeLimit() {
+        if (microtime(true) > $this->_workTimeLimit) {
+            $this->print_n("Exit by work time limit");
+            return true;
+        }
+
+        return false;
+    }
+
+    private float $_workTimeLimit = 0;
+
     private bool $_print = false;
 
 }
