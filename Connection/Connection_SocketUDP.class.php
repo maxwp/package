@@ -68,6 +68,8 @@ class Connection_SocketUDP implements Connection_IConnection {
             $fromPort = 0;
 
             $bytes = socket_recvfrom($this->_socket, $buf, $length, 0, $fromIP, $fromPort);
+            $ts = microtime(true);
+
             if ($bytes === false) {
                 $message = socket_strerror(socket_last_error($this->_socket)) . "\n";
                 $this->disconnect();
@@ -75,10 +77,8 @@ class Connection_SocketUDP implements Connection_IConnection {
             }
 
             // @todo возможно callback переделать на interface
-            // @todo закосить нахер fromPort, потому что он все равно случайный для UDP
-            // @todo добавить ts
             // вызываем callback
-            $result = $callback($buf, $fromIP, $fromPort);
+            $result = $callback($ts, $buf, $fromIP);
 
             // если есть какой-то результат - на выход
             if ($result) {

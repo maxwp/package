@@ -48,6 +48,7 @@ class Connection_WebSocket implements Connection_IConnection {
             $except = [$this->_stream];
 
             $num_changed_streams = stream_select($read, $write, $except, 0, $this->_streamSelectTimeout);
+            $ts = microtime(true);
 
             if (!empty($except)) {
                 print "stream_select except\n";
@@ -72,7 +73,7 @@ class Connection_WebSocket implements Connection_IConnection {
                         return true;
                     }
 
-                    $result = $callback($msg);
+                    $result = $callback($ts, $msg);
 
                     // если что-то вернули - на выход
                     if ($result) {
@@ -80,7 +81,7 @@ class Connection_WebSocket implements Connection_IConnection {
                     }
                 }
             } else {
-                $result = $callback(false);
+                $result = $callback($ts, false);
                 // если что-то вернули - на выход
                 if ($result) {
                     return $result;
