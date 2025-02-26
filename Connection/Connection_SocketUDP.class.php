@@ -24,6 +24,11 @@ class Connection_SocketUDP implements Connection_IConnection {
         socket_set_nonblock($this->_socket);
     }
 
+    public function setTimeoutRead($timeout) {
+        $timeout = ['sec' => $timeout, 'usec' => 0];
+        socket_set_option($this->_socket, SOL_SOCKET, SO_RCVTIMEO, $timeout);
+    }
+
     public function setBufferSizeRead($size) {
         socket_set_option($this->_socket, SOL_SOCKET, SO_RCVBUF, $size);
     }

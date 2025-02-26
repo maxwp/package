@@ -60,7 +60,7 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
     }
 
     protected function _checkWorkTimeLimit() {
-        if (microtime(true) > $this->_workTimeLimit) {
+        if ($this->_workTimeLimit > 0 && microtime(true) > $this->_workTimeLimit) {
             $this->print_n("Exit by work time limit");
             return true;
         }
