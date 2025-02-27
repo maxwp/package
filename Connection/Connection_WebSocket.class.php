@@ -5,7 +5,6 @@
  *
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
-
 class Connection_WebSocket implements Connection_IConnection {
 
     public function __construct($host, $port, $path, $ip = false) {
@@ -56,7 +55,7 @@ class Connection_WebSocket implements Connection_IConnection {
                 return true;
             }
 
-            $msgArray = false;
+            $msgArray = [];
             if ($num_changed_streams > 0) {
                 $msgArray = $this->read();
             }
@@ -66,15 +65,20 @@ class Connection_WebSocket implements Connection_IConnection {
                     if ($msg == 'pong') {
                         // запоминаем когда пришел pong
                         $this->_tsPong = 0;
-                        continue;
+
+                        // тут очень важный нюанс:
+                        // stream_select может выйти по таймауту, а может по pong.
+                        // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать $callback,
+                        // так как он ждет четкий loop по тайм-ауту 0.5-1 сек
+                        $msg = false;
                     }
 
                     if ($msg == 'closed') {
                         return true;
                     }
 
+                    // @todo переделать вызов callback на генерацию string event (simple Event)
                     $result = $callback($ts, $msg);
-
                     // если что-то вернули - на выход
                     if ($result) {
                         return $result;
