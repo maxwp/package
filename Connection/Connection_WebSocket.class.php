@@ -23,6 +23,9 @@ class Connection_WebSocket implements Connection_IConnection {
         $this->_tsPing = 0;
         $this->_tsPong = 0;
 
+        print "set nb\n";
+        stream_set_blocking($this->_stream, false);
+
         while (true) {
             $time = time();
 
