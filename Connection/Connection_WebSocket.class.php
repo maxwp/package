@@ -47,7 +47,6 @@ class Connection_WebSocket implements Connection_IConnection {
             $except = [$this->_stream];
 
             $num_changed_streams = stream_select($read, $write, $except, 0, $this->_streamSelectTimeout);
-            $ts = microtime(true);
 
             if (!empty($except)) {
                 print "stream_select except\n";
@@ -59,6 +58,11 @@ class Connection_WebSocket implements Connection_IConnection {
             if ($num_changed_streams > 0) {
                 $msgArray = $this->read();
             }
+
+            // супер важный момент: время надо получать после того, как я считаю данные.
+            // потому что может быть момент, что я запросил время сразу после stream_select(), а затем
+            // fread считал больше данных чем я ожидал
+            $ts = microtime(true);
 
             if ($msgArray) {
                 foreach ($msgArray as $msg) {
