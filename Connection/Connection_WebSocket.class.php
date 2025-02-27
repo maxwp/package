@@ -23,11 +23,10 @@ class Connection_WebSocket implements Connection_IConnection {
         $this->_tsPing = 0;
         $this->_tsPong = 0;
 
-        print "set nb\n";
         stream_set_blocking($this->_stream, false);
 
         while (true) {
-            $time = time();
+            $time = microtime(true);
 
             // auto ping frame
             if ($time - $this->_tsPing >= $this->_pingInterval) {
@@ -249,8 +248,8 @@ class Connection_WebSocket implements Connection_IConnection {
     }
 
     /**
-     * @return WebSocket
-     * @throws WebSocket_Exception
+     * @return Connection_WebSocket
+     * @throws Connection_Exception
      */
     public function getLink() {
         if (!$this->_stream) {
@@ -327,7 +326,6 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_tsPong = 0;
     private $_pingInterval = 1;
     private $_pongDeadline = 3;
-
     private $_buffer = '';
 
 }
