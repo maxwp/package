@@ -11,6 +11,8 @@
  */
 abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
 
+    // @todo а нахер он надо?
+    // @todo встроить в остальные print_*?
     public function print($s) {
         if (defined('EE_PRINT') || $this->_print) {
             print $s;
@@ -23,7 +25,7 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
         }
     }
 
-    public function print_t($s) {
+    public function print_t($s = '') {
         if (defined('EE_PRINT') || $this->_print) {
             print "$s\t";
         }
