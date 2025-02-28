@@ -13,9 +13,12 @@ class Connection_SocketUDP implements Connection_IConnection {
 
         $this->_socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 
+        // @todo
+        // Использование опции IP_MTU_DISCOVER с режимом IP_PMTUDISC_WANT позволяет сокету попытаться определить
+        // максимальный размер пакета (MTU) по пути к получателю без фрагментации.
         //socket_set_option($this->_socket, IPPROTO_IP, IP_MTU_DISCOVER, IP_PMTUDISC_WANT);
-        //socket_set_option($this->_socket, SOL_SOCKET, SO_REUSEADDR, 1);
 
+        // @todo убрать отюда, вынести по требованию
         $this->setBufferSizeRead(50 * 1024 * 1024);
         $this->setBufferSizeWrite(50 * 1024 * 1024);
     }
@@ -24,17 +27,37 @@ class Connection_SocketUDP implements Connection_IConnection {
         socket_set_nonblock($this->_socket);
     }
 
-    public function setTimeoutRead($timeout) {
-        $timeout = ['sec' => $timeout, 'usec' => 0];
-        socket_set_option($this->_socket, SOL_SOCKET, SO_RCVTIMEO, $timeout);
+    public function setSocketOption($type, $value) {
+        if (!socket_set_option($this->_socket, SOL_SOCKET, $type, $value)) {
+            throw new Connection_Exception("Socket option error type=$type");
+        }
+    }
+
+    public function setTimeoutRead($timeoutSec, $timeoutUsec) {
+        // @todo стоит ли переделывать на один параметр?
+        // @todo а нафига сделали два?
+        $timeoutSec = ['sec' => $timeoutSec, 'usec' => $timeoutUsec];
+        $this->setSocketOption(SO_RCVTIMEO, $timeoutSec);
     }
 
     public function setBufferSizeRead($size) {
-        socket_set_option($this->_socket, SOL_SOCKET, SO_RCVBUF, $size);
+        $this->setSocketOption(SO_RCVBUF, $size);
+        $this->_checkBufferSize(SO_RCVBUF, $size);
     }
 
     public function setBufferSizeWrite($size) {
-        socket_set_option($this->_socket, SOL_SOCKET, SO_SNDBUF, $size);
+        $this->setSocketOption(SO_SNDBUF, $size);
+        $this->_checkBufferSize(SO_SNDBUF, $size);
+    }
+
+    private function _checkBufferSize($side, $size) {
+        // При установке опции SO_RCVBUF/SO_SNDBUF в Linux значение, которое вы указываете, автоматически удваивается для учёта
+        // накладных расходов ядра (служебных структур, буферов для управления данными и т.п.)
+        // Это стандартное поведение, задокументированное в описании сокетов в Linux,
+        // и оно работает как для TCP, так и для UDP.
+        if (socket_get_option($this->_socket, SOL_SOCKET, $side) < $size * 2) {
+            throw new Connection_Exception("$side size error");
+        }
     }
 
     public function disconnect() {
@@ -82,6 +105,7 @@ class Connection_SocketUDP implements Connection_IConnection {
             }
 
             // @todo возможно callback переделать на interface
+            // @todo переделать на simple string Event
             // вызываем callback
             $result = $callback($ts, $buf, $fromIP);
 
