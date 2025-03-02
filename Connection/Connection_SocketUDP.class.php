@@ -17,10 +17,6 @@ class Connection_SocketUDP implements Connection_IConnection {
         // Использование опции IP_MTU_DISCOVER с режимом IP_PMTUDISC_WANT позволяет сокету попытаться определить
         // максимальный размер пакета (MTU) по пути к получателю без фрагментации.
         //socket_set_option($this->_socket, IPPROTO_IP, IP_MTU_DISCOVER, IP_PMTUDISC_WANT);
-
-        // @todo убрать отюда, вынести по требованию
-        $this->setBufferSizeRead(50 * 1024 * 1024);
-        $this->setBufferSizeWrite(50 * 1024 * 1024);
     }
 
     public function setNonBlocking() {
