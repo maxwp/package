@@ -1,0 +1,15 @@
+Основной стиль кодирования - PSR-12.
+
+Классы, методы, все подряд - MyClassName (CamelCase)
+Namespame в классах - NameSpace_MyClassName
+Ключи в массивах - snake_case (из-за json и тд передач)
+Метод позвращает объект или exception.
+Методы isXXX - bool/false без exception
+
+методы/свойства private/protected начинаются со знака подчеркивания: _var
+методы/свойства static - с Большой буквы
+методы/свойства private static - знак подчеркивания и большая буква _Var
+
+Структура класса:
+- свойства всегда снизу
+- private/protected снизу, public сверху
