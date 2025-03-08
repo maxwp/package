@@ -182,11 +182,11 @@ class DateTime_Formatter {
      */
     public static function IntervalDateFromDateTo($dateFrom, $dateTo) {
         if (preg_match("/^(\d+)m$/ius", $dateTo, $r)) {
-            $dateTo = DateTime_Object::Create($dateFrom)->addDay(+$r[1])->__toString();
+            $dateTo = DateTime_Object::Create($dateFrom)->addMinute(+$r[1])->__toString();
         }
 
         if (preg_match("/^(\d+)h$/ius", $dateTo, $r)) {
-            $dateTo = DateTime_Object::Create($dateFrom)->addDay(+$r[1])->__toString();
+            $dateTo = DateTime_Object::Create($dateFrom)->addHour(+$r[1])->__toString();
         }
 
         if (preg_match("/^(\d+)d$/ius", $dateTo, $r)) {
