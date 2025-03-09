@@ -41,6 +41,17 @@ class Array_Static {
         return $a->sum();
     }
 
+    public static function Quantile(array $a, float $percentile) {
+        $a = new Array_Object($a);
+        return $a->quantile($percentile);
+    }
+
+    public static function FilterOutliers(array $a, float $threshold) {
+        // @todo возможно переносить внутрь не имело смысла
+        $a = new Array_Object($a);
+        return $a->filterOutliers($threshold);
+    }
+
     /**
      * Calculate array median
      *

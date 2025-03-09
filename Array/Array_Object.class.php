@@ -128,4 +128,32 @@ class Array_Object extends ArrayObject {
         return $sumOfSquares / $n; // Дисперсия
     }
 
+    public function quantile(float $percentile) {
+        $array = $this->getArrayCopy();
+        sort($array);
+        $index = ($percentile / 100) * (count($array) - 1);
+        $lower = floor($index);
+        $upper = ceil($index);
+        if ($lower == $upper) {
+            return $array[$lower];
+        } else {
+            return $array[$lower] + ($array[$upper] - $array[$lower]) * ($index - $lower);
+        }
+    }
+
+    /**
+     * Фильтрация выбросов (удаляет экстремальные значения)
+     *
+     * @param $threshold
+     * @return array
+     */
+    public function filterOutliers(float $threshold) {
+        $array = $this->getArrayCopy();
+        $mean = array_sum($array) / count($array);
+        $variance = array_sum(array_map(fn($x) => pow($x - $mean, 2), $array)) / count($array);
+        $std_dev = sqrt($variance);
+
+        return array_filter($array, fn($x) => abs($x - $mean) < $threshold * $std_dev);
+    }
+
 }
