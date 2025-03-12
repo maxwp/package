@@ -15,7 +15,7 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
     // @todo встроить в остальные print_*?
     public function print($s) {
         if (defined('EE_PRINT') || $this->_print) {
-            print $s;
+            print $s.''; // это нужно для типизации в string, потому что я могу передать объект типа DateTime_Object
         }
     }
 
