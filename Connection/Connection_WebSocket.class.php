@@ -155,7 +155,7 @@ class Connection_WebSocket implements Connection_IConnection {
         // а если false - то это ошибка чтения
         // например, PHP Warning: fread(): SSL: Connection reset by peer
         if ($data === false) {
-            $errorString = error_get_last();
+            $errorString = error_get_last()['message'];
             throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
         }
 
