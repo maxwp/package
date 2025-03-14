@@ -105,6 +105,8 @@ class Connection_WebSocket implements Connection_IConnection {
                 }
             }
         }
+
+        // @todo disconnect можно вызвать прямо тут в конце loop'a
     }
 
     public function connect() {
@@ -162,60 +164,41 @@ class Connection_WebSocket implements Connection_IConnection {
         $bufferLength = strlen($this->_buffer);
 
         while ($offset < $bufferLength) {
-            // Минимальный заголовок WebSocket — 2 байта
+            // Минимальный заголовок — 2 байта
             if ($bufferLength - $offset < 2) {
                 break;  // Недостаточно данных для заголовка
             }
 
-            // Первый байт заголовка
             $firstByte = ord($this->_buffer[$offset]);
             $secondByte = ord($this->_buffer[$offset + 1]);
 
-            $opcode = $firstByte & 0x0F;  // Определяем тип фрейма
-            $isMasked = ($secondByte & 0b10000000) !== 0;  // Проверяем, замаскировано ли сообщение
-            $payloadLength = $secondByte & 0b01111111;  // Длина полезной нагрузки
+            $opcode = $firstByte & 0x0F;
+            $isMasked = ($secondByte & 0b10000000) !== 0;
+            $payloadLength = $secondByte & 0b01111111;
             $maskOffset = 2;
 
-            // Обработка фреймов закрытия и pong
-            if ($opcode === 0x8) { // Фрейм закрытия соединения
-                $messages[] = 'closed';
-                $offset += 2;  // Перемещаем указатель вперед, так как у фрейма закрытия может быть полезная нагрузка
-                continue;
-            } elseif ($opcode === 0xA) { // Фрейм pong
-                $messages[] = 'pong';
-                $offset += 2;  // Перемещаем указатель вперед, потому что у pong обычно нет полезной нагрузки
-                continue;
-            }
-
-            // Обработка разных значений длины полезной нагрузки
+            // Если длина полезной нагрузки равна 126 или 127 — читаем дополнительные байты длины
             if ($payloadLength === 126) {
-                // Если длина указана как 126, то следующие 2 байта содержат фактическую длину
                 if ($bufferLength - $offset < 4) {
-                    break;  // Недостаточно данных для заголовка и длины
+                    break; // Недостаточно данных для заголовка с расширенной длиной
                 }
-                $payloadLength = unpack('n', substr($this->_buffer, $offset + 2, 2))[1];  // Читаем 16-битную длину
+                $payloadLength = unpack('n', substr($this->_buffer, $offset + 2, 2))[1];
                 $maskOffset = 4;
             } elseif ($payloadLength === 127) {
-                // Если длина указана как 127, то следующие 8 байт содержат фактическую длину
                 if ($bufferLength - $offset < 10) {
-                    break;  // Недостаточно данных для заголовка и длины
+                    break; // Недостаточно данных для заголовка с расширенной длиной
                 }
-                $payloadLength = unpack('J', substr($this->_buffer, $offset + 2, 8))[1];  // Читаем 64-битную длину
+                $payloadLength = unpack('J', substr($this->_buffer, $offset + 2, 8))[1];
                 $maskOffset = 10;
             }
 
-            // Проверка длины полезной нагрузки меньше 126 байт (обычный случай)
-            // Здесь payloadLength уже содержит длину полезной нагрузки (до 125 байт)
-
-            // Полная длина фрейма (заголовок + маска + полезная нагрузка)
+            // Полная длина фрейма: заголовок, маска (если есть) и payload
             $frameLength = $maskOffset + ($isMasked ? 4 : 0) + $payloadLength;
-
-            // Проверяем, хватает ли данных для полного фрейма
             if ($bufferLength - $offset < $frameLength) {
-                break;  // Данных недостаточно, ждем больше
+                break; // Ждем, когда придут все данные
             }
 
-            // Читаем маску (если сообщение замаскировано)
+            // Если сообщение замаскировано — читаем маску
             $mask = '';
             if ($isMasked) {
                 $mask = substr($this->_buffer, $offset + $maskOffset, 4);
@@ -224,13 +207,22 @@ class Connection_WebSocket implements Connection_IConnection {
             // Читаем полезную нагрузку
             $payload = substr($this->_buffer, $offset + $maskOffset + ($isMasked ? 4 : 0), $payloadLength);
 
-            // Расшифровываем замаскированное сообщение (если маскировано)
+            // Если сообщение замаскировано — дешифруем payload
             if ($isMasked) {
                 $unmaskedPayload = '';
                 for ($i = 0; $i < $payloadLength; $i++) {
                     $unmaskedPayload .= $payload[$i] ^ $mask[$i % 4];
                 }
-                $messages[] = $unmaskedPayload;
+                $payload = $unmaskedPayload;
+            }
+
+            // Обработка опкодов
+            if ($opcode === 0x8) {
+                // Фрейм закрытия
+                $messages[] = 'closed';
+            } elseif ($opcode === 0xA) {
+                // Фрейм pong
+                $messages[] = 'pong';
             } else {
                 $messages[] = $payload;
             }
