@@ -50,6 +50,13 @@ class Connection_WebSocket implements Connection_IConnection {
 
             $num_changed_streams = stream_select($read, $write, $except, 0, $this->_streamSelectTimeout);
 
+            // согласно документации false может прилететь из-за system interrupt call
+            if ($num_changed_streams === false) {
+                print "stream_select error\n";
+                $this->disconnect();
+                return true;
+            }
+
             if (!empty($except)) {
                 print "stream_select except\n";
                 $this->disconnect();
