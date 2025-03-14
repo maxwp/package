@@ -40,7 +40,7 @@ class Connection_WebSocket implements Connection_IConnection {
                 // если задан дедлайн pong,
                 // и время уже больше этого дедлайна, то это означает что pong не пришет
                 // и мы идем на выход
-                print "no pong - exit\n";
+                print "no iframe-pong - exit\n";
                 return true;
             }
 
@@ -75,7 +75,7 @@ class Connection_WebSocket implements Connection_IConnection {
 
             if ($msgArray) {
                 foreach ($msgArray as $msg) {
-                    if ($msg == 'pong') {
+                    if ($msg == self::FRAME_PONG) {
                         // запоминаем когда пришел pong
                         $this->_tsPong = 0;
 
@@ -86,7 +86,7 @@ class Connection_WebSocket implements Connection_IConnection {
                         $msg = false;
                     }
 
-                    if ($msg == 'closed') {
+                    if ($msg == self::FRAME_CLOSED) {
                         return true;
                     }
 
@@ -150,8 +150,13 @@ class Connection_WebSocket implements Connection_IConnection {
 
     public function read($maxLength = 2000) {
         $data = fread($this->_stream, $maxLength);
+
+        // в неблокирующем режиме если данных нет - то будет string ''
+        // а если false - то это ошибка чтения
+        // например, PHP Warning: fread(): SSL: Connection reset by peer
         if ($data === false) {
-            return false;
+            $errorString = error_get_last();
+            throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
         }
 
         $this->_buffer .= $data;
@@ -218,11 +223,9 @@ class Connection_WebSocket implements Connection_IConnection {
 
             // Обработка опкодов
             if ($opcode === 0x8) {
-                // Фрейм закрытия
-                $messages[] = 'closed';
+                $messages[] = self::FRAME_CLOSED;
             } elseif ($opcode === 0xA) {
-                // Фрейм pong
-                $messages[] = 'pong';
+                $messages[] = self::FRAME_PONG;
             } else {
                 $messages[] = $payload;
             }
@@ -325,6 +328,8 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_tsPong = 0;
     private $_pingInterval = 1;
     private $_pongDeadline = 3;
-    private $_buffer = '';
+    private string $_buffer = '';
+    const FRAME_PONG = 'frame-pong';
+    const FRAME_CLOSED = 'frame-closed';
 
 }
