@@ -43,7 +43,7 @@ class EE_Typing {
                 $value = (array) $value;
             }
         } elseif ($typing == self::TYPE_FLOAT) {
-            $value = preg_replace("/[^0-9\.\,]/ius", '', $value);
+            $value = preg_replace("/[^0-9\.\,\-]/ius", '', $value);
             $value = str_replace(',', '.', $value);
             $value = (float) $value;
         } elseif ($typing == self::TYPE_DATE) {
