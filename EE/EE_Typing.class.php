@@ -68,7 +68,7 @@ class EE_Typing {
     const TYPE_STRING = 'string';
     const TYPE_INT = 'int';
     const TYPE_BOOL = 'bool';
-    const TYPE_FLOAT = 'float';
+    const TYPE_FLOAT = 'float'; // @todo rename to double
     const TYPE_DATE = 'date';
     const TYPE_DATETIME = 'datetime';
     const TYPE_ARRAY = 'array';
