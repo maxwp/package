@@ -12,6 +12,8 @@ class Array_Static {
     // и обнулять статистику только при изменении массива
     // это особенно актуально для Array_Static, потому что он сука static
 
+    // @todo rename Med to Media, Avg to Average
+
     public static function Max($a) {
         $a = new Array_Object($a);
         return $a->max();
