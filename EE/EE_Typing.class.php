@@ -13,6 +13,8 @@ class EE_Typing {
 
     // @todo ultra fast typing via pack()
 
+    // @todo type mixed by default
+
     /**
      * Привести строку к необходимому типу
      *
