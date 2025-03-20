@@ -13,7 +13,7 @@
  *
  * @todo rename to EE_ResponseHTTP
  */
-class EE_Response implements EE_IResponse {
+class EE_ResponseHTTP implements EE_IResponse {
 
     public function getData() {
         return $this->_body;
@@ -115,6 +115,6 @@ class EE_Response implements EE_IResponse {
 
     private $_cookieArray = [];
 
-    private $_code;
+    private int $_code = 200; // для web по-умолчанию код выхода 200
 
 }

@@ -35,7 +35,7 @@ while (1) {
             $eeRequest = new EE_Request($request['url'], $request['host'], $request['get'], $request['post'], $request['files'], $request['cookie']);
 
             // @todo создавать конированием
-            $eeResponse = new EE_Response();
+            $eeResponse = new EE_ResponseHTTP();
 
             EE::Get()->execute($eeRequest, $eeResponse);
 

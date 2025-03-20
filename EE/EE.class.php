@@ -64,8 +64,6 @@ class EE extends Pattern_ASingleton {
                 throw new EE_Exception("Routing returned null");
             }
 
-            // по умолчанию ставится код 200, но в процессе его можно поменять
-            $this->getResponse()->setCode(200);
         } catch (Exception $routingException) {
             // @todo определение ответа 200 или 500 это часть routing machine, а не движка
             $this->getResponse()->setCode(500);
@@ -168,7 +166,7 @@ class EE extends Pattern_ASingleton {
     }
 
     /**
-     * @return EE_Response
+     * @return EE_IResponse
      */
     public function getResponse() {
         if (!$this->_response) {

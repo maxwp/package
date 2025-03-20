@@ -27,7 +27,7 @@ class EE_ResponseCLI implements EE_IResponse {
         $this->_data = $data;
     }
 
-    private $_code;
+    private int $_code = 0; // для CLI код выхода 0
 
     private $_data;
 
