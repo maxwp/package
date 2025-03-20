@@ -25,6 +25,14 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
         }
     }
 
+    public function print_break($symbol = '-', $length = 80) {
+        if (defined('EE_PRINT') || $this->_print) {
+            print "\n";
+            print str_repeat($symbol, $length);
+            print "\n\n";
+        }
+    }
+
     public function print_t($s = '') {
         if (defined('EE_PRINT') || $this->_print) {
             print "$s\t";
