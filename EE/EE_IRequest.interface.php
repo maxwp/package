@@ -20,12 +20,12 @@ interface EE_IRequest {
 
     public function getArgument($key, $source = false);
 
-    const ARG_SOURCE_FILE = 'file';
-    const ARG_SOURCE_GET = 'get';
-    const ARG_SOURCE_POST = 'post';
-    const ARG_SOURCE_PUT = 'put'; // @todo
-    const ARG_SOURCE_DELETE = 'delete'; // @todo
-    const ARG_SOURCE_CLI = 'cli';
-    const ARG_SOURCE_INTERNAL = 'internal';
+    public const ARG_SOURCE_FILE = 'file';
+    public const ARG_SOURCE_GET = 'get';
+    public const ARG_SOURCE_POST = 'post';
+    public const ARG_SOURCE_PUT = 'put'; // @todo
+    public const ARG_SOURCE_DELETE = 'delete'; // @todo
+    public const ARG_SOURCE_CLI = 'cli';
+    public const ARG_SOURCE_INTERNAL = 'internal';
 
 }

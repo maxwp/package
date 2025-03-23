@@ -11,9 +11,23 @@
  */
 abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
 
+    // @todo стоит ли делать вызовы Cli?
+
+    public function printSGRStart(...$args) {
+        if (defined('EE_PRINT') || $this->_print) {
+            print "\033[".implode(';', $args)."m";
+        }
+    }
+
+    public function printSGREnd() {
+        if (defined('EE_PRINT') || $this->_print) {
+            print "\033[".EE_PrintCli::RESET."m";
+        }
+    }
+
     public function print($s) {
         if (defined('EE_PRINT') || $this->_print) {
-            print $s.''; // это нужно для типизации в string, потому что я могу передать объект типа DateTime_Object
+            print (string) $s; // это нужно для типизации в string, потому что я могу передать объект типа DateTime_Object или прочий Value Objct
         }
     }
 
@@ -49,12 +63,18 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
         }
     }
 
-    public function print_f($s, $format, $eol = ' ') {
+    public function print_f($s, $format, $eol = ' ', $color = false) {
         if (defined('EE_PRINT') || $this->_print) {
+            if ($color) {
+                $this->printSGRStart($color);
+            }
             if (substr_count($format, '%')) {
                 print sprintf($format, $s) . $eol;
             } else {
                 print sprintf('%1$' . $format, $s) . $eol;
+            }
+            if ($color) {
+                $this->printSGREnd();
             }
         }
     }

@@ -45,6 +45,7 @@ class EE_Typing {
                 $value = (array) $value;
             }
         } elseif ($typing == self::TYPE_FLOAT) {
+            // @todo no preg_match
             $value = preg_replace("/[^0-9\.\,\-]/ius", '', $value);
             $value = str_replace(',', '.', $value);
             $value = (float) $value;
@@ -67,12 +68,12 @@ class EE_Typing {
         return $value;
     }
 
-    const TYPE_STRING = 'string';
-    const TYPE_INT = 'int';
-    const TYPE_BOOL = 'bool';
-    const TYPE_FLOAT = 'float'; // @todo rename to double
-    const TYPE_DATE = 'date';
-    const TYPE_DATETIME = 'datetime';
-    const TYPE_ARRAY = 'array';
+    public const TYPE_STRING = 'string';
+    public const TYPE_INT = 'int';
+    public const TYPE_BOOL = 'bool';
+    public const TYPE_FLOAT = 'float'; // @todo rename to double
+    public const TYPE_DATE = 'date';
+    public const TYPE_DATETIME = 'datetime';
+    public const TYPE_ARRAY = 'array';
 
 }

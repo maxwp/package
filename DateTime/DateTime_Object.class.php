@@ -167,6 +167,7 @@ class DateTime_Object {
      * @return DateTime_Object
      */
     public static function Now() {
+        // @todo microtime(true)
         return new DateTime_Object(time());
     }
 
@@ -176,6 +177,7 @@ class DateTime_Object {
      * @return DateTime_Object
      */
     public static function FromTimeStamp($timestamp) {
+        // @todo явно добавить типизацию float
         return new DateTime_Object($timestamp);
     }
 
@@ -185,6 +187,7 @@ class DateTime_Object {
      * @return DateTime_Object
      */
     public static function FromString($strtime) {
+        // @todo явно добавить типизацию string
         return new DateTime_Object(strtotime($strtime));
     }
 
