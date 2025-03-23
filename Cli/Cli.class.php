@@ -1,7 +1,5 @@
 <?php
-class EE_PrintCli {
-
-    // @todo rename to Cli
+class Cli {
 
     public static function PrintSGRStart(...$args) {
         if (defined('EE_PRINT')) {

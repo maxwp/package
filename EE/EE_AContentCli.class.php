@@ -21,7 +21,7 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
 
     public function printSGREnd() {
         if (defined('EE_PRINT') || $this->_print) {
-            print "\033[".EE_PrintCli::RESET."m";
+            print "\033[".Cli::RESET."m";
         }
     }
 
