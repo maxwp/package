@@ -28,7 +28,6 @@ ClassLoader::Get()->registerClass(__DIR__.'/EE_AContentSmarty.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/EE_Network.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/EE_RequestRemote.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/EE_RoutingRemote.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/EE_PrintCli.class.php');
 
 // Engine events
 ClassLoader::Get()->registerClass(__DIR__.'/EE_Event_ContentProcess.class.php');
