@@ -65,7 +65,6 @@ class EE extends Pattern_ASingleton {
             }
 
         } catch (Exception $routingException) {
-            // @todo определение ответа 200 или 500 это часть routing machine, а не движка
             $this->getResponse()->setCode(500);
             $this->getResponse()->setData($routingException->getMessage());
             $className = 'ee500'; // штатный контент
