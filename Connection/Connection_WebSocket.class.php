@@ -78,11 +78,14 @@ class Connection_WebSocket implements Connection_IConnection {
             if ($msgArray) {
                 foreach ($msgArray as $msg) {
                     if ($msg == self::FRAME_PING) {
+                        print "Connection_WebSocket: iframe-ping\n";
                         $this->_sendPongFrame();
                         continue;
                     }
 
                     if ($msg == self::FRAME_PONG) {
+                        print "Connection_WebSocket: iframe-pong\n";
+
                         // запоминаем когда пришел pong
                         $this->_tsPong = 0;
 
