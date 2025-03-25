@@ -82,6 +82,8 @@ class Connection_WebSocket implements Connection_IConnection {
 
                     // @todo тут можно поменять порядок state machine, чтобы оперативнее отправлять frame-data
 
+                    // @todo перевести принты на Cli
+
                     if ($msgType == self::FRAME_PING) {
                         print "Connection_WebSocket: iframe-ping $msgData\n";
                         $this->_sendPongFrame($msgData);
@@ -89,7 +91,7 @@ class Connection_WebSocket implements Connection_IConnection {
                     }
 
                     if ($msgType == self::FRAME_PONG) {
-                        print "Connection_WebSocket: iframe-pong $msgData]\n";
+                        print "Connection_WebSocket: iframe-pong $msgData\n";
 
                         // запоминаем когда пришел pong
                         $this->_tsPong = 0;
