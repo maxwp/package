@@ -40,7 +40,7 @@ class Connection_WebSocket implements Connection_IConnection {
                 // если задан дедлайн pong,
                 // и время уже больше этого дедлайна, то это означает что pong не пришет
                 // и мы идем на выход
-                print "no iframe-pong - exit\n";
+                print "Connection_WebSocket: no iframe-pong - exit\n";
                 return true;
             }
 
@@ -52,13 +52,13 @@ class Connection_WebSocket implements Connection_IConnection {
 
             // согласно документации false может прилететь из-за system interrupt call
             if ($num_changed_streams === false) {
-                print "stream_select error\n";
+                print "Connection_WebSocket: stream_select error\n";
                 $this->disconnect();
                 return true;
             }
 
             if (!empty($except)) {
-                print "stream_select except\n";
+                print "Connection_WebSocket: stream_select except\n";
                 $this->disconnect();
                 return true;
             }
@@ -87,6 +87,7 @@ class Connection_WebSocket implements Connection_IConnection {
                     }
 
                     if ($msg == self::FRAME_CLOSED) {
+                        print "Connection_WebSocket: iframe-closed\n";
                         return true;
                     }
 
