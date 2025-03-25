@@ -77,14 +77,19 @@ class Connection_WebSocket implements Connection_IConnection {
 
             if ($msgArray) {
                 foreach ($msgArray as $msg) {
-                    if ($msg[0] == self::FRAME_PING) {
-                        print "Connection_WebSocket: iframe-ping $msg[1]\n";
-                        $this->_sendPongFrame($msg[1]);
+                    $msgType = $msg[0];
+                    $msgData = $msg[1];
+
+                    // @todo тут можно поменять порядок state machine, чтобы оперативнее отправлять frame-data
+
+                    if ($msgType == self::FRAME_PING) {
+                        print "Connection_WebSocket: iframe-ping $msgData\n";
+                        $this->_sendPongFrame($msgData);
                         continue;
                     }
 
-                    if ($msg[0] == self::FRAME_PONG) {
-                        print "Connection_WebSocket: iframe-pong $msg[1]\n";
+                    if ($msgType == self::FRAME_PONG) {
+                        print "Connection_WebSocket: iframe-pong $msgData]\n";
 
                         // запоминаем когда пришел pong
                         $this->_tsPong = 0;
@@ -93,16 +98,16 @@ class Connection_WebSocket implements Connection_IConnection {
                         // stream_select может выйти по таймауту, а может по pong.
                         // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать $callback,
                         // так как он ждет четкий loop по тайм-ауту 0.5-1 сек
-                        $msg = false;
+                        $msgData = false;
                     }
 
-                    if ($msg[0] == self::FRAME_CLOSED) {
+                    if ($msgType == self::FRAME_CLOSED) {
                         print "Connection_WebSocket: iframe-closed\n";
                         return true;
                     }
 
                     // @todo переделать вызов callback на генерацию string event (simple Event)
-                    $result = $callback($ts, $msg[1]);
+                    $result = $callback($ts, $msgData);
                     // если что-то вернули - на выход
                     if ($result) {
                         return $result;
