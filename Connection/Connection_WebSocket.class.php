@@ -19,6 +19,8 @@ class Connection_WebSocket implements Connection_IConnection {
     }
 
     public function loop($callback) {
+        // @todo надо получать причину выхода из loop, возможно через return string или exception
+
         // обнуляем ts ping-pong, иначе могу зайти в вечную restart долбежку
         $this->_tsPing = 0;
         $this->_tsPong = 0;
@@ -30,7 +32,7 @@ class Connection_WebSocket implements Connection_IConnection {
 
             // auto ping frame
             if ($time - $this->_tsPing >= $this->_pingInterval) {
-                $this->_sendPingFrame($this->_stream);
+                $this->_sendPingFrame();
                 $this->_tsPing = $time;
                 // дедлайн до которого должен прийти pong
                 $this->_tsPong = $time + $this->_pongDeadline;
@@ -75,6 +77,11 @@ class Connection_WebSocket implements Connection_IConnection {
 
             if ($msgArray) {
                 foreach ($msgArray as $msg) {
+                    if ($msg == self::FRAME_PING) {
+                        $this->_sendPongFrame();
+                        continue;
+                    }
+
                     if ($msg == self::FRAME_PONG) {
                         // запоминаем когда пришел pong
                         $this->_tsPong = 0;
@@ -227,6 +234,8 @@ class Connection_WebSocket implements Connection_IConnection {
                 $messages[] = self::FRAME_CLOSED;
             } elseif ($opcode === 0xA) {
                 $messages[] = self::FRAME_PONG;
+            } elseif ($opcode === 0x9) {
+                $messages[] = self::FRAME_PING;
             } else {
                 $messages[] = $payload;
             }
@@ -262,10 +271,14 @@ class Connection_WebSocket implements Connection_IConnection {
         return $this->_stream;
     }
 
-    private function _sendPingFrame($socket) {
-        $pingMessage = ''; // Пустое тело для ping
-        $encodedPing = $this->_encodeWebSocketMessage($pingMessage, 9); // 9 — это opcode для ping
-        fwrite($socket, $encodedPing);
+    private function _sendPingFrame($payload = '') {
+        $encodedPing = $this->_encodeWebSocketMessage($payload, 9);
+        fwrite($this->_stream, $encodedPing);
+    }
+
+    private function _sendPongFrame($payload = '') {
+        $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA);
+        fwrite($this->_stream, $encodedPong);
     }
 
     /**
@@ -330,6 +343,7 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_pingInterval = 1;
     private $_pongDeadline = 3;
     private string $_buffer = '';
+    const FRAME_PING = 'frame-ping';
     const FRAME_PONG = 'frame-pong';
     const FRAME_CLOSED = 'frame-closed';
 
