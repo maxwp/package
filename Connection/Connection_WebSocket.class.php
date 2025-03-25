@@ -77,14 +77,14 @@ class Connection_WebSocket implements Connection_IConnection {
 
             if ($msgArray) {
                 foreach ($msgArray as $msg) {
-                    if ($msg == self::FRAME_PING) {
-                        print "Connection_WebSocket: iframe-ping\n";
-                        $this->_sendPongFrame();
+                    if ($msg[0] == self::FRAME_PING) {
+                        print "Connection_WebSocket: iframe-ping $msg[1]\n";
+                        $this->_sendPongFrame($msg[1]);
                         continue;
                     }
 
-                    if ($msg == self::FRAME_PONG) {
-                        print "Connection_WebSocket: iframe-pong\n";
+                    if ($msg[0] == self::FRAME_PONG) {
+                        print "Connection_WebSocket: iframe-pong $msg[1]\n";
 
                         // запоминаем когда пришел pong
                         $this->_tsPong = 0;
@@ -96,13 +96,13 @@ class Connection_WebSocket implements Connection_IConnection {
                         $msg = false;
                     }
 
-                    if ($msg == self::FRAME_CLOSED) {
+                    if ($msg[0] == self::FRAME_CLOSED) {
                         print "Connection_WebSocket: iframe-closed\n";
                         return true;
                     }
 
                     // @todo переделать вызов callback на генерацию string event (simple Event)
-                    $result = $callback($ts, $msg);
+                    $result = $callback($ts, $msg[1]);
                     // если что-то вернули - на выход
                     if ($result) {
                         return $result;
@@ -234,13 +234,13 @@ class Connection_WebSocket implements Connection_IConnection {
 
             // Обработка опкодов
             if ($opcode === 0x8) {
-                $messages[] = self::FRAME_CLOSED;
+                $messages[] = [self::FRAME_CLOSED, $payload];
             } elseif ($opcode === 0xA) {
-                $messages[] = self::FRAME_PONG;
+                $messages[] = [self::FRAME_PONG, $payload];
             } elseif ($opcode === 0x9) {
-                $messages[] = self::FRAME_PING;
+                $messages[] = [self::FRAME_PING, $payload];
             } else {
-                $messages[] = $payload;
+                $messages[] = [self::FRAME_DATA, $payload];
             }
 
             // Сдвигаем указатель на следующий фрейм
@@ -349,5 +349,6 @@ class Connection_WebSocket implements Connection_IConnection {
     const FRAME_PING = 'frame-ping';
     const FRAME_PONG = 'frame-pong';
     const FRAME_CLOSED = 'frame-closed';
+    const FRAME_DATA = 'frame-data';
 
 }
