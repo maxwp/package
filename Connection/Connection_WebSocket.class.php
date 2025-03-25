@@ -42,7 +42,7 @@ class Connection_WebSocket implements Connection_IConnection {
                 // если задан дедлайн pong,
                 // и время уже больше этого дедлайна, то это означает что pong не пришет
                 // и мы идем на выход
-                print "Connection_WebSocket: no iframe-pong - exit\n";
+                Cli::Print_n("Connection_WebSocket: no iframe-pong - exit");
                 return true;
             }
 
@@ -54,13 +54,13 @@ class Connection_WebSocket implements Connection_IConnection {
 
             // согласно документации false может прилететь из-за system interrupt call
             if ($num_changed_streams === false) {
-                print "Connection_WebSocket: stream_select error\n";
+                Cli::Print_n("Connection_WebSocket: stream_select error");
                 $this->disconnect();
                 return true;
             }
 
             if (!empty($except)) {
-                print "Connection_WebSocket: stream_select except\n";
+                Cli::Print_n("Connection_WebSocket: stream_select except");
                 $this->disconnect();
                 return true;
             }
@@ -68,30 +68,27 @@ class Connection_WebSocket implements Connection_IConnection {
             $msgArray = [];
             if ($num_changed_streams > 0) {
                 $msgArray = $this->read();
+            } else {
+                // msg timeout select
+                $msgArray[] = [self::_FRAME_SELECT_TIMEOUT, false];
             }
 
             // супер важный момент: время надо получать после того, как я считаю данные.
             // потому что может быть момент, что я запросил время сразу после stream_select(), а затем
-            // fread считал больше данных чем я ожидал
+            // fread() считал больше данных чем я ожидал - и тогда будет казаться что данные пришли из будущего.
             $ts = microtime(true);
 
-            if ($msgArray) {
-                foreach ($msgArray as $msg) {
-                    $msgType = $msg[0];
-                    $msgData = $msg[1];
+            foreach ($msgArray as $msg) {
+                $msgType = $msg[0];
+                $msgData = $msg[1];
 
-                    // @todo тут можно поменять порядок state machine, чтобы оперативнее отправлять frame-data
-
-                    // @todo перевести принты на Cli
-
-                    if ($msgType == self::FRAME_PING) {
-                        print "Connection_WebSocket: iframe-ping $msgData\n";
+                switch ($msgType) {
+                    case self::_FRAME_PING:
+                        Cli::Print_n("Connection_WebSocket: iframe-ping $msgData");
                         $this->_sendPongFrame($msgData);
-                        continue;
-                    }
-
-                    if ($msgType == self::FRAME_PONG) {
-                        print "Connection_WebSocket: iframe-pong $msgData\n";
+                        break;
+                    case self::_FRAME_PONG:
+                        Cli::Print_n("Connection_WebSocket: iframe-pong $msgData");
 
                         // запоминаем когда пришел pong
                         $this->_tsPong = 0;
@@ -99,32 +96,33 @@ class Connection_WebSocket implements Connection_IConnection {
                         // тут очень важный нюанс:
                         // stream_select может выйти по таймауту, а может по pong.
                         // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать $callback,
-                        // так как он ждет четкий loop по тайм-ауту 0.5-1 сек
-                        $msgData = false;
-                    }
-
-                    if ($msgType == self::FRAME_CLOSED) {
-                        print "Connection_WebSocket: iframe-closed\n";
+                        // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
+                        $result = $callback($ts, false);
+                        if ($result) {
+                            // если что-то вернули - на выход
+                            return $result;
+                        }
+                        break;
+                    case self::_FRAME_CLOSED:
+                        Cli::Print_n("Connection_WebSocket: iframe-closed");
                         return true;
-                    }
-
-                    // @todo переделать вызов callback на генерацию string event (simple Event)
-                    $result = $callback($ts, $msgData);
-                    // если что-то вернули - на выход
-                    if ($result) {
-                        return $result;
-                    }
-                }
-            } else {
-                $result = $callback($ts, false);
-                // если что-то вернули - на выход
-                if ($result) {
-                    return $result;
+                        break;
+                    case self::_FRAME_SELECT_TIMEOUT:
+                    case self::_FRAME_DATA:
+                        // @todo переделать вызов callback на генерацию string event (simple Event)
+                        $result = $callback($ts, $msgData);
+                        if ($result) {
+                            // если что-то вернули - на выход
+                            return $result;
+                        }
+                        break;
+                    default:
+                        break;
                 }
             }
         }
 
-        // @todo disconnect можно вызвать прямо тут в конце loop'a
+        // @todo disconnect можно вызвать прямо тут в конце loop?
     }
 
     public function connect() {
@@ -241,13 +239,13 @@ class Connection_WebSocket implements Connection_IConnection {
 
             // Обработка опкодов
             if ($opcode === 0x8) {
-                $messages[] = [self::FRAME_CLOSED, $payload];
+                $messages[] = [self::_FRAME_CLOSED, $payload];
             } elseif ($opcode === 0xA) {
-                $messages[] = [self::FRAME_PONG, $payload];
+                $messages[] = [self::_FRAME_PONG, $payload];
             } elseif ($opcode === 0x9) {
-                $messages[] = [self::FRAME_PING, $payload];
+                $messages[] = [self::_FRAME_PING, $payload];
             } else {
-                $messages[] = [self::FRAME_DATA, $payload];
+                $messages[] = [self::_FRAME_DATA, $payload];
             }
 
             // Сдвигаем указатель на следующий фрейм
@@ -347,15 +345,16 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_port;
     private $_path;
     private $_stream;
-    private $_streamSelectTimeout = 500000; // 500 ms
+    private $_streamSelectTimeout = 500000; // 500 ms by default
     private $_tsPing = 0;
     private $_tsPong = 0;
     private $_pingInterval = 1;
     private $_pongDeadline = 3;
     private string $_buffer = '';
-    const FRAME_PING = 'frame-ping';
-    const FRAME_PONG = 'frame-pong';
-    const FRAME_CLOSED = 'frame-closed';
-    const FRAME_DATA = 'frame-data';
+    private const _FRAME_PING = 'frame-ping';
+    private const _FRAME_PONG = 'frame-pong';
+    private const _FRAME_CLOSED = 'frame-closed';
+    private const _FRAME_DATA = 'frame-data';
+    private const _FRAME_SELECT_TIMEOUT = 'frame-select-timeout';
 
 }
