@@ -12,6 +12,8 @@ class Connection_WebSocket implements Connection_IConnection {
         $this->_ip = $ip;
         $this->_port = $port;
         $this->_path = $path;
+
+        // @todo можно сделать чтобы Connection_WebSocket был extends Connection_SocketStreamSSL
     }
 
     public function setLoopTimeout($microseconds) {
@@ -19,8 +21,6 @@ class Connection_WebSocket implements Connection_IConnection {
     }
 
     public function loop($callback) {
-        // @todo надо получать причину выхода из loop, возможно через return string или exception
-
         // обнуляем ts ping-pong, иначе могу зайти в вечную restart долбежку
         $this->_tsPing = 0;
         $this->_tsPong = 0;
@@ -42,8 +42,8 @@ class Connection_WebSocket implements Connection_IConnection {
                 // если задан дедлайн pong,
                 // и время уже больше этого дедлайна, то это означает что pong не пришет
                 // и мы идем на выход
-                Cli::Print_n("Connection_WebSocket: no iframe-pong - exit");
-                return true;
+                $this->disconnect();
+                throw new Connection_Exception("Connection_WebSocket: no iframe-pong - exit");
             }
 
             $read = [$this->_stream];
@@ -54,15 +54,13 @@ class Connection_WebSocket implements Connection_IConnection {
 
             // согласно документации false может прилететь из-за system interrupt call
             if ($num_changed_streams === false) {
-                Cli::Print_n("Connection_WebSocket: stream_select error");
                 $this->disconnect();
-                return true;
+                throw new Connection_Exception("Connection_WebSocket: stream_select error");
             }
 
             if (!empty($except)) {
-                Cli::Print_n("Connection_WebSocket: stream_select except");
                 $this->disconnect();
-                return true;
+                throw new Connection_Exception("Connection_WebSocket: stream_select except");
             }
 
             $msgArray = [];
@@ -97,32 +95,34 @@ class Connection_WebSocket implements Connection_IConnection {
                         // stream_select может выйти по таймауту, а может по pong.
                         // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать $callback,
                         // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
-                        $result = $callback($ts, false);
-                        if ($result) {
-                            // если что-то вернули - на выход
-                            return $result;
+                        try {
+                            $callback($ts, false);
+                        } catch (Throwable $userException) {
+                            $this->disconnect();
+                            throw $userException;
                         }
                         break;
                     case self::_FRAME_CLOSED:
-                        Cli::Print_n("Connection_WebSocket: iframe-closed");
-                        return true;
-                        break;
+                        $this->disconnect();
+                        throw new Connection_Exception("Connection_WebSocket: iframe-closed");
                     case self::_FRAME_SELECT_TIMEOUT:
                     case self::_FRAME_DATA:
                         // @todo переделать вызов callback на генерацию string event (simple Event)
-                        $result = $callback($ts, $msgData);
-                        if ($result) {
-                            // если что-то вернули - на выход
-                            return $result;
+                        try {
+                            $callback($ts, $msgData);
+                        } catch (Throwable $userException) {
+                            $this->disconnect();
+                            throw $userException;
                         }
                         break;
                     default:
-                        break;
+                        throw new Connection_Exception("WebSocket type $msgType not implemented");
                 }
             }
         }
 
-        // @todo disconnect можно вызвать прямо тут в конце loop?
+        // теоретически я сюда никогда не дойду, ну да ладно
+        $this->disconnect();
     }
 
     public function connect() {
