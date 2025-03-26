@@ -66,8 +66,9 @@ class Connection_WebSocket implements Connection_IConnection {
             $msgArray = [];
             if ($num_changed_streams > 0) {
                 $msgArray = $this->read();
-            } else {
-                // msg timeout select
+            }
+
+            if (!$msgArray) {
                 $msgArray[] = [self::_FRAME_SELECT_TIMEOUT, false];
             }
 
@@ -173,6 +174,12 @@ class Connection_WebSocket implements Connection_IConnection {
         if ($data === false) {
             $errorString = error_get_last()['message'];
             throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
+        }
+
+        // Если fread вернул пустую строку, проверяем, достигнут ли EOF
+        if ($data === '' && feof($this->_stream)) {
+            $this->disconnect();
+            throw new Exception("EOF reached: connection closed by remote host");
         }
 
         $this->_buffer .= $data;
