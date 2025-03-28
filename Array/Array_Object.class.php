@@ -128,6 +128,10 @@ class Array_Object extends ArrayObject {
         return $sumOfSquares / $n; // Дисперсия
     }
 
+    public function stdDeviation() {
+        return sqrt($this->variance());
+    }
+
     public function quantile(float $percentile) {
         $array = $this->getArrayCopy();
         sort($array);

@@ -38,6 +38,11 @@ class Array_Static {
         return $a->variance();
     }
 
+    public static function StdDeviation($a) {
+        $a = new Array_Object($a);
+        return $a->stdDeviation();
+    }
+
     public static function Sum($a) {
         $a = new Array_Object($a);
         return $a->sum();
