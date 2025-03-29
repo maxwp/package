@@ -25,11 +25,12 @@ class Cli {
         }
     }
 
-    public static function Print_break($symbol = '-', $length = 80) {
+    public static function Print_break($symbol = '-', $length = 80, $separator = "\n") {
         if (defined('EE_PRINT') ) {
-            print "\n";
+            print $separator;
             print str_repeat($symbol, $length);
-            print "\n\n";
+            print $separator;
+            print "\n";
         }
     }
 
