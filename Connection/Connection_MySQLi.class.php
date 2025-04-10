@@ -55,11 +55,11 @@ implements Connection_IDatabaseAdapter {
      * Выполнить SQL-запрос.
      * Через этот метод теоретически проходят все SQL-запросы в системе.
      *
-     * @param string $query
+     * @param string $queryString
      *
-     * @return resource
+     * @return bool|mysqli_result
      */
-    public function query($query) {
+    public function query($queryString) {
         if (!$this->getLink()) {
             $this->connect();
         }
@@ -74,11 +74,11 @@ implements Connection_IDatabaseAdapter {
             $this->query('START TRANSACTION');
         }
 
-        $result = $this->getLink()->query($query);
+        $result = $this->getLink()->query($queryString);
 
         $e = $this->getLink()->error;
         if ($e) {
-            throw new Connection_Exception("Executing error: {$e} in query: {$query}");
+            throw new Connection_Exception("Executing error: {$e} in query: {$queryString}");
         }
 
         return $result;
@@ -203,6 +203,14 @@ implements Connection_IDatabaseAdapter {
             $queryResource->free();
         }
         return $result;
+    }
+
+    public function prepare($query) {
+        if (!$this->getLink()) {
+            $this->connect();
+        }
+
+        return $this->getLink()->prepare($query);
     }
 
     /**

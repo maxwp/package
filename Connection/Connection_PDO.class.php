@@ -54,28 +54,18 @@ implements Connection_IConnection, Connection_IDatabaseAdapter {
     /**
      * Выполнить SQL-запрос.
      *
-     * @param string $query
+     * @param string $queryString
      *
      * @return PDOStatement
      */
-    public function query($query) {
+    public function query($queryString) {
         if (!$this->getLink()) {
             $this->connect();
         }
 
         try {
-            $time = microtime(true);
-            $result = $this->getLink()->prepare($query);
+            $result = $this->getLink()->prepare($queryString);
             $result->execute();
-            $time = microtime(true) - $time;
-
-            if (PackageLoader::Get()->getMode('debug')) {
-                $statArray = array();
-                $statArray['query'] = $query;
-                $statArray['time'] = $time;
-                $this->_queryStat[] = $statArray;
-            }
-
             return $result;
         } catch (Exception $e) {
             throw new Connection_Exception($e->getMessage());
