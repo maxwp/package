@@ -38,7 +38,7 @@ implements Connection_IDatabaseAdapter {
             $this->_port
         );
 
-        $e = $this->getLink()->connect_error;
+        $e = $this->_link->connect_error;
         if ($e) {
             throw new Connection_Exception("Cannot connect to database $this->_database@$this->_hostname: ".$e);
         }
@@ -46,6 +46,9 @@ implements Connection_IDatabaseAdapter {
         if ($this->_encoding) {
             mysqli_set_charset($this->_link, $this->_encoding);
         }
+
+        // пометка что все установлено
+        $this->_linkConnected = true;
 
         // Специальный fix для MySQL 5.7, отключает STRICT MODE
         $this->query('SET sql_mode = ""');
@@ -60,7 +63,7 @@ implements Connection_IDatabaseAdapter {
      * @return bool|mysqli_result
      */
     public function query($queryString) {
-        if (!$this->getLink()) {
+        if (!$this->_linkConnected) {
             $this->connect();
         }
 
@@ -74,9 +77,9 @@ implements Connection_IDatabaseAdapter {
             $this->query('START TRANSACTION');
         }
 
-        $result = $this->getLink()->query($queryString);
+        $result = $this->_link->query($queryString);
 
-        $e = $this->getLink()->error;
+        $e = $this->_link->error;
         if ($e) {
             throw new Connection_Exception("Executing error: {$e} in query: {$queryString}");
         }
@@ -88,6 +91,8 @@ implements Connection_IDatabaseAdapter {
         if ($this->_link) {
             $this->_link->close();
         }
+
+        $this->_linkConnected = false;
     }
 
     /**
@@ -113,6 +118,8 @@ implements Connection_IDatabaseAdapter {
         // транзакцию нужно открывать либо по force, либо когда счетчик = 0
         if (!$this->_transactionCount || $force) {
             $this->_transactionStart = true;
+
+            // см метод query, там умный старт транзакции только когда есть первый запрос
         }
 
         $this->_transactionCount ++;
@@ -206,11 +213,11 @@ implements Connection_IDatabaseAdapter {
     }
 
     public function prepare($query) {
-        if (!$this->getLink()) {
+        if (!$this->_linkConnected) {
             $this->connect();
         }
 
-        return $this->getLink()->prepare($query);
+        return $this->_link->prepare($query);
     }
 
     /**
@@ -225,18 +232,18 @@ implements Connection_IDatabaseAdapter {
             return $string;
         }
 
-        if (!$this->getLink()) {
+        if (!$this->_linkConnected) {
             $this->connect();
         }
-        return @mysqli_real_escape_string($this->getLink(), $string);
+        return @mysqli_real_escape_string($this->_link, $string);
     }
 
     public function getLastInsertID() {
-        return $this->getLink()->insert_id;
+        return $this->_link->insert_id;
     }
 
     public function getAffectedRows() {
-        return $this->getLink()->affected_rows;
+        return $this->_link->affected_rows;
     }
 
     private $_hostname;
@@ -252,6 +259,7 @@ implements Connection_IDatabaseAdapter {
     private $_encoding;
 
     private $_link = null;
+    private $_linkConnected = false;
 
     private $_transactionCount = 0;
 
