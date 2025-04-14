@@ -53,7 +53,7 @@ class Storage_Memcached implements Storage_IHandler {
     /**
      * Получить данные по ключу
      *
-     * @param string $key
+     * @param string|array $key
      */
     public function get($key) {
         if (is_array($key)) {
