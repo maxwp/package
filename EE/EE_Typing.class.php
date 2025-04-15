@@ -57,6 +57,7 @@ class EE_Typing {
                 $value = date('Y-m-d', $x);
             }
         } elseif ($typing == self::TYPE_DATETIME) {
+            // @todo тут полная хуйня нужен timestamp
             $x = strtotime($value);
             if (!$x || $x < 0) {
                 $value = '';
