@@ -194,16 +194,11 @@ abstract class EE_AContent implements EE_IContent {
      * @return mixed
      */
     public function render() {
-        $event = Events::Get()->generateEvent('EE:content.process:before');
-        $event->setContent($this);
-        $event->notify();
+        EV::GetInternal()->notify('EE:content.process:before', $this);
 
         $this->process();
 
-        // вызываем все пост-процессоры
-        $event = Events::Get()->generateEvent('EE:content.process:after');
-        $event->setContent($this);
-        $event->notify();
+        EV::GetInternal()->notify('EE:content.process:after', $this);
 
         return $this->getValueArray();
     }

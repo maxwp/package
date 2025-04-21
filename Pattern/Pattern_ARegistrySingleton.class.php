@@ -47,6 +47,6 @@ abstract class Pattern_ARegistrySingleton {
 
     private static $_ObjectArray = [];
 
-    protected static $_ExceptionClass = Pattern_Exception::class;
+    protected static $_ExceptionClass = Pattern_Exception::class; // @todo overload не пашет же
 
 }

@@ -20,13 +20,11 @@
  * @author    Maxim Miroshnichenko <max@webproduction.ua>
  * @copyright WebProduction
  * @package   Events
+ *
+ * @deprecated
+ * @see EV
  */
 class Events extends Pattern_ASingleton {
-
-    // @todo переписать Events чтобы события не надо было регистрировать, а можно было просто цепляться на key и
-    // от него делать notify всего что там висит.
-
-    // @todo pattern model
 
     /**
      * Получить событие

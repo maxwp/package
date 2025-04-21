@@ -12,18 +12,6 @@
 class EE extends Pattern_ASingleton {
 
     protected function __construct() {
-        // регистрация событий которые понимает Eventic Engine
-        // @todo попрравить на нормальный :class
-        Events::Get()->addEvent('EE:content.process:before', 'EE_Event_ContentProcess');
-        Events::Get()->addEvent('EE:content.process:after', 'EE_Event_ContentProcess');
-        Events::Get()->addEvent('EE:content.render:before', 'EE_Event_ContentRender');
-        Events::Get()->addEvent('EE:content.render:after', 'EE_Event_ContentRender');
-        Events::Get()->addEvent('EE:routing:before', 'Events_Event');
-        Events::Get()->addEvent('EE:routing:after', 'Events_Event');
-        Events::Get()->addEvent('EE:execute:before', 'Events_Event');
-        Events::Get()->addEvent('EE:execute:exception', 'EE_Event_Exception');
-        Events::Get()->addEvent('EE:execute:after', 'Events_Event');
-
         $this->_contentRegistryArray = new Pattern_RegistryArray();
     }
 
@@ -32,8 +20,7 @@ class EE extends Pattern_ASingleton {
      * Передаем параметр $request, получаем $response
      */
     public function execute(EE_IRequest $request, EE_IResponse $response) {
-        $event = Events::Get()->generateEvent('EE:execute:before');
-        $event->notify();
+        EV::GetInternal()->notify('EE:execute:before');
 
         // сохраняем request в себе
         // это нужно чтобы в процессе работы движка любой контент мог получить доступ к Request
@@ -44,8 +31,7 @@ class EE extends Pattern_ASingleton {
         $this->_response = $response;
 
         // до того как сработал роутинг
-        $event = Events::Get()->generateEvent('EE:routing:before');
-        $event->notify();
+        EV::GetInternal()->notify('EE:routing:before');
 
         // получаем систему роутинга
         // она должна быть инициирована заранее
@@ -71,8 +57,7 @@ class EE extends Pattern_ASingleton {
         }
 
         // после того как сработал роутинг
-        $event = Events::Get()->generateEvent('EE:routing:after');
-        $event->notify();
+        EV::GetInternal()->notify('EE:routing:after');
 
         // формируем ответ
         try {
@@ -85,19 +70,12 @@ class EE extends Pattern_ASingleton {
             // что-то пошло не так
             $this->getResponse()->setCode(500);
 
-            // если есть событие и обработчики EE:execute:exception - то перенаправляем вывод
-            if (Events::Get()->hasEvent('EE:execute:exception')) {
-                $event = Events::Get()->generateEvent('EE:execute:exception');
-                $event->setException($ex500);
-                $event->notify();
-            } else {
-                // иначе все как обычно - fatal в экран как нибудь
-                throw $ex500;
-            }
+            EV::GetInternal()->notify('EE:execute:exception', $ex500);
+
+            throw $ex500;
         }
 
-        $event = Events::Get()->generateEvent('EE:execute:after');
-        $event->notify();
+        EV::GetInternal()->notify('EE:execute:after');
 
         // очищаем все контенты,
         // это нужно следующего запуска движка в режиме non-stop
