@@ -80,7 +80,11 @@ abstract class EE_AContent implements EE_IContent {
         try {
             return $this->getArgument($key, $type, $source);
         } catch (Exception $exception) {
-            return EE_Typing::TypeString(false, $type);
+            if ($type) {
+                return EE_Typing::TypeString(false, $type);
+            } else {
+                return false;
+            }
         }
     }
 
