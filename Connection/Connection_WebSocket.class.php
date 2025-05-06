@@ -16,8 +16,8 @@ class Connection_WebSocket implements Connection_IConnection {
         // @todo можно сделать чтобы Connection_WebSocket был extends Connection_SocketStreamSSL
     }
 
-    public function setLoopTimeout($microseconds) {
-        $this->_streamSelectTimeout = $microseconds;
+    public function setLoopTimeout($us) {
+        $this->_streamSelectTimeoutUS = $us;
     }
 
     public function loop($callback) {
@@ -50,7 +50,7 @@ class Connection_WebSocket implements Connection_IConnection {
             $write = null;
             $except = [$this->_stream];
 
-            $num_changed_streams = stream_select($read, $write, $except, 0, $this->_streamSelectTimeout);
+            $num_changed_streams = stream_select($read, $write, $except, 0, $this->_streamSelectTimeoutUS);
 
             // согласно документации false может прилететь из-за system interrupt call
             if ($num_changed_streams === false) {
@@ -353,7 +353,7 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_port;
     private $_path;
     private $_stream;
-    private $_streamSelectTimeout = 500000; // 500 ms by default
+    private $_streamSelectTimeoutUS = 500000; // 500 ms by default
     private $_tsPing = 0;
     private $_tsPong = 0;
     private $_pingInterval = 1;
