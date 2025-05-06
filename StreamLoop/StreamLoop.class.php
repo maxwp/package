@@ -27,33 +27,39 @@ class StreamLoop {
             $r = [];
             $w = [];
             $e = [];
-            $cnt = 0;
             $linkArray = [];
 
+            $ok = false;
             foreach ($this->_handlerArray as $handler) {
                 // handler будет выдавать stream только в том случае, если он что-то ждет
-                // @todo возможно он сможет выдавать stream + что он ждет, но пока это не актуальная оптимизация
-                $stream = $handler->getStream();
-                if ($stream) {
+                // и будет указыват что именно ждет этот stream
+                $x = $handler->getStreamConfig();
+                //print_r($x);
+                $stream = $x[0];
+                $linkArray[(int)$stream] = $handler;
+                if ($x[1]) {
                     $r[] = $stream;
+                    $ok = true;
+                }
+                if ($x[2]) {
                     $w[] = $stream;
+                    $ok = true;
+                }
+                if ($x[3]) {
                     $e[] = $stream;
-
-                    $cnt ++;
-
-                    $linkArray[(int)$stream] = $handler;
+                    $ok = true;
                 }
             }
 
             // если ничего нет - пауза на тот же тайм-аут
-            if ($cnt === 0) {
+            if (!$ok) {
                 usleep($this->_streamSelectTimeoutUS);
                 continue;
             }
 
-            $result = stream_select($r, $w, $e, $this->_streamSelectTimeoutUS);
+            $result = stream_select($r, $w, $e, 0, $this->_streamSelectTimeoutUS);
             if ($result === false) {
-                throw new StreamLoop_Exception("stream_select() failed");
+                throw new StreamLoop_Exception("stream_select failed");
             }
 
             foreach ($r as $stream) {
@@ -82,7 +88,7 @@ class StreamLoop {
      */
     private $_handlerArray = [];
 
-    private $_streamSelectTimeoutUS = 500000;
+    private $_streamSelectTimeoutUS = 500_000*2;
 
     private bool $_loopRunning;
 

@@ -1,21 +1,6 @@
 <?php
 class StreamLoop_HandlerHTTPS implements StreamLoop_IHandler {
 
-    public function request(string $method, string $path, string $body, array $headerArray, callable $callback) {
-        // добавляем запрос в очередь
-        $this->_requestQue->enqueue(array(
-            'method' => strtoupper($method),
-            'path' => $path,
-            'body' => $body,
-            'headerArray' => $headerArray,
-            'callback' => $callback,
-        ));
-
-        if (!$this->_activeRequest) {
-            $this->_checkRequestQue();
-        }
-    }
-
     public function __construct($host, $port) {
         $this->_host = $host;
         $this->_port = $port;
@@ -33,9 +18,24 @@ class StreamLoop_HandlerHTTPS implements StreamLoop_IHandler {
         $this->_connect();
     }
 
+    public function request(string $method, string $path, string $body, array $headerArray, callable $callback) {
+        // добавляем запрос в очередь
+        $this->_requestQue->enqueue(array(
+            'method' => strtoupper($method),
+            'path' => $path,
+            'body' => $body,
+            'headerArray' => $headerArray,
+            'callback' => $callback,
+        ));
+
+        if (!$this->_activeRequest) {
+            $this->_checkRequestQue();
+        }
+    }
+
     private function _connect() {
         $this->_activeRequest = true;
-        $this->_state = self::_STATE_CONNECTING;
+        $this->_updateState(self::_STATE_CONNECTING, false, true, false);
 
         $ctx = stream_context_create();  // без ssl-опций!
         $flags = STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT;
@@ -85,7 +85,7 @@ class StreamLoop_HandlerHTTPS implements StreamLoop_IHandler {
                 stream_context_set_option($this->_stream, 'ssl', 'peer_name', $this->_host);
                 stream_context_set_option($this->_stream, 'ssl', 'allow_self_signed', true);
 
-                $this->_state = self::_STATE_HANDSHAKE;
+                $this->_updateState(self::_STATE_HANDSHAKE, true, true, false);
                 $this->_checkHandshake();
                 return;
             case self::_STATE_HANDSHAKE:
@@ -107,7 +107,7 @@ class StreamLoop_HandlerHTTPS implements StreamLoop_IHandler {
         $this->_activeRequest = $this->_requestQue->dequeue();
         $this->_activeRequestTS = microtime(true);
 
-        $request  = $this->_activeRequest['method']." ".$this->_activeRequest['path']." HTTP/1.1\r\n";
+        $request = $this->_activeRequest['method']." ".$this->_activeRequest['path']." HTTP/1.1\r\n";
         foreach ($this->_activeRequest['headerArray'] as $name => $value) {
             $request .= "{$name}: {$value}\r\n";
         }
@@ -126,7 +126,7 @@ class StreamLoop_HandlerHTTPS implements StreamLoop_IHandler {
 
         fwrite($this->_stream, $request);
 
-        $this->_state = self::_STATE_WAIT_FOR_RESPONSE_HEADERS;
+        $this->_updateState(self::_STATE_WAIT_FOR_RESPONSE_HEADERS, true, false, false);
     }
 
     public function readyExcept() {
@@ -150,7 +150,9 @@ class StreamLoop_HandlerHTTPS implements StreamLoop_IHandler {
         }
 
         if ($return === true) {
-            $this->_state = self::_STATE_READY;
+            $this->_updateState(self::_STATE_READY, false, false, false);
+
+            $this->_checkRequestQue();
         }
     }
 
@@ -182,7 +184,7 @@ class StreamLoop_HandlerHTTPS implements StreamLoop_IHandler {
                     $this->_headerArray[strtolower($name)] = $value;
                 }
 
-                $this->_state = self::_STATE_WAIT_FOR_RESPONSE_BODY;
+                $this->_updateState(self::_STATE_WAIT_FOR_RESPONSE_BODY, true, false, false);
                 $this->_buffer = '';
 
                 return;
@@ -205,7 +207,7 @@ class StreamLoop_HandlerHTTPS implements StreamLoop_IHandler {
                 // @todo возможно своя структура response с таймерами: когда начал, когда закончил, что было в запросе (потому что мне идентифицировать его как-то его надо)
                 $this->_activeRequest['callback']($this->_activeRequestTS, $tsNow, $this->_statusCode, $this->_statusMessage, $this->_headerArray, $this->_buffer);
 
-                $this->_state = self::_STATE_READY;
+                $this->_updateState(self::_STATE_READY, false, false, false);
                 $this->_buffer = '';
                 $this->_headerArray = [];
                 $this->_statusCode = 0;
@@ -242,12 +244,15 @@ class StreamLoop_HandlerHTTPS implements StreamLoop_IHandler {
         }
     }
 
-    public function getStream() {
+    public function getStreamConfig() {
         if (feof($this->_stream)) {
+            //var_dump('EOF');
+
             // @todo в зависимости от того отправлен был запрос или нет - лучше по разному вести себя:
             // не был отправлен - добавляем
             // уже был отправлен (и мог быть выполнен) - callback шо всему пизда
-            if ($this->_activeRequest) {
+            // = для HFT не критично из-за unique nonce, можно повторять всегда
+            if ($this->_activeRequest && $this->_activeRequest !== true) {
                 $this->_requestQue->enqueue($this->_activeRequest);
                 $this->_activeRequest = false;
             }
@@ -255,8 +260,11 @@ class StreamLoop_HandlerHTTPS implements StreamLoop_IHandler {
             $this->_connect();
         }
 
-        // выдаем только если соединение активно и я чего-то жду
-        return $this->_activeRequest ? $this->_stream : false;
+        // [stream, r, w, e]
+        // @todo а нафига я выдаю, если я могу просто менять эти флаги readonly?
+        // прийдется делать класс
+        // @todo но куда тогда перенести проверку eof?
+        return [$this->_stream, $this->_flagRead, $this->_flagWrite, $this->_flagExcept];
     }
 
     /**
@@ -264,6 +272,13 @@ class StreamLoop_HandlerHTTPS implements StreamLoop_IHandler {
      */
     public function getRequestQue() {
         return $this->_requestQue;
+    }
+
+    private function _updateState($state, $flagRead, $flagWrite, $flagExcept) {
+        $this->_state = $state;
+        $this->_flagRead = $flagRead;
+        $this->_flagWrite = $flagWrite;
+        $this->_flagExcept = $flagExcept;
     }
 
     private $_stream;
@@ -278,6 +293,7 @@ class StreamLoop_HandlerHTTPS implements StreamLoop_IHandler {
     private $_statusMessage = '';
 
     private $_activeRequest;
+    private $_flagRead = false, $_flagWrite = false, $_flagExcept = false;
     private $_activeRequestTS = 0;
     private SplQueue $_requestQue;
 

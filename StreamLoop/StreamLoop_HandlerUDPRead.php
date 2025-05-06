@@ -65,8 +65,9 @@ class StreamLoop_HandlerUDPRead implements StreamLoop_IHandler {
 
     }
 
-    public function getStream() {
-        return $this->_stream;
+    public function getStreamConfig() {
+        // stream, r, w, e
+        return [$this->_stream, true, false, false];
     }
 
     private $_stream;

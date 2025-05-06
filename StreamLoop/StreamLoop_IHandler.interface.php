@@ -4,6 +4,6 @@ interface StreamLoop_IHandler {
     public function readyRead();
     public function readyWrite();
     public function readyExcept();
-    public function getStream();
+    public function getStreamConfig();
 
 }
