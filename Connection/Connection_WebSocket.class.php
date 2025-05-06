@@ -144,6 +144,7 @@ class Connection_WebSocket implements Connection_IConnection {
         }
 
         // @todo надо добить STREAM_CLIENT_ASYNC_CONNECT
+        // @todo из Tool_EL7 я могу делать ASNYNC handshake
         $this->_stream = stream_socket_client("ssl://{$connectHost}:{$this->_port}", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context);
         if (!$this->_stream) {
             throw new Connection_Exception("Failed to connect to {$this->_host}:{$this->_port} - $errstr ($errno)");
