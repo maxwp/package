@@ -1,9 +1,10 @@
 <?php
 class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
-    public function __construct($host, $port) {
+    public function __construct($host, $port, $ip = false) {
         $this->_host = $host;
         $this->_port = $port;
+        $this->_ip = $ip ? $ip : $this->_host;
 
         $this->_requestQue = new SplQueue();
 
@@ -39,7 +40,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         $ctx = stream_context_create();  // без ssl-опций!
         $flags = STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT;
         $this->stream = stream_socket_client(
-            "tcp://{$this->_host}:{$this->_port}",
+            "tcp://{$this->_ip}:{$this->_port}",
             $errno,
             $errstr,
             0, // timeout = 0, чтобы мгновенно вернулось
@@ -340,7 +341,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         $this->flagExcept = $flagExcept;
     }
 
-    private $_host, $_port;
+    private $_host, $_port, $_ip;
 
     private $_state = '';
 
