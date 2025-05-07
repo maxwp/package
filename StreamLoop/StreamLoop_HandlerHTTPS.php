@@ -34,6 +34,8 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     private function _connect() {
+        $this->_reset();
+
         $this->_activeRequest = true;
         $this->_updateState(self::_STATE_CONNECTING, false, true, false);
 
@@ -58,12 +60,27 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         stream_set_write_buffer($this->stream, 0);
     }
 
+    private function _reset() {
+        $this->_buffer = '';
+        $this->_statusCode = 0;
+        $this->_statusMessage = '';
+        $this->_headerArray = [];
+        $this->_activeRequestTS = 0;
+        $this->_activeRequest = false;
+    }
+
     public function readyRead() {
         if (feof($this->stream)) {
-            // аналогично рестарту:
-            // — вернём активный запрос в очередь
             if ($this->_activeRequest && is_array($this->_activeRequest)) {
-                $this->_requestQue->enqueue($this->_activeRequest);
+                $cb = $this->_activeRequest['callback'];
+                $cb(
+                    $this->_activeRequestTS,
+                    microtime(true),
+                    0, // http code 0
+                    'Connection closed by server', // ясное сообщение
+                    [], // заголовков нет
+                    '' // тела нет
+                );
             }
 
             fclose($this->stream);
@@ -138,12 +155,16 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
         $n = fwrite($this->stream, $request);
         if ($n === false) {
-            // куда девать запрос, если запись не удалась?
-            // — повторно закинуть в очередь:
-            if ($this->_activeRequest && is_array($this->_activeRequest)) {
-                $this->_requestQue->enqueue($this->_activeRequest);
-            }
-            // — закрыть текущее соединение и перейти в CONNECTING-состояние
+            $cb = $this->_activeRequest['callback'];
+            $cb(
+                $this->_activeRequestTS,
+                microtime(true),
+                0, // http code 0
+                'Connection closed by server', // ясное сообщение
+                [], // заголовков нет
+                '' // тела нет
+            );
+
             fclose($this->stream);
             $this->_connect();
             return;
@@ -155,8 +176,17 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     public function readyExcept() {
         if (feof($this->stream)) {
             if ($this->_activeRequest && is_array($this->_activeRequest)) {
-                $this->_requestQue->enqueue($this->_activeRequest);
+                $cb = $this->_activeRequest['callback'];
+                $cb(
+                    $this->_activeRequestTS,
+                    microtime(true),
+                    0, // http code 0
+                    'Connection closed by server', // ясное сообщение
+                    [], // заголовков нет
+                    '' // тела нет
+                );
             }
+
             fclose($this->stream);
             $this->_connect();
             return;
@@ -180,6 +210,8 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         }
 
         if ($return === true) {
+            $this->_reset();
+
             $this->_updateState(self::_STATE_READY, false, false, false);
 
             $this->_checkRequestQue();
@@ -339,6 +371,10 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         $this->flagRead = $flagRead;
         $this->flagWrite = $flagWrite;
         $this->flagExcept = $flagExcept;
+    }
+
+    public function getState() {
+        return $this->_state;
     }
 
     private $_host, $_port, $_ip;

@@ -150,6 +150,10 @@ class Connection_WebSocket implements Connection_IConnection {
             throw new Connection_Exception("Failed to connect to {$this->_host}:{$this->_port} - $errstr ($errno)");
         }
 
+        // отключаем буферизацию php
+        stream_set_read_buffer($this->_stream, 0);
+        stream_set_write_buffer($this->_stream, 0);
+
         $key = base64_encode(random_bytes(16)); // Уникальный ключ для Handshake
         $headers = "GET {$this->_path} HTTP/1.1\r\n"
             . "Host: {$this->_host}\r\n"
