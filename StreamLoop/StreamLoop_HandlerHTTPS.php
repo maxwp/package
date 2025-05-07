@@ -60,33 +60,8 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         stream_set_write_buffer($this->stream, 0);
     }
 
-    private function _reset() {
-        $this->_buffer = '';
-        $this->_statusCode = 0;
-        $this->_statusMessage = '';
-        $this->_headerArray = [];
-        $this->_activeRequestTS = 0;
-        $this->_activeRequest = false;
-    }
-
     public function readyRead() {
-        if (feof($this->stream)) {
-            if ($this->_activeRequest && is_array($this->_activeRequest)) {
-                $cb = $this->_activeRequest['callback'];
-                $cb(
-                    $this->_activeRequestTS,
-                    microtime(true),
-                    0, // http code 0
-                    'Connection closed by server', // ясное сообщение
-                    [], // заголовков нет
-                    '' // тела нет
-                );
-            }
-
-            fclose($this->stream);
-            $this->_connect();
-            return;
-        }
+        $this->_checkEOF();
 
         switch ($this->_state) {
             case self::_STATE_HANDSHAKE:
@@ -125,6 +100,34 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
                 $this->_checkRequestQue();
                 return;
+        }
+    }
+
+    public function readyExcept() {
+        $this->_checkEOF();
+
+        if ($this->_state == self::_STATE_HANDSHAKE) {
+            $this->_checkHandshake();
+            return;
+        }
+    }
+
+    private function _checkEOF() {
+        if (feof($this->stream)) {
+            if ($this->_activeRequest && is_array($this->_activeRequest)) {
+                $cb = $this->_activeRequest['callback'];
+                $cb(
+                    $this->_activeRequestTS,
+                    microtime(true),
+                    0, // http code 0
+                    'Connection closed by server', // ясное сообщение
+                    [], // заголовков нет
+                    '' // тела нет
+                );
+            }
+
+            fclose($this->stream);
+            $this->_connect();
         }
     }
 
@@ -171,31 +174,6 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         }
 
         $this->_updateState(self::_STATE_WAIT_FOR_RESPONSE_HEADERS, true, false, false);
-    }
-
-    public function readyExcept() {
-        if (feof($this->stream)) {
-            if ($this->_activeRequest && is_array($this->_activeRequest)) {
-                $cb = $this->_activeRequest['callback'];
-                $cb(
-                    $this->_activeRequestTS,
-                    microtime(true),
-                    0, // http code 0
-                    'Connection closed by server', // ясное сообщение
-                    [], // заголовков нет
-                    '' // тела нет
-                );
-            }
-
-            fclose($this->stream);
-            $this->_connect();
-            return;
-        }
-
-        if ($this->_state == self::_STATE_HANDSHAKE) {
-            $this->_checkHandshake();
-            return;
-        }
     }
 
     private function _checkHandshake() {
@@ -270,13 +248,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 $this->_activeRequest['callback']($this->_activeRequestTS, $tsNow, $this->_statusCode, $this->_statusMessage, $this->_headerArray, $this->_buffer);
 
                 $this->_updateState(self::_STATE_READY, false, false, false);
-                $this->_buffer = '';
-                $this->_headerArray = [];
-                $this->_statusCode = 0;
-                $this->_statusMessage = '';
-                $this->_activeRequest = false;
-                $this->_activeRequestTS = 0;
-
+                $this->_reset();
                 $this->_checkRequestQue();
             }
         } elseif (isset($this->_headerArray['transfer-encoding']) && strtolower($this->_headerArray['transfer-encoding']) === 'chunked') {
@@ -375,6 +347,15 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
     public function getState() {
         return $this->_state;
+    }
+
+    private function _reset() {
+        $this->_buffer = '';
+        $this->_statusCode = 0;
+        $this->_statusMessage = '';
+        $this->_headerArray = [];
+        $this->_activeRequestTS = 0;
+        $this->_activeRequest = false;
     }
 
     private $_host, $_port, $_ip;
