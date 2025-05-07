@@ -1,7 +1,7 @@
 <?php
 class StreamLoop {
 
-    public function addHandler(StreamLoop_IHandler $handler) {
+    public function addHandler(StreamLoop_AHandler $handler) {
         $this->_handlerArray[] = $handler;
     }
 
@@ -33,20 +33,17 @@ class StreamLoop {
             foreach ($this->_handlerArray as $handler) {
                 // handler будет выдавать stream только в том случае, если он что-то ждет
                 // и будет указыват что именно ждет этот stream
-                $x = $handler->getStreamConfig();
-                //print_r($x);
-                $stream = $x[0];
-                $linkArray[(int)$stream] = $handler;
-                if ($x[1]) {
-                    $r[] = $stream;
+                $linkArray[(int)$handler->stream] = $handler; // @todo improve только если что-то поменялось
+                if ($handler->flagRead) {
+                    $r[] = $handler->stream;
                     $ok = true;
                 }
-                if ($x[2]) {
-                    $w[] = $stream;
+                if ($handler->flagWrite) {
+                    $w[] = $handler->stream;
                     $ok = true;
                 }
-                if ($x[3]) {
-                    $e[] = $stream;
+                if ($handler->flagExcept) {
+                    $e[] = $handler->stream;
                     $ok = true;
                 }
             }
@@ -84,11 +81,11 @@ class StreamLoop {
     }
 
     /**
-     * @var array<StreamLoop_IHandler>
+     * @var array<StreamLoop_AHandler>
      */
     private $_handlerArray = [];
 
-    private $_streamSelectTimeoutUS = 500_000*2;
+    private $_streamSelectTimeoutUS = 1_000_000;
 
     private bool $_loopRunning;
 
