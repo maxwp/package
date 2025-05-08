@@ -5,11 +5,11 @@ class StreamLoop {
         $this->_handlerArray[] = $handler;
     }
 
-    public function loopStop() {
+    public function stop() {
         $this->_loopRunning = false;
     }
 
-    public function loopRun(callable $callback) {
+    public function run(callable $callback) {
         if (!$this->_handlerArray) {
             throw new StreamLoop_Exception('No handler array');
         }
