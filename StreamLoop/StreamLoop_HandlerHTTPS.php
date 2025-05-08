@@ -155,8 +155,8 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         $this->_activeRequestTS = microtime(true);
 
         $request = $this->_activeRequest['method']." ".$this->_activeRequest['path']." HTTP/1.1\r\n";
-        foreach ($this->_activeRequest['headerArray'] as $name => $value) {
-            $request .= "{$name}: {$value}\r\n";
+        foreach ($this->_activeRequest['headerArray'] as $value) {
+            $request .= "{$value}\r\n";
         }
         if ($this->_activeRequest['body']) {
             $length = strlen($this->_activeRequest['body']);

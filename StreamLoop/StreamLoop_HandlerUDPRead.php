@@ -10,8 +10,7 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
         );
         if ($this->stream === false) {
             // критическая ошибка — завершаем
-            fwrite(STDERR, "Ошибка создания сокета: $errstr ($errno)\n");
-            exit(1);
+            throw new StreamLoop_Exception("$errstr ($errno)");
         }
 
         $this->_socket = socket_import_stream($this->stream);
