@@ -18,7 +18,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         // надо попробовать
     }
 
-    public function request(string $method, string $path, string $body, array $headerArray, callable $callback) {
+    public function request(string $method, string $path, string $body, array $headerArray, callable $callback, float $timeout = 0) {
         // добавляем запрос в очередь
         $this->_requestQue->enqueue(array(
             'method' => strtoupper($method),
@@ -26,6 +26,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
             'body' => $body,
             'headerArray' => $headerArray,
             'callback' => $callback,
+            'timeout' => $timeout,
         ));
 
         if (!$this->_activeRequest) {
@@ -37,7 +38,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         $this->_reset();
 
         $this->_activeRequest = true;
-        $this->_updateState(self::_STATE_CONNECTING, false, true, false);
+        $this->_updateState(self::_STATE_CONNECTING, false, true, false, false);
 
         $ctx = stream_context_create();  // без ssl-опций!
         $flags = STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT;
@@ -89,7 +90,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 stream_context_set_option($this->stream, 'ssl', 'peer_name', $this->_host);
                 stream_context_set_option($this->stream, 'ssl', 'allow_self_signed', true);
 
-                $this->_updateState(self::_STATE_HANDSHAKE, true, true, false);
+                $this->_updateState(self::_STATE_HANDSHAKE, true, true, false, false);
                 $this->_checkHandshake();
                 return;
             case self::_STATE_HANDSHAKE:
@@ -109,6 +110,20 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         if ($this->_state == self::_STATE_HANDSHAKE) {
             $this->_checkHandshake();
             return;
+        }
+    }
+
+    public function tick($ts) {
+        if (!$this->_activeRequest || !is_array($this->_activeRequest) || !$this->_activeRequestTS || empty($this->_activeRequest['timeout'])) {
+            return;
+        }
+
+        if ($ts - $this->_activeRequestTS >= $this->_activeRequest['timeout']) {
+            $cb = $this->_activeRequest['callback'];
+            $cb($this->_activeRequestTS, $ts, 408, 'Request Timeout', [], '');
+
+            fclose($this->stream);
+            $this->_connect();
         }
     }
 
@@ -173,7 +188,13 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
             return;
         }
 
-        $this->_updateState(self::_STATE_WAIT_FOR_RESPONSE_HEADERS, true, false, false);
+        $this->_updateState(
+            self::_STATE_WAIT_FOR_RESPONSE_HEADERS,
+            true,
+            false,
+            false,
+            !empty($this->_activeRequest['timeout'])
+        );
     }
 
     private function _checkHandshake() {
@@ -190,7 +211,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         if ($return === true) {
             $this->_reset();
 
-            $this->_updateState(self::_STATE_READY, false, false, false);
+            $this->_updateState(self::_STATE_READY, false, false, false, false);
 
             $this->_checkRequestQue();
         }
@@ -224,7 +245,13 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                     $this->_headerArray[strtolower($name)] = $value;
                 }
 
-                $this->_updateState(self::_STATE_WAIT_FOR_RESPONSE_BODY, true, false, false);
+                $this->_updateState(
+                    self::_STATE_WAIT_FOR_RESPONSE_BODY,
+                    true,
+                    false,
+                    false,
+                    !empty($this->_activeRequest['timeout'])
+                );
                 $this->_buffer = '';
 
                 return;
@@ -244,10 +271,20 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
             if (strlen($this->_buffer) == $length) {
                 $tsNow = microtime(true);
-                // @todo возможно своя структура response с таймерами: когда начал, когда закончил, что было в запросе (потому что мне идентифицировать его как-то его надо)
-                $this->_activeRequest['callback']($this->_activeRequestTS, $tsNow, $this->_statusCode, $this->_statusMessage, $this->_headerArray, $this->_buffer);
+                // @todo возможно своя структура response с таймерами:
+                // когда начал, когда закончил, что было в запросе,
+                // id потому что мне идентифицировать его как-то надо
+                $cb = $this->_activeRequest['callback'];
+                $cb(
+                    $this->_activeRequestTS,
+                    $tsNow,
+                    $this->_statusCode,
+                    $this->_statusMessage,
+                    $this->_headerArray,
+                    $this->_buffer
+                );
 
-                $this->_updateState(self::_STATE_READY, false, false, false);
+                $this->_updateState(self::_STATE_READY, false, false, false, false);
                 $this->_reset();
                 $this->_checkRequestQue();
             }
@@ -277,7 +314,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                             $this->_buffer
                         );
                         // сбрасываем state
-                        $this->_updateState(self::_STATE_READY, false, false, false);
+                        $this->_updateState(self::_STATE_READY, false, false, false, false);
                         $this->_buffer = '';
                         $this->_headerArray = [];
                         $this->_statusCode = 0;
@@ -338,11 +375,12 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         return $this->_requestQue;
     }
 
-    private function _updateState($state, $flagRead, $flagWrite, $flagExcept) {
+    private function _updateState($state, $flagRead, $flagWrite, $flagExcept, $flagTick) {
         $this->_state = $state;
         $this->flagRead = $flagRead;
         $this->flagWrite = $flagWrite;
         $this->flagExcept = $flagExcept;
+        $this->flagTick = $flagTick;
     }
 
     public function getState() {

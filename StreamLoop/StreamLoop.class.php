@@ -22,7 +22,9 @@ class StreamLoop {
                 break;
             }
 
-            $callback();
+            $tsNow = microtime(true);
+
+            $callback($tsNow);
 
             $r = [];
             $w = [];
@@ -31,9 +33,18 @@ class StreamLoop {
 
             $ok = false;
             foreach ($this->_handlerArray as $handler) {
+                // всегда вызываю handler tick, если в handler указано что ему нужны тики
+                // это упрощает логику на лишний call и бесконечное сравнение timestamp
+                // важно: tick надо вызывать ДО чтения флагов RWE, потому что сам tick() может поменять эти флаги,
+                // и может поменять сам resource stream
+                if ($handler->flagTick) {
+                    $handler->tick($tsNow);
+                }
+
+                $linkArray[(int)$handler->stream] = $handler; // @todo improve только если что-то поменялось
+
                 // handler будет выдавать stream только в том случае, если он что-то ждет
                 // и будет указыват что именно ждет этот stream
-                $linkArray[(int)$handler->stream] = $handler; // @todo improve только если что-то поменялось
                 if ($handler->flagRead) {
                     $r[] = $handler->stream;
                     $ok = true;

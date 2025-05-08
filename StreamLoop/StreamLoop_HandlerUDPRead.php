@@ -69,6 +69,10 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
     }
 
+    public function tick($ts) {
+
+    }
+
     private $_socket;
 
     private $_callback;
