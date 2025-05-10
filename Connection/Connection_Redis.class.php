@@ -17,15 +17,13 @@ implements Connection_IConnection {
             throw new Connection_Exception("PHP extension 'Redis' not available");
         }
 
-        ini_set('default_socket_timeout', -1); // for redis timeout
-
         $this->_hostname = $hostname;
         $this->_port = $port;
     }
 
     public function connect() {
         $this->_link = new Redis();
-        $this->_link->pconnect($this->_hostname, $this->_port);
+        $this->_link->pconnect($this->_hostname, $this->_port, $this->_timeoutConnect);
 
         $e = $this->getLink()->getLastError();
         if ($e) {
@@ -37,6 +35,14 @@ implements Connection_IConnection {
         if ($this->_link) {
             $this->_link->close();
         }
+    }
+
+    public function setTimeoutConnect(float $timeout) {
+        $this->_timeoutConnect = $timeout;
+    }
+
+    public function setTimeoutRead(float $timeout) {
+        $this->_link->setOption(Redis::OPT_READ_TIMEOUT, $timeout);
     }
 
     /**
@@ -64,5 +70,7 @@ implements Connection_IConnection {
      * @var Redis
      */
     private $_link = null;
+
+    private $_timeoutConnect = 3.0;
 
 }
