@@ -34,14 +34,6 @@ class StreamLoop {
 
             $ok = false;
             foreach ($this->_handlerArray as $handler) {
-                // всегда вызываю handler tick, если в handler указано что ему нужны тики
-                // это упрощает логику на лишний call и бесконечное сравнение timestamp
-                // важно: tick надо вызывать ДО чтения флагов RWE, потому что сам tick() может поменять эти флаги,
-                // и может поменять сам resource stream
-                if ($handler->flagTick) {
-                    $handler->tick($tsNow);
-                }
-
                 $linkArray[(int)$handler->stream] = $handler; // @todo improve только если что-то поменялось
 
                 // вот тут у handler я могу спросить до какого времени ты хочешь timeout
@@ -75,6 +67,7 @@ class StreamLoop {
             // вот тут определить сколько us до ближайшего timeout'a
             // а также учитывать глобальный timeout loop'a
             $timeoutToArray[] = $tsNow + $this->_streamSelectTimeoutUS / 1_000_000;
+            print_r($timeoutToArray);
             $timeout = min($timeoutToArray) - $tsNow;
             if ($timeout <= 0) {
                 $timeout = 0;

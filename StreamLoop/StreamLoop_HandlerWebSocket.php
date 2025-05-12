@@ -125,10 +125,6 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
         $this->_checkPingPong($ts);
     }
 
-    public function tick($ts) {
-
-    }
-
     private function _checkPingPong($ts) {
         // websocket layer ping
         // auto ping frame
@@ -290,11 +286,14 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
         $this->flagRead = $flagRead;
         $this->flagWrite = $flagWrite;
         $this->flagExcept = $flagExcept;
-        $this->flagTick = $flagTick;
     }
 
     public function getState() {
         return $this->_state;
+    }
+
+    public function getPath() {
+        return $this->_path;
     }
 
     private function _decodeMessageArray() {

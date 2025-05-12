@@ -114,20 +114,15 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     public function readySelectTimeout() {
+        if ($this->_activeRequest && !empty($this->_activeRequest['timeout'])) {
+            $ts = microtime(true);
+            if ($ts - $this->_activeRequestTS >= $this->_activeRequest['timeout']) {
+                $cb = $this->_activeRequest['callback'];
+                $cb($this->_activeRequestTS, $ts, 408, 'Request Timeout', [], '');
 
-    }
-
-    public function tick($ts) {
-        if (!$this->_activeRequest || !is_array($this->_activeRequest) || !$this->_activeRequestTS || empty($this->_activeRequest['timeout'])) {
-            return;
-        }
-
-        if ($ts - $this->_activeRequestTS >= $this->_activeRequest['timeout']) {
-            $cb = $this->_activeRequest['callback'];
-            $cb($this->_activeRequestTS, $ts, 408, 'Request Timeout', [], '');
-
-            fclose($this->stream);
-            $this->_connect();
+                fclose($this->stream);
+                $this->_connect();
+            }
         }
     }
 
@@ -157,6 +152,11 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
         $this->_activeRequest = $this->_requestQue->dequeue();
         $this->_activeRequestTS = microtime(true);
+        if (!empty($this->_activeRequest['timeout'])) {
+            $this->timeoutTo = $this->_activeRequestTS + $this->_activeRequest['timeout'];
+        } else {
+            $this->timeoutTo = 0;
+        }
 
         $request = $this->_activeRequest['method']." ".$this->_activeRequest['path']." HTTP/1.1\r\n";
         foreach ($this->_activeRequest['headerArray'] as $value) {
@@ -197,7 +197,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
             true,
             false,
             false,
-            !empty($this->_activeRequest['timeout'])
+            false
         );
     }
 
@@ -254,7 +254,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                     true,
                     false,
                     false,
-                    !empty($this->_activeRequest['timeout'])
+                    false,
                 );
                 $this->_buffer = '';
 
@@ -379,12 +379,11 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         return $this->_requestQue;
     }
 
-    private function _updateState($state, $flagRead, $flagWrite, $flagExcept, $flagTick) {
+    private function _updateState($state, $flagRead, $flagWrite, $flagExcept) {
         $this->_state = $state;
         $this->flagRead = $flagRead;
         $this->flagWrite = $flagWrite;
         $this->flagExcept = $flagExcept;
-        $this->flagTick = $flagTick;
     }
 
     public function getState() {
@@ -398,6 +397,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         $this->_headerArray = [];
         $this->_activeRequestTS = 0;
         $this->_activeRequest = false;
+        $this->timeoutTo = 0;
     }
 
     private $_host, $_port, $_ip;
