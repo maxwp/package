@@ -1,21 +1,31 @@
 <?php
 class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
 
-    public function __construct($host, $port, $path, $writeArray, $ip, callable $callback) {
+    public function __construct($host, $port, $path, $writeArray, $ip) {
         $this->_host = $host;
         $this->_port = $port;
         $this->_path = $path;
         $this->_writeArray = $writeArray;
         $this->_ip = $ip ? $ip : $this->_host;
-        $this->_callback = $callback;
 
-        $this->_connect();
+        // @todo как слепить в кучу websocket over https?
+        // @todo тут странноватая реализация WebSocket, потому что мне нужно стабильно каждые 250ms получать callback message, даже пустую.
+        // возможно можно переписать как-то на таймеры, чтобы не ограничивать специально socket_select.
+
+        $this->connect();
     }
 
-    private function _connect() {
+    public function onMessage(callable $callback) {
+        $this->_callbackMessage = $callback;
+    }
+    public function onError(callable $callback) {
+        $this->_callbackError = $callback;
+    }
+
+    public function connect() {
         $this->_buffer = '';
 
-        $this->_updateState(self::_STATE_CONNECTING, false, true, false, false);
+        $this->_updateState(self::_STATE_CONNECTING, false, true, false);
 
         $this->stream = stream_socket_client(
             "tcp://{$this->_ip}:{$this->_port}",
@@ -36,8 +46,10 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
         stream_set_write_buffer($this->stream, 0);
     }
 
-    public function _disconnect() {
+    public function disconnect() {
         fclose($this->stream);
+        $this->_buffer = '';
+        $this->timeoutTo = 0;
     }
 
     public function readyRead() {
@@ -49,7 +61,7 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
                 return;
             case self::_STATE_WEBSOCKET_READY:
                 $ts = microtime(true);
-                $this->timeoutTo = $ts + 0.25;
+                $this->timeoutTo = $ts + $this->_selectTimeout;
                 $this->_checkPingPong($ts);
                 $this->_checkRead();
                 return;
@@ -72,7 +84,7 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
                 stream_context_set_option($this->stream, 'ssl', 'peer_name', $this->_host);
                 stream_context_set_option($this->stream, 'ssl', 'allow_self_signed', true);
 
-                $this->_updateState(self::_STATE_HANDSHAKE, true, true, false, false);
+                $this->_updateState(self::_STATE_HANDSHAKE, true, true, false);
                 $this->_checkHandshake();
                 return;
             case self::_STATE_HANDSHAKE:
@@ -91,7 +103,7 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
                     . "Sec-WebSocket-Version: 13\r\n"
                     . "\r\n";
                 fwrite($this->stream, $headers);
-                $this->_updateState(self::_STATE_WAITING_FOR_UPGRADE, true, false, false, false);
+                $this->_updateState(self::_STATE_WAITING_FOR_UPGRADE, true, false, false);
                 $this->_checkUpgrade();
                 return;
         }
@@ -116,7 +128,7 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
         }
 
         $ts = microtime(true);
-        $this->timeoutTo = $ts + 0.25;
+        $this->timeoutTo = $ts + $this->_selectTimeout;
 
         $msgArray = [];
         $msgArray[] = [self::_FRAME_SELECT_TIMEOUT, ''];
@@ -140,7 +152,7 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
             // если задан дедлайн pong,
             // и время уже больше этого дедлайна, то это означает что pong не пришет
             // и мы идем на выход
-            $this->_disconnect();
+            $this->disconnect();
             throw new Connection_Exception("Connection_WebSocket: no iframe-pong - exit");
         }
     }
@@ -158,9 +170,9 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
         }
 
         // Если fread вернул пустую строку, проверяем, достигнут ли EOF
-        if ($data === '' && feof($this->stream)) {
-            $this->_disconnect();
-            throw new Exception("EOF reached: connection closed by remote host");
+        if ($data === '') {
+            $this->_checkEOF();
+            return;
         }
 
         $this->_buffer .= $data;
@@ -198,23 +210,27 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
                     // потому что внутри callback может быть логика, которая ожидает что она будет выполняться ровно каждые 0.5..1.0 sec,
                     // например тот же DRSTC snapshot (S) или application layer ping.
                     try {
-                        $callback = $this->_callback;
+                        $callback = $this->_callbackMessage;
                         $callback($ts, false);
                     } catch (Exception $userException) {
-                        $this->_disconnect();
+                        // тут вылетаем, но надо сделать disconnect
+                        $this->disconnect();
                         throw $userException;
                     }
                     break;
                 case self::_FRAME_CLOSED:
-                    $this->_disconnect();
-                    throw new Connection_Exception("Connection_WebSocket: iframe-closed");
+                    $this->disconnect();
+                    $cb = $this->_callbackError;
+                    $cb($ts, "WebSocket: iframe-closed");
+                    break;
                 case self::_FRAME_SELECT_TIMEOUT:
                 case self::_FRAME_DATA:
                     try {
-                        $callback = $this->_callback;
+                        $callback = $this->_callbackMessage;
                         $callback($ts, $msgData);
                     } catch (Exception $userException) {
-                        $this->_disconnect();
+                        // тут вылетаем, но надо сделать disconnect
+                        $this->disconnect();
                         throw $userException;
                     }
                     break;
@@ -246,7 +262,6 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
                     true,
                     false,
                     false,
-                    false
                 );
                 $this->_buffer = '';
 
@@ -260,8 +275,10 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
 
     private function _checkEOF() {
         if (feof($this->stream)) {
-            $this->_disconnect();
-            $this->_connect();
+            $this->disconnect();
+
+            $cb = $this->_callbackError;
+            $cb(microtime(true), "EOF");
         }
     }
 
@@ -277,11 +294,11 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
         }
 
         if ($return === true) {
-            $this->_updateState(self::_STATE_READY, false, true, false, false);
+            $this->_updateState(self::_STATE_READY, false, true, false);
         }
     }
 
-    private function _updateState($state, $flagRead, $flagWrite, $flagExcept, $flagTick) {
+    private function _updateState($state, $flagRead, $flagWrite, $flagExcept) {
         $this->_state = $state;
         $this->flagRead = $flagRead;
         $this->flagWrite = $flagWrite;
@@ -435,7 +452,7 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
     }
 
     private $_host, $_port, $_path, $_ip, $_writeArray;
-    private $_callback;
+    private $_callbackMessage, $_callbackError;
     private $_buffer = '';
 
     private $_state = '';
@@ -456,5 +473,6 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
     private const _FRAME_CLOSED = 'frame-closed';
     private const _FRAME_DATA = 'frame-data';
     private const _FRAME_SELECT_TIMEOUT = 'frame-select-timeout';
+    private $_selectTimeout = 0.25; // @todo setup
 
 }

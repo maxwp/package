@@ -61,6 +61,11 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         stream_set_write_buffer($this->stream, 0);
     }
 
+    private function _disconnect() {
+        fclose($this->stream);
+        $this->_reset();
+    }
+
     public function readyRead() {
         $this->_checkEOF();
 
@@ -120,7 +125,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 $cb = $this->_activeRequest['callback'];
                 $cb($this->_activeRequestTS, $ts, 408, 'Request Timeout', [], '');
 
-                fclose($this->stream);
+                $this->_disconnect();
                 $this->_connect();
             }
         }
@@ -140,7 +145,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 );
             }
 
-            fclose($this->stream);
+            $this->_disconnect();
             $this->_connect();
         }
     }
@@ -187,7 +192,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 '' // тела нет
             );
 
-            fclose($this->stream);
+            $this->_disconnect();
             $this->_connect();
             return;
         }
@@ -261,6 +266,10 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 return;
             }
         }
+
+        if ($line === '') {
+            $this->_checkEOF();
+        }
     }
 
     private function _checkResponseBody() {
@@ -271,6 +280,10 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
             if ($chunk !== false && $chunk !== '') {
                 $this->_buffer .= $chunk;
+            }
+
+            if ($chunk === '') {
+                $this->_checkEOF();
             }
 
             if (strlen($this->_buffer) == $length) {
@@ -302,6 +315,11 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                         // данных пока нет — выходим, дождёмся следующего select
                         return;
                     }
+
+                    if ($line === '') {
+                        $this->_checkEOF();
+                    }
+
                     $this->_currentChunkSize = hexdec(trim($line));
                     // если нулевой размер — это последний чанк
                     if ($this->_currentChunkSize === 0) {

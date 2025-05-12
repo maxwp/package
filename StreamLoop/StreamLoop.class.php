@@ -67,7 +67,6 @@ class StreamLoop {
             // вот тут определить сколько us до ближайшего timeout'a
             // а также учитывать глобальный timeout loop'a
             $timeoutToArray[] = $tsNow + $this->_streamSelectTimeoutUS / 1_000_000;
-            print_r($timeoutToArray);
             $timeout = min($timeoutToArray) - $tsNow;
             if ($timeout <= 0) {
                 $timeout = 0;
