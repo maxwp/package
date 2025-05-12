@@ -8,12 +8,12 @@ class StateMachine {
     public function setState(string $state): bool {
         if ($this->canTransitionTo($state)) {
             $this->_state = $state;
-            $this->onEnterState($state);
+            $this->_onEnterState($state);
 
             return true;
         } else {
             // @todo events
-            $this->onInvalidTransition($this->_state, $state);
+            $this->_onInvalidTransition($this->_state, $state);
 
             return false;
         }
@@ -31,11 +31,11 @@ class StateMachine {
         return !empty($this->_transitionArray[$this->_state][$state]);
     }
 
-    protected function onEnterState(string $state): void {
+    protected function _onEnterState(string $state): void {
         // Override in subclass for state-specific entry actions
     }
 
-    protected function onInvalidTransition(string $from, string $to): void {
+    protected function _onInvalidTransition(string $from, string $to): void {
         throw new StateMachine_Exception("Invalid transition from $from to $to");
     }
 
