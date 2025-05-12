@@ -12,8 +12,6 @@ class Connection_WebSocket implements Connection_IConnection {
         $this->_ip = $ip;
         $this->_port = $port;
         $this->_path = $path;
-
-        // @todo можно сделать чтобы Connection_WebSocket был extends Connection_SocketStreamSSL
     }
 
     public function setLoopTimeout($us) {
@@ -143,8 +141,6 @@ class Connection_WebSocket implements Connection_IConnection {
             $connectHost = $this->_host;
         }
 
-        // @todo надо добить STREAM_CLIENT_ASYNC_CONNECT
-        // @todo из Tool_EL7 я могу делать ASNYNC handshake
         $this->_stream = stream_socket_client("ssl://{$connectHost}:{$this->_port}", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context);
         if (!$this->_stream) {
             throw new Connection_Exception("Failed to connect to {$this->_host}:{$this->_port} - $errstr ($errno)");

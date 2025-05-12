@@ -68,6 +68,10 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
     }
 
+    public function readySelectTimeout() {
+
+    }
+
     public function tick($ts) {
 
     }

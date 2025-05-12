@@ -113,6 +113,10 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         }
     }
 
+    public function readySelectTimeout() {
+
+    }
+
     public function tick($ts) {
         if (!$this->_activeRequest || !is_array($this->_activeRequest) || !$this->_activeRequestTS || empty($this->_activeRequest['timeout'])) {
             return;

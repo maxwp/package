@@ -29,6 +29,7 @@ $exitCode = $response->getCode();
 
 print "\n\n";
 print "done:\n";
+print "pid      = ".getmypid()."\n";
 print "code     = ".$exitCode."\n";
 print "start    = ".date('Y-m-d H:i:s', $tsStart)." ($tsStart)\n";
 print "finish   = ".date('Y-m-d H:i:s', $tsFinish)." ($tsFinish)\n";
