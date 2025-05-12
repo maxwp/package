@@ -6,7 +6,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         $this->_port = $port;
         $this->_path = $path;
         $this->_writeArray = $writeArray;
-        $this->setIP($ip);
+        $this->_ip = $ip ? $ip : $this->_host;
 
         // @todo как слепить в кучу websocket over https?
         // @todo сначала надо придумать как сделать StateMachine, чтобы я мог помещать команду с событиями onXXX,
@@ -17,10 +17,6 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         $this->connect();
     }
 
-    public function setIP($ip) {
-        $this->_ip = $ip;
-    }
-
     public function onMessage(callable $callback) {
         $this->_callbackMessage = $callback;
     }
@@ -29,16 +25,12 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     }
 
     public function connect() {
-        $this->_state = new StreamLoop_HandlerWSS_StateMachine();
-
         $this->_buffer = '';
 
-        $this->_updateState(StreamLoop_HandlerWSS_StateMachine::CONNECTING, false, true, false);
-
-        $ip = $this->_ip ? $this->_ip : $this->_host;
+        $this->_updateState(self::_STATE_CONNECTING, false, true, false);
 
         $this->stream = stream_socket_client(
-            "tcp://{$ip}:{$this->_port}",
+            "tcp://{$this->_ip}:{$this->_port}",
             $errno,
             $errstr,
             0, // timeout = 0, чтобы мгновенно вернулось
@@ -65,25 +57,25 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     public function readyRead() {
         $this->_checkEOF();
 
-        switch ($this->_state->getState()) {
-            case StreamLoop_HandlerWSS_StateMachine::HANDSHAKE:
+        switch ($this->_state) {
+            case self::_STATE_HANDSHAKE:
                 $this->_checkHandshake();
                 return;
-            case StreamLoop_HandlerWSS_StateMachine::WEBSOCKET_READY:
+            case self::_STATE_WEBSOCKET_READY:
                 $ts = microtime(true);
                 $this->timeoutTo = $ts + $this->_selectTimeout;
                 $this->_checkPingPong($ts);
                 $this->_checkRead();
                 return;
-            case StreamLoop_HandlerWSS_StateMachine::WAITING_FOR_UPGRADE:
+            case self::_STATE_WAITING_FOR_UPGRADE:
                 $this->_checkUpgrade();
                 return;
         }
     }
 
     public function readyWrite() {
-        switch ($this->_state->getState()) {
-            case StreamLoop_HandlerWSS_StateMachine::CONNECTING:
+        switch ($this->_state) {
+            case self::_STATE_CONNECTING:
                 // коннект установился, я готов к записи
                 stream_context_set_option($this->stream, array(
                     'ssl' => [
@@ -94,16 +86,16 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
                 stream_context_set_option($this->stream, 'ssl', 'peer_name', $this->_host);
                 stream_context_set_option($this->stream, 'ssl', 'allow_self_signed', true);
 
-                $this->_updateState(StreamLoop_HandlerWSS_StateMachine::HANDSHAKE, true, true, false);
+                $this->_updateState(self::_STATE_HANDSHAKE, true, true, false);
                 $this->_checkHandshake();
                 return;
-            case StreamLoop_HandlerWSS_StateMachine::HANDSHAKE:
+            case self::_STATE_HANDSHAKE:
                 $this->_checkHandshake();
                 return;
-            case StreamLoop_HandlerWSS_StateMachine::WAITING_FOR_UPGRADE:
+            case self::_STATE_WAITING_FOR_UPGRADE:
                 $this->_checkUpgrade();
                 return;
-            case StreamLoop_HandlerWSS_StateMachine::READY:
+            case self::_STATE_READY:
                 $key = base64_encode(random_bytes(16)); // Уникальный ключ для Handshake
                 $headers = "GET {$this->_path} HTTP/1.1\r\n"
                     . "Host: {$this->_host}\r\n"
@@ -113,7 +105,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
                     . "Sec-WebSocket-Version: 13\r\n"
                     . "\r\n";
                 fwrite($this->stream, $headers);
-                $this->_updateState(StreamLoop_HandlerWSS_StateMachine::WAITING_FOR_UPGRADE, true, false, false);
+                $this->_updateState(self::_STATE_WAITING_FOR_UPGRADE, true, false, false);
                 $this->_checkUpgrade();
                 return;
         }
@@ -122,18 +114,18 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     public function readyExcept() {
         $this->_checkEOF();
 
-        switch ($this->_state->getState()) {
-            case StreamLoop_HandlerWSS_StateMachine::HANDSHAKE:
-                $this->_checkHandshake();
-                return;
-            case StreamLoop_HandlerWSS_StateMachine::WAITING_FOR_UPGRADE:
-                $this->_checkUpgrade();
-                return;
+        if ($this->_state == self::_STATE_HANDSHAKE) {
+            $this->_checkHandshake();
+            return;
+        }
+        if ($this->_state == self::_STATE_WAITING_FOR_UPGRADE) {
+            $this->_checkUpgrade();
+            return;
         }
     }
 
     public function readySelectTimeout() {
-        if ($this->_state->getState() != StreamLoop_HandlerWSS_StateMachine::WEBSOCKET_READY) {
+        if ($this->_state != self::_STATE_WEBSOCKET_READY) {
             return;
         }
 
@@ -268,7 +260,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
                 }
 
                 $this->_updateState(
-                    StreamLoop_HandlerWSS_StateMachine::WEBSOCKET_READY,
+                    self::_STATE_WEBSOCKET_READY,
                     true,
                     false,
                     false,
@@ -304,12 +296,12 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         }
 
         if ($return === true) {
-            $this->_updateState(StreamLoop_HandlerWSS_StateMachine::READY, false, true, false);
+            $this->_updateState(self::_STATE_READY, false, true, false);
         }
     }
 
     private function _updateState($state, $flagRead, $flagWrite, $flagExcept) {
-        $this->_state->setState($state);
+        $this->_state = $state;
         $this->flagRead = $flagRead;
         $this->flagWrite = $flagWrite;
         $this->flagExcept = $flagExcept;
@@ -465,7 +457,13 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     private $_callbackMessage, $_callbackError;
     private $_buffer = '';
 
-    private StreamLoop_HandlerWSS_StateMachine $_state;
+    private $_state = '';
+
+    private const _STATE_CONNECTING = 'connecting';
+    private const _STATE_HANDSHAKE = 'handshake';
+    private const _STATE_READY = 'ready';
+    private const _STATE_WAITING_FOR_UPGRADE = 'waiting-for-upgrade';
+    private const _STATE_WEBSOCKET_READY = 'websocket-ready';
 
     private $_tsPing = 0;
     private $_tsPong = 0;

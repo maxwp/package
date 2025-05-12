@@ -5,7 +5,7 @@ class StateMachine {
         return $this->_state;
     }
 
-    public function setState(string $state): bool {
+    public function setState(int $state) {
         if ($this->canTransitionTo($state)) {
             $this->_state = $state;
             $this->_onEnterState($state);
