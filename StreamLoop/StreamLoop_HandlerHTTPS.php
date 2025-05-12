@@ -4,7 +4,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     public function __construct($host, $port, $ip = false) {
         $this->_host = $host;
         $this->_port = $port;
-        $this->_ip = $ip ? $ip : $this->_host;
+        $this->setIP($ip);
 
         $this->_requestQue = new SplQueue();
 
@@ -34,14 +34,20 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         }
     }
 
+    public function setIP($ip) {
+        $this->_ip = $ip;
+    }
+
     public function connect() {
         $this->_reset();
 
         $this->_activeRequest = true;
         $this->_updateState(self::_STATE_CONNECTING, false, true, false);
 
+        $ip = $this->_ip ? $this->_ip : $this->_host;
+
         $this->stream = stream_socket_client(
-            "tcp://{$this->_ip}:{$this->_port}",
+            "tcp://{$ip}:{$this->_port}",
             $errno,
             $errstr,
             0, // timeout = 0, чтобы мгновенно вернулось

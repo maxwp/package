@@ -27,6 +27,7 @@ class Pattern_RegistryArray {
     }
 
     public function getArray() {
+        // @todo заменить на public?
         return $this->_registryArray;
     }
 

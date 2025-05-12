@@ -6,7 +6,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         $this->_port = $port;
         $this->_path = $path;
         $this->_writeArray = $writeArray;
-        $this->_ip = $ip ? $ip : $this->_host;
+        $this->setIP($ip);
 
         // @todo как слепить в кучу websocket over https?
         // @todo сначала надо придумать как сделать StateMachine, чтобы я мог помещать команду с событиями onXXX,
@@ -15,6 +15,10 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         // возможно можно переписать как-то на таймеры, чтобы не ограничивать специально socket_select.
 
         $this->connect();
+    }
+
+    public function setIP($ip) {
+        $this->_ip = $ip;
     }
 
     public function onMessage(callable $callback) {
@@ -31,8 +35,10 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
 
         $this->_updateState(StreamLoop_HandlerWSS_StateMachine::CONNECTING, false, true, false);
 
+        $ip = $this->_ip ? $this->_ip : $this->_host;
+
         $this->stream = stream_socket_client(
-            "tcp://{$this->_ip}:{$this->_port}",
+            "tcp://{$ip}:{$this->_port}",
             $errno,
             $errstr,
             0, // timeout = 0, чтобы мгновенно вернулось

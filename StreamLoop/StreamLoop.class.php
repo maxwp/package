@@ -120,7 +120,7 @@ class StreamLoop {
     /**
      * @var array<StreamLoop_AHandler>
      */
-    private $_handlerArray = [];
+    private $_handlerArray = []; // @todo registry?
 
     private $_streamSelectTimeoutUS = 1_000_000;
 
