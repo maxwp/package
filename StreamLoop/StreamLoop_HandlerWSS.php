@@ -25,9 +25,11 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     }
 
     public function connect() {
+        $this->_state = new StreamLoop_HandlerWSS_StateMachine();
+
         $this->_buffer = '';
 
-        $this->_updateState(self::_STATE_CONNECTING, false, true, false);
+        $this->_updateState(StreamLoop_HandlerWSS_StateMachine::CONNECTING, false, true, false);
 
         $this->stream = stream_socket_client(
             "tcp://{$this->_ip}:{$this->_port}",
@@ -57,25 +59,25 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     public function readyRead() {
         $this->_checkEOF();
 
-        switch ($this->_state) {
-            case self::_STATE_HANDSHAKE:
+        switch ($this->_state->getState()) {
+            case StreamLoop_HandlerWSS_StateMachine::HANDSHAKE:
                 $this->_checkHandshake();
                 return;
-            case self::_STATE_WEBSOCKET_READY:
+            case StreamLoop_HandlerWSS_StateMachine::WEBSOCKET_READY:
                 $ts = microtime(true);
                 $this->timeoutTo = $ts + $this->_selectTimeout;
                 $this->_checkPingPong($ts);
                 $this->_checkRead();
                 return;
-            case self::_STATE_WAITING_FOR_UPGRADE:
+            case StreamLoop_HandlerWSS_StateMachine::WAITING_FOR_UPGRADE:
                 $this->_checkUpgrade();
                 return;
         }
     }
 
     public function readyWrite() {
-        switch ($this->_state) {
-            case self::_STATE_CONNECTING:
+        switch ($this->_state->getState()) {
+            case StreamLoop_HandlerWSS_StateMachine::CONNECTING:
                 // коннект установился, я готов к записи
                 stream_context_set_option($this->stream, array(
                     'ssl' => [
@@ -86,16 +88,16 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
                 stream_context_set_option($this->stream, 'ssl', 'peer_name', $this->_host);
                 stream_context_set_option($this->stream, 'ssl', 'allow_self_signed', true);
 
-                $this->_updateState(self::_STATE_HANDSHAKE, true, true, false);
+                $this->_updateState(StreamLoop_HandlerWSS_StateMachine::HANDSHAKE, true, true, false);
                 $this->_checkHandshake();
                 return;
-            case self::_STATE_HANDSHAKE:
+            case StreamLoop_HandlerWSS_StateMachine::HANDSHAKE:
                 $this->_checkHandshake();
                 return;
-            case self::_STATE_WAITING_FOR_UPGRADE:
+            case StreamLoop_HandlerWSS_StateMachine::WAITING_FOR_UPGRADE:
                 $this->_checkUpgrade();
                 return;
-            case self::_STATE_READY:
+            case StreamLoop_HandlerWSS_StateMachine::READY:
                 $key = base64_encode(random_bytes(16)); // Уникальный ключ для Handshake
                 $headers = "GET {$this->_path} HTTP/1.1\r\n"
                     . "Host: {$this->_host}\r\n"
@@ -105,7 +107,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
                     . "Sec-WebSocket-Version: 13\r\n"
                     . "\r\n";
                 fwrite($this->stream, $headers);
-                $this->_updateState(self::_STATE_WAITING_FOR_UPGRADE, true, false, false);
+                $this->_updateState(StreamLoop_HandlerWSS_StateMachine::WAITING_FOR_UPGRADE, true, false, false);
                 $this->_checkUpgrade();
                 return;
         }
@@ -114,18 +116,18 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     public function readyExcept() {
         $this->_checkEOF();
 
-        if ($this->_state == self::_STATE_HANDSHAKE) {
-            $this->_checkHandshake();
-            return;
-        }
-        if ($this->_state == self::_STATE_WAITING_FOR_UPGRADE) {
-            $this->_checkUpgrade();
-            return;
+        switch ($this->_state->getState()) {
+            case StreamLoop_HandlerWSS_StateMachine::HANDSHAKE:
+                $this->_checkHandshake();
+                return;
+            case StreamLoop_HandlerWSS_StateMachine::WAITING_FOR_UPGRADE:
+                $this->_checkUpgrade();
+                return;
         }
     }
 
     public function readySelectTimeout() {
-        if ($this->_state != self::_STATE_WEBSOCKET_READY) {
+        if ($this->_state->getState() != StreamLoop_HandlerWSS_StateMachine::WEBSOCKET_READY) {
             return;
         }
 
@@ -260,7 +262,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
                 }
 
                 $this->_updateState(
-                    self::_STATE_WEBSOCKET_READY,
+                    StreamLoop_HandlerWSS_StateMachine::WEBSOCKET_READY,
                     true,
                     false,
                     false,
@@ -296,12 +298,12 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         }
 
         if ($return === true) {
-            $this->_updateState(self::_STATE_READY, false, true, false);
+            $this->_updateState(StreamLoop_HandlerWSS_StateMachine::READY, false, true, false);
         }
     }
 
     private function _updateState($state, $flagRead, $flagWrite, $flagExcept) {
-        $this->_state = $state;
+        $this->_state->setState($state);
         $this->flagRead = $flagRead;
         $this->flagWrite = $flagWrite;
         $this->flagExcept = $flagExcept;
@@ -457,13 +459,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     private $_callbackMessage, $_callbackError;
     private $_buffer = '';
 
-    private $_state = '';
-
-    private const _STATE_CONNECTING = 'connecting';
-    private const _STATE_HANDSHAKE = 'handshake';
-    private const _STATE_READY = 'ready';
-    private const _STATE_WAITING_FOR_UPGRADE = 'waiting-for-upgrade';
-    private const _STATE_WEBSOCKET_READY = 'websocket-ready';
+    private StreamLoop_HandlerWSS_StateMachine $_state;
 
     private $_tsPing = 0;
     private $_tsPong = 0;

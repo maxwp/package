@@ -19,11 +19,11 @@ class StateMachine {
         }
     }
 
-    public function registerTransition(string $stateFrom, string $stateTo) {
+    protected function _registerTransition(string $stateFrom, string $stateTo) {
         $this->_transitionArray[$stateFrom][$stateTo] = true;
     }
 
-    public function unregisterTransition(string $stateFrom, string $stateTo) {
+    protected function _unregisterTransition(string $stateFrom, string $stateTo) {
         unset($this->_transitionArray[$stateFrom][$stateTo]);
     }
 
@@ -39,6 +39,9 @@ class StateMachine {
         throw new StateMachine_Exception("Invalid transition from $from to $to");
     }
 
+    protected function _setInitialState(string $state): void {
+        $this->_state = $state;
+    }
 
     private string $_state;
     private array $_transitionArray = [];
