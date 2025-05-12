@@ -20,6 +20,9 @@ if (function_exists('mb_internal_encoding')) {
 // fix for Mac OS X PHP 5.3 default
 @date_default_timezone_set(date_default_timezone_get());
 
+// костыляка для Throwable и сборщика трасс (в php 8.3 отключат и так)
+ini_set('zend.exception_ignore_args', 1);
+
 include(__DIR__.'/Pattern/include.php');
 include(__DIR__.'/ClassLoader/include.php');
 include(__DIR__.'/File/include.php');
