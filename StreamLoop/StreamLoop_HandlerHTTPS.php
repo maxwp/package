@@ -10,7 +10,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
         // соединение я начинаю устанавливать сразу же
         // @todo в будущем можно переделать на установку соединения по требованию, но пока это просто не актульано
-        $this->_connect();
+        $this->connect();
 
         // @todo я могу коннектор закинуть внутрь "request", он будет как команда handshake.
         // просто handshake ловит свои события,
@@ -34,21 +34,19 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         }
     }
 
-    private function _connect() {
+    public function connect() {
         $this->_reset();
 
         $this->_activeRequest = true;
-        $this->_updateState(self::_STATE_CONNECTING, false, true, false, false);
+        $this->_updateState(self::_STATE_CONNECTING, false, true, false);
 
-        $ctx = stream_context_create();  // без ssl-опций!
-        $flags = STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT;
         $this->stream = stream_socket_client(
             "tcp://{$this->_ip}:{$this->_port}",
             $errno,
             $errstr,
             0, // timeout = 0, чтобы мгновенно вернулось
-            $flags,
-            $ctx
+            STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT,
+            stream_context_create()  // без ssl-опций!
         );
         if (!$this->stream) {
             throw new StreamLoop_Exception("TCP connect failed immediately: $errstr ($errno)");
@@ -61,9 +59,9 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         stream_set_write_buffer($this->stream, 0);
     }
 
-    private function _disconnect() {
-        fclose($this->stream);
+    public function disconnect() {
         $this->_reset();
+        fclose($this->stream);
     }
 
     public function readyRead() {
@@ -125,8 +123,8 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 $cb = $this->_activeRequest['callback'];
                 $cb($this->_activeRequestTS, $ts, 408, 'Request Timeout', [], '');
 
-                $this->_disconnect();
-                $this->_connect();
+                $this->disconnect();
+                $this->connect();
             }
         }
     }
@@ -145,8 +143,8 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 );
             }
 
-            $this->_disconnect();
-            $this->_connect();
+            $this->disconnect();
+            $this->connect();
         }
     }
 
@@ -192,8 +190,8 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 '' // тела нет
             );
 
-            $this->_disconnect();
-            $this->_connect();
+            $this->disconnect();
+            $this->connect();
             return;
         }
 

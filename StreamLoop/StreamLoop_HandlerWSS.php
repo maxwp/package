@@ -1,5 +1,5 @@
 <?php
-class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
+class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
 
     public function __construct($host, $port, $path, $writeArray, $ip) {
         $this->_host = $host;
@@ -9,6 +9,8 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
         $this->_ip = $ip ? $ip : $this->_host;
 
         // @todo как слепить в кучу websocket over https?
+        // @todo сначала надо придумать как сделать StateMachine, чтобы я мог помещать команду с событиями onXXX,
+        // и затем handshake и switching protocol снанут этими командами
         // @todo тут странноватая реализация WebSocket, потому что мне нужно стабильно каждые 250ms получать callback message, даже пустую.
         // возможно можно переписать как-то на таймеры, чтобы не ограничивать специально socket_select.
 
