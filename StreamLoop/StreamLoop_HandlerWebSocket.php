@@ -288,14 +288,6 @@ class StreamLoop_HandlerWebSocket extends StreamLoop_AHandler {
         $this->flagExcept = $flagExcept;
     }
 
-    public function getState() {
-        return $this->_state;
-    }
-
-    public function getPath() {
-        return $this->_path;
-    }
-
     private function _decodeMessageArray() {
         $messages = [];
         $offset = 0;
