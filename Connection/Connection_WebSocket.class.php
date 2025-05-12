@@ -98,7 +98,7 @@ class Connection_WebSocket implements Connection_IConnection {
                         // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                         try {
                             $callback($ts, false);
-                        } catch (Throwable $userException) {
+                        } catch (Exception $userException) {
                             $this->disconnect();
                             throw $userException;
                         }
@@ -111,7 +111,7 @@ class Connection_WebSocket implements Connection_IConnection {
                         // @todo переделать вызов callback на генерацию string event (simple Event)
                         try {
                             $callback($ts, $msgData);
-                        } catch (Throwable $userException) {
+                        } catch (Exception $userException) {
                             $this->disconnect();
                             throw $userException;
                         }

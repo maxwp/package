@@ -50,7 +50,7 @@ while (1) {
                     $request = new EE_RequestRemote($content, $argumentArray);
 
                     EE::Get()->execute($request, $response);
-                } catch (Throwable $eeException) {
+                } catch (Exception $eeException) {
                     $response->setCode(500);
                     $response->setData($eeException->getMessage());
                 }
@@ -74,11 +74,11 @@ while (1) {
                 print "t(request > response) = ".number_format($responseArray['ts_response'] - $responseArray['ts_request'], 8, '.', '')." sec.\n";
 
                 print "\n";
-            } catch (Throwable $e) {
+            } catch (Exception $e) {
                 print_r($e);
             }
         });
-    } catch (Throwable $redisEx) {
+    } catch (Exception $redisEx) {
         print_r($redisEx);
     }
 
