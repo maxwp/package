@@ -36,27 +36,27 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
         $fromIP = '';
         $fromPort = 0;
 
-        $data = socket_recvfrom(
-            $this->_socket,
-            $buffer,
-            1024,
-            0,
-            $fromIP,
-            $fromPort
-        );
+        // drain loop
+        for ($j = 1; $j <= 10; $j++) {
+            $data = socket_recvfrom(
+                $this->_socket,
+                $buffer,
+                1024,
+                0,
+                $fromIP,
+                $fromPort
+            );
 
-        $ts = microtime(true);
+            $ts = microtime(true);
 
-        /*if ($data === false) {
-            // нет данных — CPU-спин
-            usleep(1);
-            continue;
-        }*/
-
-        // Если получили больше нуля байт — обрабатываем
-        if ($data > 0) {
-            $callback = $this->_callback;
-            $callback($ts, $buffer, $fromIP);
+            // Если получили больше нуля байт — обрабатываем
+            if ($data > 0) {
+                $callback = $this->_callback;
+                $callback($ts, $buffer, $fromIP);
+            } else {
+                // end of drain
+                break;
+            }
         }
     }
 
