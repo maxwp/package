@@ -124,6 +124,6 @@ class StreamLoop {
 
     private $_streamSelectTimeoutUS = 1_000_000;
 
-    private bool $_loopRunning;
+    private $_loopRunning;
 
 }

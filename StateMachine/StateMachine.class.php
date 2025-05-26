@@ -43,7 +43,7 @@ class StateMachine {
         $this->_state = $state;
     }
 
-    private string $_state;
+    private $_state;
     private array $_transitionArray = [];
 
 }

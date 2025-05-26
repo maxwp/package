@@ -358,7 +358,7 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_tsPong = 0;
     private $_pingInterval = 1;
     private $_pongDeadline = 3;
-    private string $_buffer = '';
+    private $_buffer = '';
     private const _FRAME_PING = 'frame-ping';
     private const _FRAME_PONG = 'frame-pong';
     private const _FRAME_CLOSED = 'frame-closed';
