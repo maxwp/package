@@ -34,7 +34,11 @@ class StreamLoop {
 
             $ok = false;
             foreach ($this->_handlerArray as $handler) {
-                $linkArray[(int)$handler->stream] = $handler; // @todo improve только если что-то поменялось
+                $streamID = (int)$handler->stream;
+                if (!$streamID) {
+                    continue;
+                }
+                $linkArray[] = $handler; // @todo improve только если что-то поменялось
 
                 // вот тут у handler я могу спросить до какого времени ты хочешь timeout
                 // он может вернуть 0, то есть ему насрать и он не хочет таймаут
