@@ -237,7 +237,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
             // пустая строка — конец блока заголовков
             if ($line == "\r\n" || $line == "\n") {
                 // разбираем заголовки в ассоц. массив
-                $lines = explode("\r\n", trim($this->_buffer));
+                $lines = explode("\r\n", $this->_buffer);
 
                 // Формат статус-строки: HTTP/1.1 200 OK
                 $statusParts = explode(' ', $lines[0], 3);
