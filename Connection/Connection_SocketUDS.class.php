@@ -27,8 +27,8 @@ class Connection_SocketUDS implements Connection_IConnection {
         return $this->_socket;
     }
 
-    public function write($message, $messageSize, $host, $port) {
-        return socket_sendto($this->_socket, $message, $messageSize, 0, $host, $port);
+    public function write($message, $messageSize, $sockFile) {
+        return socket_sendto($this->_socket, $message, $messageSize, MSG_DONTWAIT, $sockFile);
     }
 
     /**
@@ -37,7 +37,8 @@ class Connection_SocketUDS implements Connection_IConnection {
      * @param int $length
      */
     public function read($sockFile, callable $callback, $length = 1024) {
-        // @todo ???
+        // всегда косим файл перед bind-ом
+        // @todo sockfile передавать в конструктор
         if (file_exists($sockFile)) {
             unlink($sockFile);
         }

@@ -37,12 +37,14 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
         $fromPort = 0;
 
         // drain loop
+        // @todo приделать наоборот, сразу в массив и считать index массива на лету
+        // а затем обработка в обратном порядке
         for ($j = 1; $j <= 10; $j++) {
-            $data = socket_recvfrom(
+            $bytes = socket_recvfrom(
                 $this->_socket,
                 $buffer,
                 1024,
-                0,
+                0, // @todo MSG_DONTWAIT ?
                 $fromIP,
                 $fromPort
             );
@@ -50,7 +52,7 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
             $ts = microtime(true);
 
             // Если получили больше нуля байт — обрабатываем
-            if ($data > 0) {
+            if ($bytes > 0) {
                 $callback = $this->_callback;
                 $callback($ts, $buffer, $fromIP);
             } else {

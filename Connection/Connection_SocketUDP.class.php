@@ -70,7 +70,7 @@ class Connection_SocketUDP implements Connection_IConnection {
     }
 
     public function write($message, $messageSize, $host, $port) {
-        return socket_sendto($this->_socket, $message, $messageSize, 0, $host, $port);
+        return socket_sendto($this->_socket, $message, $messageSize, MSG_DONTWAIT, $host, $port);
     }
 
     /**
@@ -87,6 +87,7 @@ class Connection_SocketUDP implements Connection_IConnection {
         }
 
         while (1) {
+            // @todo инициацию можно перенести выше, минус лишний allow
             $buf = '';
             $fromIP = '';
             $fromPort = 0;
