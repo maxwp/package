@@ -259,6 +259,7 @@ class Checker {
             return false;
         }
 
+        // @todo без собак
         return self::CheckIP(@$matches[4]) ? true : self::CheckHostname(@$matches[4]);
     }
 

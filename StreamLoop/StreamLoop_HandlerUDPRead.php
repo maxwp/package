@@ -37,6 +37,8 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
     }
 
     public function readyRead() {
+        // @todo no locals
+
         // reverse drain read loop
         $this->_messageCount = 0;
 
