@@ -9,8 +9,7 @@ class StreamLoop {
         $this->_loopRunning = false;
     }
 
-    // @todo отказаться от callable
-    public function run(callable $callback) {
+    public function run(StreamLoop_IRun $onRun) {
         if (!$this->_handlerArray) {
             throw new StreamLoop_Exception('No handler array');
         }
@@ -25,7 +24,7 @@ class StreamLoop {
 
             $tsNow = microtime(true);
 
-            $callback($tsNow);
+            $onRun->onRun($tsNow);
 
             $r = [];
             $w = [];

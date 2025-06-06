@@ -4,7 +4,7 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
     // @todo как сделать универсально с drain forward/back и без него?
     // потому что hedger тоже будет юзать этот же SL_UDP
 
-    public function __construct($host, $port, callable $callback) {
+    public function __construct($host, $port, StreamLoop_HandlerUDPRead_IReceiver $receiver) {
         $this->stream = stream_socket_server(
             sprintf('udp://%s:%d', $host, $port),
             $errno,
@@ -27,9 +27,9 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
         stream_set_blocking($this->stream, false);
 
-        $this->_callback = $callback; // @todo йобаный callable closure опять
+        $this->_receiver = $receiver;
 
-        $this->flagRead = true;
+        $this->flagRead = true; // true only for UDP
         $this->flagWrite = false;
         $this->flagExcept = false;
 
@@ -62,10 +62,9 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
         // я вычисляю один ts на все сообщения, потому что из-за drain мне важно момент когда я начал обрабатвать (callback), а не когда я их достал
         // и это экономия на microtime-call
         $ts = microtime(true);
-        $callback = $this->_callback; // @todo wtf Closure?
         // вдуваем сообщения в обратном порядке
         for ($j = $this->_messageCount - 1; $j >= 0; $j--) {
-            $callback($ts, $this->_messageArray[$j][0], $this->_messageArray[$j][1], $this->_messageArray[$j][2]);
+            $this->_receiver->onReceive($ts, $this->_messageArray[$j][0], $this->_messageArray[$j][1], $this->_messageArray[$j][2]);
         }
     }
 
@@ -89,7 +88,7 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
     private $_socket;
 
-    private $_callback;
+    private $_receiver;
 
     private int $_drainLimit = 0;
 
