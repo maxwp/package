@@ -8,9 +8,8 @@
 
 class Connection_SocketUDS implements Connection_IConnection {
 
-    public function __construct($socketFile, Connection_Socket_IReceiver $receiver) {
+    public function __construct($socketFile) {
         $this->_socketFile = $socketFile;
-        $this->_receiver = $receiver;
     }
 
     public function connect() {
@@ -35,10 +34,10 @@ class Connection_SocketUDS implements Connection_IConnection {
     }
 
     /**
-     * @param callable(string $buf, string $fromIP, int $fromPort): void $callback
+     * @param Connection_Socket_IReceiver $receiver
      * @param int $length
      */
-    public function read(callable $callback, $length = 1024) {
+    public function read(Connection_Socket_IReceiver $receiver, $length = 1024) {
         // всегда косим файл перед bind-ом
         if (file_exists($this->_socketFile)) {
             unlink($this->_socketFile);
@@ -65,14 +64,12 @@ class Connection_SocketUDS implements Connection_IConnection {
                 throw new Connection_Exception($message);
             }
 
-            $this->_receiver->onReceive($ts, $buf, $fromAddress, $fromPort);
+            $receiver->onReceive($ts, $buf, $fromAddress, $fromPort);
         }
     }
 
     private $_socket;
 
     private $_socketFile;
-
-    private Connection_Socket_IReceiver $_receiver;
 
 }
