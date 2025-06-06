@@ -106,7 +106,6 @@ class Connection_WebSocket implements Connection_IConnection {
                         throw new Connection_Exception("Connection_WebSocket: iframe-closed");
                     case self::_FRAME_SELECT_TIMEOUT:
                     case self::_FRAME_DATA:
-                        // @todo переделать вызов callback на генерацию string event (simple Event)
                         try {
                             $callback($ts, $msgData); // @todo fucking Closure
                         } catch (Exception $userException) {
