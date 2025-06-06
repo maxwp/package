@@ -37,36 +37,40 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
     }
 
     public function readyRead() {
-        // @todo no locals
-
         // reverse drain read loop
-        $this->_messageCount = 0;
+        $messageArray = [];
+
+        // в php init локальной переменной дешевле чем доступ к свойству, поэтому не могу вынести
+        $buffer = '';
+        $fromAddress = '';
+        $fromPort = 0;
 
         for ($j = 1; $j <= $this->_drainLimit; $j++) {
             $bytes = socket_recvfrom(
                 $this->_socket,
-                $this->_buffer,
+                $buffer,
                 1024,
                 MSG_DONTWAIT,
-                $this->_fromAddress,
-                $this->_fromPort
+                $fromAddress,
+                $fromPort
             );
 
             if ($bytes === false) {
                 // end of drain
                 break;
             } else {
-                $this->_messageArray[$this->_messageCount] = [$this->_buffer, $this->_fromAddress, $this->_fromPort];
-                $this->_messageCount ++;
+                $messageArray[] = [$buffer, $fromAddress, $fromPort];
             }
         }
 
         // я вычисляю один ts на все сообщения, потому что из-за drain мне важно момент когда я начал обрабатвать (callback), а не когда я их достал
         // и это экономия на microtime-call
         $ts = microtime(true);
+
         // вдуваем сообщения в обратном порядке
-        for ($j = $this->_messageCount - 1; $j >= 0; $j--) {
-            $this->_receiver->onReceive($ts, $this->_messageArray[$j][0], $this->_messageArray[$j][1], $this->_messageArray[$j][2]);
+        $cnt = count($messageArray);
+        for ($j = $cnt - 1; $j >= 0; $j--) {
+            $this->_receiver->onReceive($ts, $messageArray[$j][0], $messageArray[$j][1], $messageArray[$j][2]);
         }
     }
 
@@ -84,21 +88,12 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
     public function setDrainLimit(int $limit) {
         $this->_drainLimit = $limit;
-        // инициируем массив до drain limit специально чтобы не менять его size на лету, бо динамическая херня ждет аллокации
-        $this->_messageArray = array_fill(0, $this->_drainLimit, null);
     }
 
     private $_socket;
 
-    private $_receiver;
+    private StreamLoop_HandlerUDPRead_IReceiver $_receiver;
 
     private int $_drainLimit = 0;
-
-    // я вынес параметры сюда для уменьшения malloc, потому что readyRead вызывается постоянно
-    private $_buffer = '';
-    private $_fromAddress = '';
-    private $_fromPort = 0;
-    private $_messageArray = [];
-    private $_messageCount = 0;
 
 }
