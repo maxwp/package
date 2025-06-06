@@ -18,6 +18,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         // надо попробовать
     }
 
+    // @todo отказаться от callable
     public function request(string $method, string $path, string $body, array $headerArray, callable $callback, float $timeout = 0) {
         // добавляем запрос в очередь
         $this->_requestQue->enqueue(array(

@@ -9,6 +9,7 @@ class StreamLoop {
         $this->_loopRunning = false;
     }
 
+    // @todo отказаться от callable
     public function run(callable $callback) {
         if (!$this->_handlerArray) {
             throw new StreamLoop_Exception('No handler array');

@@ -17,9 +17,11 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         $this->connect();
     }
 
+    // @todo отказаться от callable
     public function onMessage(callable $callback) {
         $this->_callbackMessage = $callback;
     }
+    // @todo отказаться от callable
     public function onError(callable $callback) {
         $this->_callbackError = $callback;
     }

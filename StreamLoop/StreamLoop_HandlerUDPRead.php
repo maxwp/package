@@ -1,6 +1,7 @@
 <?php
 class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
+    // @todo отказаться от callable
     public function __construct($host, $port, callable $callback) {
         $this->stream = stream_socket_server(
             sprintf('udp://%s:%d', $host, $port),
