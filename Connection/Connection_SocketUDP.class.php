@@ -97,7 +97,7 @@ class Connection_SocketUDP implements Connection_IConnection {
             $ts = microtime(true);
 
             if ($bytes === false) {
-                $message = socket_strerror(socket_last_error($this->_socket)) . "\n";
+                $message = socket_strerror(socket_last_error($this->_socket)); // message надо получить ДО disconnect, бо поменяется
                 $this->disconnect();
                 throw new Connection_Exception($message);
             }

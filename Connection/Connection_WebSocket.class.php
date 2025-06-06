@@ -18,7 +18,7 @@ class Connection_WebSocket implements Connection_IConnection {
         $this->_streamSelectTimeoutUS = $us;
     }
 
-    public function loop($callback) {
+    public function loop($callback) { // @todo fucking Closure find usages
         // обнуляем ts ping-pong, иначе могу зайти в вечную restart долбежку
         $this->_tsPing = 0;
         $this->_tsPong = 0;
@@ -95,7 +95,7 @@ class Connection_WebSocket implements Connection_IConnection {
                         // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать $callback,
                         // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                         try {
-                            $callback($ts, false);
+                            $callback($ts, false); // @todo fucking Closure
                         } catch (Exception $userException) {
                             $this->disconnect();
                             throw $userException;
@@ -108,7 +108,7 @@ class Connection_WebSocket implements Connection_IConnection {
                     case self::_FRAME_DATA:
                         // @todo переделать вызов callback на генерацию string event (simple Event)
                         try {
-                            $callback($ts, $msgData);
+                            $callback($ts, $msgData); // @todo fucking Closure
                         } catch (Exception $userException) {
                             $this->disconnect();
                             throw $userException;

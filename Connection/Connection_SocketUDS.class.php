@@ -8,8 +8,9 @@
 
 class Connection_SocketUDS implements Connection_IConnection {
 
-    public function __construct($socketFile) {
+    public function __construct($socketFile, Connection_Socket_IReceiver $receiver) {
         $this->_socketFile = $socketFile;
+        $this->_receiver = $receiver;
     }
 
     public function connect() {
@@ -51,26 +52,27 @@ class Connection_SocketUDS implements Connection_IConnection {
         }
 
         $buf = '';
-        $from = '';
+        $fromAddress = '';
+        $fromPort = 0;
 
         while (1) {
-            $bytes = socket_recvfrom($this->_socket, $buf, $length, 0, $from);
+            $bytes = socket_recvfrom($this->_socket, $buf, $length, 0, $fromAddress, $fromPort);
+            $ts = microtime(true);
 
             if ($bytes === false) {
-                $message = socket_strerror(socket_last_error($this->_socket)) . "\n";
+                $message = socket_strerror(socket_last_error($this->_socket)); // message надо получить ДО disconnect, бо поменяется
                 $this->disconnect();
                 throw new Connection_Exception($message);
             }
 
-            // @todo возможно callback переделать на interface
-            // @todo closure
-            // вызываем callback
-            $callback($buf, $from);
+            $this->_receiver->onReceive($ts, $buf, $fromAddress, $fromPort);
         }
     }
 
     private $_socket;
 
     private $_socketFile;
+
+    private Connection_Socket_IReceiver $_receiver;
 
 }
