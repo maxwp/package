@@ -1,7 +1,9 @@
 <?php
 class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
-    // @todo отказаться от callable
+    // @todo как сделать универсально с drain forward/back и без него?
+    // потому что hedger тоже будет юзать этот же SL_UDP
+
     public function __construct($host, $port, callable $callback) {
         $this->stream = stream_socket_server(
             sprintf('udp://%s:%d', $host, $port),
@@ -25,42 +27,45 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
         stream_set_blocking($this->stream, false);
 
-        $this->_callback = $callback;
+        $this->_callback = $callback; // @todo йобаный callable closure опять
 
         $this->flagRead = true;
         $this->flagWrite = false;
         $this->flagExcept = false;
+
+        $this->setDrainLimit(50);
     }
 
     public function readyRead() {
-        $buffer = '';
-        $fromIP = '';
-        $fromPort = 0;
+        // reverse drain read loop
+        $this->_messageCount = 0;
 
-        // drain loop
-        // @todo приделать наоборот, сразу в массив и считать index массива на лету
-        // а затем обработка в обратном порядке
-        // @todo drain limit
-        for ($j = 1; $j <= 10; $j++) {
+        for ($j = 1; $j <= $this->_drainLimit; $j++) {
             $bytes = socket_recvfrom(
                 $this->_socket,
-                $buffer,
+                $this->_buffer,
                 1024,
                 MSG_DONTWAIT,
-                $fromIP,
-                $fromPort
+                $this->_fromAddress,
+                $this->_fromPort
             );
-
-            $ts = microtime(true);
 
             if ($bytes === false) {
                 // end of drain
                 break;
             } else {
-                // @todo wtf Closure?
-                $callback = $this->_callback;
-                $callback($ts, $buffer, $fromIP);
+                $this->_messageArray[$this->_messageCount] = [$this->_buffer, $this->_fromAddress, $this->_fromPort];
+                $this->_messageCount ++;
             }
+        }
+
+        // я вычисляю один ts на все сообщения, потому что из-за drain мне важно момент когда я начал обрабатвать (callback), а не когда я их достал
+        // и это экономия на microtime-call
+        $ts = microtime(true);
+        $callback = $this->_callback; // @todo wtf Closure?
+        // вдуваем сообщения в обратном порядке
+        for ($j = $this->_messageCount - 1; $j >= 0; $j--) {
+            $callback($ts, $this->_messageArray[$j][0], $this->_messageArray[$j][1], $this->_messageArray[$j][2]);
         }
     }
 
@@ -76,7 +81,23 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
     }
 
+    public function setDrainLimit(int $limit) {
+        $this->_drainLimit = $limit;
+        // инициируем массив до drain limit специально чтобы не менять его size на лету, бо динамическая херня ждет аллокации
+        $this->_messageArray = array_fill(0, $this->_drainLimit, null);
+    }
+
     private $_socket;
 
     private $_callback;
+
+    private int $_drainLimit = 0;
+
+    // я вынес параметры сюда для уменьшения malloc, потому что readyRead вызывается постоянно
+    private $_buffer = '';
+    private $_fromAddress = '';
+    private $_fromPort = 0;
+    private $_messageArray = [];
+    private $_messageCount = 0;
+
 }
