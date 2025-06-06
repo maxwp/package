@@ -75,10 +75,10 @@ class Connection_SocketUDP implements Connection_IConnection {
 
     /**
      * @param int $port
-     * @param callable(string $buf, string $fromIP, int $fromPort): void $callback
+     * @param Connection_Socket_IReceiver $receiver
      * @param int $length
      */
-    public function read($port, callable $callback, $length = 1024) {
+    public function read($port, Connection_Socket_IReceiver $receiver, $length = 1024) {
         $result = socket_bind($this->_socket, '0.0.0.0', $port);
         if ($result === false) {
             $message = socket_strerror(socket_last_error($this->_socket));
@@ -89,11 +89,11 @@ class Connection_SocketUDP implements Connection_IConnection {
         // инициализация переменных ДО цикла,
         // все равно socket_recvfrom их перетирает
         $buf = '';
-        $fromIP = '';
+        $fromAddress = '';
         $fromPort = 0;
 
         while (1) {
-            $bytes = socket_recvfrom($this->_socket, $buf, $length, 0, $fromIP, $fromPort);
+            $bytes = socket_recvfrom($this->_socket, $buf, $length, 0, $fromAddress, $fromPort);
             $ts = microtime(true);
 
             if ($bytes === false) {
@@ -102,11 +102,7 @@ class Connection_SocketUDP implements Connection_IConnection {
                 throw new Connection_Exception($message);
             }
 
-            // @todo возможно callback переделать на interface
-            // @todo переделать на simple string Event
-            // @todo wtf Closure?
-            // вызываем callback
-            $result = $callback($ts, $buf, $fromIP);
+            $result = $receiver->onReceive($ts, $buf, $fromAddress, $fromPort);
 
             // если есть какой-то результат - на выход
             if ($result) {
