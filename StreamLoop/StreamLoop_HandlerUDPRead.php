@@ -39,25 +39,26 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
         // drain loop
         // @todo приделать наоборот, сразу в массив и считать index массива на лету
         // а затем обработка в обратном порядке
+        // @todo drain limit
         for ($j = 1; $j <= 10; $j++) {
             $bytes = socket_recvfrom(
                 $this->_socket,
                 $buffer,
                 1024,
-                0, // @todo MSG_DONTWAIT ?
+                MSG_DONTWAIT,
                 $fromIP,
                 $fromPort
             );
 
             $ts = microtime(true);
 
-            // Если получили больше нуля байт — обрабатываем
-            if ($bytes > 0) {
-                $callback = $this->_callback;
-                $callback($ts, $buffer, $fromIP);
-            } else {
+            if ($bytes === false) {
                 // end of drain
                 break;
+            } else {
+                // @todo wtf Closure?
+                $callback = $this->_callback;
+                $callback($ts, $buffer, $fromIP);
             }
         }
     }

@@ -86,12 +86,13 @@ class Connection_SocketUDP implements Connection_IConnection {
             throw new Connection_Exception($message.' port='.$port);
         }
 
-        while (1) {
-            // @todo инициацию можно перенести выше, минус лишний allow
-            $buf = '';
-            $fromIP = '';
-            $fromPort = 0;
+        // инициализация переменных ДО цикла,
+        // все равно socket_recvfrom их перетирает
+        $buf = '';
+        $fromIP = '';
+        $fromPort = 0;
 
+        while (1) {
             $bytes = socket_recvfrom($this->_socket, $buf, $length, 0, $fromIP, $fromPort);
             $ts = microtime(true);
 
@@ -103,6 +104,7 @@ class Connection_SocketUDP implements Connection_IConnection {
 
             // @todo возможно callback переделать на interface
             // @todo переделать на simple string Event
+            // @todo wtf Closure?
             // вызываем callback
             $result = $callback($ts, $buf, $fromIP);
 
