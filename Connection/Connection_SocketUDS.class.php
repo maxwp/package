@@ -8,9 +8,11 @@
 
 class Connection_SocketUDS implements Connection_IConnection {
 
-    public function connect() {
-        // @todo шо делать с sock file?
+    public function __construct($socketFile) {
+        $this->_socketFile = $socketFile;
+    }
 
+    public function connect() {
         $this->_socket = socket_create(AF_UNIX, SOCK_DGRAM, 0);
     }
 
@@ -27,34 +29,33 @@ class Connection_SocketUDS implements Connection_IConnection {
         return $this->_socket;
     }
 
-    public function write($message, $messageSize, $sockFile) {
-        return socket_sendto($this->_socket, $message, $messageSize, MSG_DONTWAIT, $sockFile);
+    public function write($message, $messageSize) {
+        return socket_sendto($this->_socket, $message, $messageSize, MSG_DONTWAIT, $this->_socketFile);
     }
 
     /**
-     * @param string $sockFile
      * @param callable(string $buf, string $fromIP, int $fromPort): void $callback
      * @param int $length
      */
-    public function read($sockFile, callable $callback, $length = 1024) {
+    public function read(callable $callback, $length = 1024) {
         // всегда косим файл перед bind-ом
-        // @todo sockfile передавать в конструктор
-        if (file_exists($sockFile)) {
-            unlink($sockFile);
+        if (file_exists($this->_socketFile)) {
+            unlink($this->_socketFile);
         }
 
-        $result = socket_bind($this->_socket, $sockFile);
+        $result = socket_bind($this->_socket, $this->_socketFile);
         if ($result === false) {
             $message = socket_strerror(socket_last_error($this->_socket));
             $this->disconnect();
-            throw new Connection_Exception($message.' sockfile='.$sockFile);
+            throw new Connection_Exception($message.' sockfile='.$this->_socketFile);
         }
 
-        while (1) {
-            $buf = '';
-            $from = '';
+        $buf = '';
+        $from = '';
 
+        while (1) {
             $bytes = socket_recvfrom($this->_socket, $buf, $length, 0, $from);
+
             if ($bytes === false) {
                 $message = socket_strerror(socket_last_error($this->_socket)) . "\n";
                 $this->disconnect();
@@ -62,11 +63,14 @@ class Connection_SocketUDS implements Connection_IConnection {
             }
 
             // @todo возможно callback переделать на interface
+            // @todo closure
             // вызываем callback
             $callback($buf, $from);
         }
     }
 
     private $_socket;
+
+    private $_socketFile;
 
 }
