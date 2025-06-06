@@ -56,6 +56,8 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         $this->timeoutTo = 0;
     }
 
+    // @todo malloc fix
+
     public function readyRead() {
         $this->_checkEOF();
 

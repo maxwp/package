@@ -26,6 +26,8 @@ class StreamLoop {
 
             $onRun->onRun($tsNow);
 
+            // @todo malloc fix
+
             $r = [];
             $w = [];
             $e = [];

@@ -123,6 +123,8 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         }
     }
 
+    // @todo malloc fix
+
     public function readySelectTimeout() {
         if ($this->_activeRequest && !empty($this->_activeRequest['timeout'])) {
             $ts = microtime(true);
