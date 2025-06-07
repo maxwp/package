@@ -20,7 +20,7 @@ class Connection_WebSocket implements Connection_IConnection {
 
     public function loop($callback) { // @todo fucking Closure find usages
         // обнуляем ts ping-pong, иначе могу зайти в вечную restart долбежку
-        $this->_tsPing = 0;
+        $this->_tsPing = 0; // @todo ping-pong можно сделать local
         $this->_tsPong = 0;
 
         stream_set_blocking($this->_stream, false);
@@ -44,11 +44,12 @@ class Connection_WebSocket implements Connection_IConnection {
                 throw new Connection_Exception("Connection_WebSocket: no iframe-pong - exit");
             }
 
+            // @todo вытянуть stream?
             $read = [$this->_stream];
             $write = null;
             $except = [$this->_stream];
 
-            $num_changed_streams = stream_select($read, $write, $except, 0, $this->_streamSelectTimeoutUS);
+            $num_changed_streams = stream_select($read, $write, $except, 0, $this->_streamSelectTimeoutUS); // @todo locals
 
             // согласно документации false может прилететь из-за system interrupt call
             if ($num_changed_streams === false) {
@@ -56,6 +57,7 @@ class Connection_WebSocket implements Connection_IConnection {
                 throw new Connection_Exception("Connection_WebSocket: stream_select error");
             }
 
+            // @todo тут быстрее empty или сразу сравнение?
             if (!empty($except)) {
                 $this->disconnect();
                 throw new Connection_Exception("Connection_WebSocket: stream_select except");
@@ -66,6 +68,7 @@ class Connection_WebSocket implements Connection_IConnection {
                 $msgArray = $this->read();
             }
 
+            // @todo склейка массива - говно
             if (!$msgArray) {
                 $msgArray[] = [self::_FRAME_SELECT_TIMEOUT, false];
             }
@@ -189,7 +192,7 @@ class Connection_WebSocket implements Connection_IConnection {
     private function _decodeMessageArray() {
         $messages = [];
         $offset = 0;
-        $bufferLength = strlen($this->_buffer);
+        $bufferLength = strlen($this->_buffer); // @todo buffer в locals
 
         while ($offset < $bufferLength) {
             // Минимальный заголовок — 2 байта

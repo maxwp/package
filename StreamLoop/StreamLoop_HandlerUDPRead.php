@@ -45,9 +45,11 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
         $fromAddress = '';
         $fromPort = 0;
 
+        $found = false;
+
         for ($j = 1; $j <= $this->_drainLimit; $j++) {
             $bytes = socket_recvfrom(
-                $this->_socket,
+                $this->_socket, // @todo вытянуть сокет в локальную?
                 $buffer,
                 1024,
                 MSG_DONTWAIT,
@@ -59,18 +61,28 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
                 // end of drain
                 break;
             } else {
+                // @todo теоретически можно поменять на какую-то другую структуру, а не массив
+                // потому что дальше revert loop и он херовый
                 $messageArray[] = [$buffer, $fromAddress, $fromPort];
+                $found = true;
             }
         }
 
-        // я вычисляю один ts на все сообщения, потому что из-за drain мне важно момент когда я начал обрабатвать (callback), а не когда я их достал
-        // и это экономия на microtime-call
+        // если вдруг ничего нет - на выход
+        if (!$found) {
+            return;
+        }
+
+        // 1. я вычисляю один ts на все сообщения, потому что из-за drain мне важно момент когда я начал обрабатвать (callback), а не когда я их достал
+        // 2. ну и это экономия на microtime-call
         $ts = microtime(true);
 
         // вдуваем сообщения в обратном порядке
         $cnt = count($messageArray);
+        $receiver = $this->_receiver; // вытянуть сюда его дешевле чем юзать в цикле
         for ($j = $cnt - 1; $j >= 0; $j--) {
-            $this->_receiver->onReceive($ts, $messageArray[$j][0], $messageArray[$j][1], $messageArray[$j][2]);
+            $message = $messageArray[$j];
+            $receiver->onReceive($ts, $message[0], $message[1], $message[2]);
         }
     }
 

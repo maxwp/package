@@ -93,7 +93,15 @@ class Connection_SocketUDP implements Connection_IConnection {
         $fromPort = 0;
 
         while (1) {
-            $bytes = socket_recvfrom($this->_socket, $buf, $length, 0, $fromAddress, $fromPort);
+            $bytes = socket_recvfrom(
+                $this->_socket, // @todo вытянуть сокет в локальную?
+                $buf,
+                $length,
+                0,
+                $fromAddress,
+                $fromPort
+            );
+
             $ts = microtime(true);
 
             if ($bytes === false) {

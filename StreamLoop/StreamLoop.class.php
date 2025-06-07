@@ -18,6 +18,7 @@ class StreamLoop {
 
         // event loop
         while (1) {
+            // @todo тройное равно сделает хуже
             if ($this->_loopRunning === false) {
                 break;
             }
@@ -25,8 +26,6 @@ class StreamLoop {
             $tsNow = microtime(true);
 
             $onRun->onRun($tsNow);
-
-            // @todo malloc fix
 
             $r = [];
             $w = [];
@@ -36,13 +35,13 @@ class StreamLoop {
 
             $ok = false;
             foreach ($this->_handlerArray as $handler) {
-                $streamID = (int)$handler->stream;
+                $streamID = (int) $handler->stream;
                 if (!$streamID) {
                     continue;
                 }
                 $linkArray[$streamID] = $handler; // @todo improve только если что-то поменялось
 
-                // вот тут у handler я могу спросить до какого времени ты хочешь timeout
+                // вот тут у handler'a я могу спросить до какого времени ты хочешь timeout
                 // он может вернуть 0, то есть ему насрать и он не хочет таймаут
                 if ($handler->timeoutTo > 0) {
                     $timeoutToArray[] = $handler->timeoutTo;
@@ -77,6 +76,8 @@ class StreamLoop {
             if ($timeout <= 0) {
                 $timeout = 0;
             }
+
+            // @todo if timeout == 0 - то не вызывать select?
 
             $result = stream_select($r, $w, $e, 0, $timeout * 1_000_000);
             if ($result === false) {
@@ -126,7 +127,7 @@ class StreamLoop {
     /**
      * @var array<StreamLoop_AHandler>
      */
-    private $_handlerArray = []; // @todo registry?
+    private $_handlerArray = [];
 
     private $_streamSelectTimeoutUS = 1_000_000;
 

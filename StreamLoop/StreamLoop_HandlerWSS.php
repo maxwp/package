@@ -56,8 +56,6 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         $this->timeoutTo = 0;
     }
 
-    // @todo malloc fix
-
     public function readyRead() {
         $this->_checkEOF();
 
@@ -129,6 +127,11 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     }
 
     public function readySelectTimeout() {
+        // для WSS фиксированно задан период 0.25 сек когда он должен слать что-то что он жив,
+        // это и есть _FRAME_SELECT_TIMEOUT
+        // он срабатывает на stream_select
+        // если ничего не пришло - пушим это сообщение
+
         if ($this->_state != self::_STATE_WEBSOCKET_READY) {
             return;
         }
@@ -284,7 +287,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
             $this->disconnect();
 
             $cb = $this->_callbackError;
-            $cb(microtime(true), "EOF");
+            $cb(microtime(true), 'EOF');
         }
     }
 
@@ -314,7 +317,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     private function _decodeMessageArray() {
         $messages = [];
         $offset = 0;
-        $bufferLength = strlen($this->_buffer);
+        $bufferLength = strlen($this->_buffer); // @todo bufer to locals
 
         while ($offset < $bufferLength) {
             // Минимальный заголовок — 2 байта
