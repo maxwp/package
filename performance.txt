@@ -1,4 +1,5 @@
 PHP 8.2 crazy performance benchmarks
+@todo php 8.2 vs 8.3 vs 8.4
 
 @author Maxim Miroshnichenko <max@miroshnichenko.org>
 
@@ -457,32 +458,76 @@ php -d opcache.enable=1 -d opcache.validate_timestamps=1 -d opcache.revalidate_f
 php -d opcache.enable=1 -d opcache.validate_timestamps=1 -d opcache.revalidate_freq=0 -d opcache.enable_cli=1 -d opcache.jit_buffer_size=100M -d opcache.jit=function -f  1.php // 244 ms
 php -d opcache.enable=1 -d opcache.validate_timestamps=1 -d opcache.revalidate_freq=0 -d opcache.enable_cli=1 -d opcache.jit_buffer_size=100M -d opcache.jit=tracing -f  1.php // 114 ms
 
-c6gn.large
+@todo jit test на моих параметрах выше, а затем на c8
+
+aws gn vs g сетевухи
+Если не использовать DPDK/Kernel-by-pass то нет никакой разницы между gn или g для реального подключения по ws/udp.
+Но вот скорость обработки самого сетевого стека сильно зависит от cpu и тут c8g выигрывает с ебейшим отрывом у всего остального.
+Тестировал на подключении к fstream к одному IP из кластера c7gn, c7g, c8g.
+
+m5zn.xlarge (intel xeon 4.5Ghz tokyo-only)
+php 472 ms
+php +opcache 333 ms
+php +opcache +jit 78ms
+network
+no-jit  0.017221922	0.016291	0.010026	0.039792
+jit	    0.016803216	0.015686	0.009896	0.03596
+
+c7a.xlarge (top of amd 3.7Ghz)
+php 491 ms
+php +opcache 402 ms
+php +opcache +jit 59 ms << супер быстрая математика
+network
+no-jit  0.023317672327672	0.02271	0.00912	0.0398
+jit     не тестил, потому что проигрывает
+
+c8g.xlarge << top of all
+php 608 ms
+php +opcache 384 ms
+php +opcache +jit 75-80 ms << математика быстрая, но сеть просто ебическая
+network << самый быстрый, IGW тоже топ
+no-jit 0.0088250438247012	0.0080535	0.005574	0.033326 << монстр по сети
+jit    0.008585994011976	0.007398	0.005503	0.032228 << не особо меняет
+
+c7gn.xlarge, c7g.xlarge (arm,  2.6Ghz, L-1M)
+php 655 ms
+php +opcache 435 ms, stable
+php +opcache +jit 88 ms
+network c7gn.xlarge
+no-jit 	0.011871339	0.010371	0.007511	0.037104
+jit 	0.012685706	0.0107155	0.007691	0.269821 делает чуть хуже?
+network c7g.xlarge
+no-jit  0.011913541	0.0101565	0.007481	0.036936 не похоже что чем-то отличется от c7gn
+jit     0.012632865	0.0106905	0.007413	0.285803 делает чуть хуже, но нет разницы с c7gn
+
+c6gn.xlarge (arm, 2.5 GHz)
 php 789 ms
 php +opcache 641 ms
 php +opcache +jit 114 ms
-php +compiled 8.2.28 - 790 ms
+php +compiled 8.2.28 - 790 ms (= сборка php -O3 native не помогает)
 php +compiled +opcache - 638 ms
 php +compiled +opcache + jit 114 ms
-= сборка php -O3 native не помогает
+network 0.0227 ms/udp loopback << это нитро сетевуха ENA, без ENA express
+no-jit  0.02284175386 avg	0.02055975 med	0.01138 min 	0.4851 max
+jit     0.02276954401 avg	0.020537 med	0.011126 min	0.37818 max не стабильное, но медиана самая низкая
 
-c6a.large (amd)
-php 527 ms
-php +opcache 607 ms, странно делает хуже
-php +opcache +jit 65 ms << best of
-php +compiled
-php +compiled +opcache
-php +compiled +opcache + jit
-amd сеть в 3.5 раза хуже c6gn (тест udp loopback)
+c6a.xlarge (amd, 2.65 Ghz)
+php 528 ms
+php +opcache 380..574 ms, странно делает хуже и прыгает
+php +opcache +jit 65 ms, стабильно << best of
+network 0.045 ms/udp loopback, сеть вдвое хуже чем arm/intel
+no-jit	0.048085801198801 avg	0.051471 med	0.01847 min	0.183734 max
+jit 	0.045852571428571 avg	0.046251 med	0.02055 min	0.095102 max
 
-c6i.large (intel)
-php 522 ms
+c6i.xlarge (intel, 3.5 Ghz, сильно больше L-кешей)
+php 520 ms
 php +opcache 396 ms
 php +opcache +jit 90 ms
-php +compiled
-php +compiled +opcache
-php +compiled +opcache + jit
-intel сеть хуже в 1.5 раза (тест udp loopback)
+network 0.0233 ms/udp loopback
+no-jit  0.025813836 avg	0.0254155 med	0.011826 min	0.052407 max
+jit     0.023273431 avg	0.022677 med	0.010959 min	0.054387 max    самое стабильное, но на 2% хуже arm
 
-@todo metal, в тч a1.metal (без контекст свитчинга)
-@todo php 8.2 vs 8.3 vs 8.4
+a1.metal (old arm)
+php 2090 ms
+php +opcache +jit 183 ms (ускоренеи норм, но все равно лажа с c6*)
+сеть 0.03 ms/udp loopback, хуже в 1.5 раза
