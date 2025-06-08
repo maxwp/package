@@ -10,7 +10,7 @@ Zend Engine v4.2.28, Copyright (c) Zend Technologies with Zend OPcache v8.2.28, 
 
 opcache.enable_cli => Off => Off
 
-AWS EC2 c7gn.xlarge
+AWS EC2 c6gn.xlarge
 
 PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"
 NAME="Debian GNU/Linux"
@@ -438,3 +438,51 @@ private function _test() {
         $this->_bucket[$i] = $i;
     }
 }
+
+==============================================================
+
+ini_set('zend.enable_gc', 0);
+
+Убирает запуск garbage collector, все становится чуть сложнее, но циклы стабильне.
+
+==============================================================
+
+OPCACHE + JIT
+
+NB! шо opcache+jit это жопа с eval, если есть eval smarty - всему пизда сразу же
+
+Синтетический тест на вызовы методов и доступ к свойствам:
+php -f 1.php // 791 ms
+php -d opcache.enable=1 -d opcache.validate_timestamps=1 -d opcache.revalidate_freq=0 -d opcache.enable_cli=1 -f 1.php // 642 ms opcache only
+php -d opcache.enable=1 -d opcache.validate_timestamps=1 -d opcache.revalidate_freq=0 -d opcache.enable_cli=1 -d opcache.jit_buffer_size=100M -d opcache.jit=function -f  1.php // 244 ms
+php -d opcache.enable=1 -d opcache.validate_timestamps=1 -d opcache.revalidate_freq=0 -d opcache.enable_cli=1 -d opcache.jit_buffer_size=100M -d opcache.jit=tracing -f  1.php // 114 ms
+
+c6gn.large
+php 789 ms
+php +opcache 641 ms
+php +opcache +jit 114 ms
+php +compiled 8.2.28 - 790 ms
+php +compiled +opcache - 638 ms
+php +compiled +opcache + jit 114 ms
+= сборка php -O3 native не помогает
+
+c6a.large (amd)
+php 527 ms
+php +opcache 607 ms, странно делает хуже
+php +opcache +jit 65 ms << best of
+php +compiled
+php +compiled +opcache
+php +compiled +opcache + jit
+amd сеть в 3.5 раза хуже c6gn (тест udp loopback)
+
+c6i.large (intel)
+php 522 ms
+php +opcache 396 ms
+php +opcache +jit 90 ms
+php +compiled
+php +compiled +opcache
+php +compiled +opcache + jit
+intel сеть хуже в 1.5 раза (тест udp loopback)
+
+@todo metal, в тч a1.metal (без контекст свитчинга)
+@todo php 8.2 vs 8.3 vs 8.4
