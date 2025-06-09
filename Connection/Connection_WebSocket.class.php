@@ -19,9 +19,10 @@ class Connection_WebSocket implements Connection_IConnection {
     }
 
     public function loop($callback) { // @todo fucking Closure find usages
-        // обнуляем ts ping-pong, иначе могу зайти в вечную restart долбежку
-        $this->_tsPing = 0; // @todo ping-pong можно сделать local
-        $this->_tsPong = 0;
+        $tsPing = 0;
+        $tsPong = 0;
+
+        $streamSelectTimeoutUS = $this->_streamSelectTimeoutUS; // вытягивание в locals
 
         stream_set_blocking($this->_stream, false);
 
@@ -29,14 +30,14 @@ class Connection_WebSocket implements Connection_IConnection {
             $time = microtime(true);
 
             // auto ping frame
-            if ($time - $this->_tsPing >= $this->_pingInterval) {
+            if ($time - $tsPing >= $this->_pingInterval) {
                 $this->_sendPingFrame();
-                $this->_tsPing = $time;
+                $tsPing = $time;
                 // дедлайн до которого должен прийти pong
-                $this->_tsPong = $time + $this->_pongDeadline;
+                $tsPong = $time + $this->_pongDeadline;
             }
 
-            if ($this->_tsPong > 0 && $time > $this->_tsPong) {
+            if ($tsPong > 0 && $time > $tsPong) {
                 // если задан дедлайн pong,
                 // и время уже больше этого дедлайна, то это означает что pong не пришет
                 // и мы идем на выход
@@ -44,12 +45,11 @@ class Connection_WebSocket implements Connection_IConnection {
                 throw new Connection_Exception("Connection_WebSocket: no iframe-pong - exit");
             }
 
-            // @todo вытянуть stream?
             $read = [$this->_stream];
             $write = null;
             $except = [$this->_stream];
 
-            $num_changed_streams = stream_select($read, $write, $except, 0, $this->_streamSelectTimeoutUS); // @todo locals
+            $num_changed_streams = stream_select($read, $write, $except, 0, $streamSelectTimeoutUS);
 
             // согласно документации false может прилететь из-за system interrupt call
             if ($num_changed_streams === false) {
@@ -65,7 +65,9 @@ class Connection_WebSocket implements Connection_IConnection {
 
             $msgArray = [];
             if ($num_changed_streams > 0) {
-                $msgArray = $this->read();
+                // так как тут всего один вызов _read без параметров, то jit его заинлайнит
+                // и переносить сюда код я не буду :)
+                $msgArray = $this->_read();
             }
 
             // @todo склейка массива - говно
@@ -84,14 +86,18 @@ class Connection_WebSocket implements Connection_IConnection {
 
                 switch ($msgType) {
                     case self::_FRAME_PING:
+                        # debug:start
                         Cli::Print_n("Connection_WebSocket: iframe-ping $msgData");
+                        # debug:end
                         $this->_sendPongFrame($msgData);
                         break;
                     case self::_FRAME_PONG:
+                        # debug:start
                         Cli::Print_n("Connection_WebSocket: iframe-pong $msgData");
+                        # debug:end
 
                         // запоминаем когда пришел pong
-                        $this->_tsPong = 0;
+                        $tsPong = 0;
 
                         // тут очень важный нюанс:
                         // stream_select может выйти по таймауту, а может по pong.
@@ -168,7 +174,7 @@ class Connection_WebSocket implements Connection_IConnection {
         }
     }
 
-    public function read($maxLength = 2000) {
+    private function _read($maxLength = 2000) {
         $data = fread($this->_stream, $maxLength);
 
         // в неблокирующем режиме если данных нет - то будет string ''
@@ -185,14 +191,12 @@ class Connection_WebSocket implements Connection_IConnection {
             throw new Exception("EOF reached: connection closed by remote host");
         }
 
-        $this->_buffer .= $data;
-        return $this->_decodeMessageArray();
-    }
+        $buffer = $this->_buffer; // вытягивание буфера в locals, так сильно быстрее
+        $buffer .= $data;
 
-    private function _decodeMessageArray() {
         $messages = [];
         $offset = 0;
-        $bufferLength = strlen($this->_buffer); // @todo buffer в locals
+        $bufferLength = strlen($buffer);
 
         while ($offset < $bufferLength) {
             // Минимальный заголовок — 2 байта
@@ -200,8 +204,8 @@ class Connection_WebSocket implements Connection_IConnection {
                 break;  // Недостаточно данных для заголовка
             }
 
-            $firstByte = ord($this->_buffer[$offset]);
-            $secondByte = ord($this->_buffer[$offset + 1]);
+            $firstByte = ord($buffer[$offset]);
+            $secondByte = ord($buffer[$offset + 1]);
 
             $opcode = $firstByte & 0x0F;
             $isMasked = ($secondByte & 0b10000000) !== 0;
@@ -213,13 +217,13 @@ class Connection_WebSocket implements Connection_IConnection {
                 if ($bufferLength - $offset < 4) {
                     break; // Недостаточно данных для заголовка с расширенной длиной
                 }
-                $payloadLength = unpack('n', substr($this->_buffer, $offset + 2, 2))[1];
+                $payloadLength = unpack('n', substr($buffer, $offset + 2, 2))[1];
                 $maskOffset = 4;
             } elseif ($payloadLength === 127) {
                 if ($bufferLength - $offset < 10) {
                     break; // Недостаточно данных для заголовка с расширенной длиной
                 }
-                $payloadLength = unpack('J', substr($this->_buffer, $offset + 2, 8))[1];
+                $payloadLength = unpack('J', substr($buffer, $offset + 2, 8))[1];
                 $maskOffset = 10;
             }
 
@@ -232,11 +236,11 @@ class Connection_WebSocket implements Connection_IConnection {
             // Если сообщение замаскировано — читаем маску
             $mask = '';
             if ($isMasked) {
-                $mask = substr($this->_buffer, $offset + $maskOffset, 4);
+                $mask = substr($buffer, $offset + $maskOffset, 4);
             }
 
             // Читаем полезную нагрузку
-            $payload = substr($this->_buffer, $offset + $maskOffset + ($isMasked ? 4 : 0), $payloadLength);
+            $payload = substr($buffer, $offset + $maskOffset + ($isMasked ? 4 : 0), $payloadLength);
 
             // Если сообщение замаскировано — дешифруем payload
             if ($isMasked) {
@@ -248,6 +252,7 @@ class Connection_WebSocket implements Connection_IConnection {
             }
 
             // Обработка опкодов
+            // @todo вместо того чтобы клеить массив сильно лучше вызывать методы обработки
             if ($opcode === 0x8) {
                 $messages[] = [self::_FRAME_CLOSED, $payload];
             } elseif ($opcode === 0xA) {
@@ -263,7 +268,7 @@ class Connection_WebSocket implements Connection_IConnection {
         }
 
         // Удаляем обработанные данные из буфера
-        $this->_buffer = substr($this->_buffer, $offset);
+        $this->_buffer = substr($buffer, $offset);
 
         return $messages;
     }
@@ -356,8 +361,6 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_path;
     private $_stream;
     private $_streamSelectTimeoutUS = 500000; // 500 ms by default
-    private $_tsPing = 0;
-    private $_tsPong = 0;
     private $_pingInterval = 1;
     private $_pongDeadline = 3;
     private $_buffer = '';
