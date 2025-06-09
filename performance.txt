@@ -489,6 +489,14 @@ network << самый быстрый, IGW тоже топ
 no-jit 0.0088250438247012	0.0080535	0.005574	0.033326 << монстр по сети
 jit    0.008585994011976	0.007398	0.005503	0.032228 << не особо меняет
 
+c8g.metal-24xl (arm, 96 vcpu)
+php 607 ms
+php +opcache 384 ms
+php +opcache +jit 76 ms (чуть быстрее из-за отсутсвия context switching)
+network
+no-jit  0.005952433	0.005753	0.004636	0.014024 << top of network and performance
+jit     0.005866824	0.005636	0.004512	0.015603
+
 c7gn.xlarge, c7g.xlarge (arm,  2.6Ghz, L-1M)
 php 655 ms
 php +opcache 435 ms, stable
@@ -499,6 +507,14 @@ jit 	0.012685706	0.0107155	0.007691	0.269821 делает чуть хуже?
 network c7g.xlarge
 no-jit  0.011913541	0.0101565	0.007481	0.036936 не похоже что чем-то отличется от c7gn
 jit     0.012632865	0.0106905	0.007413	0.285803 делает чуть хуже, но нет разницы с c7gn
+
+c7gn.metal (arm,  64 vcpu, 2.6Ghz, L-1M) - bare metal, без context-switching'a
+php 655 ms
+php +opcache 435 ms
+php +opcache +jit 88 ms << больше ядер никак не помогает php-процессу и это логично
+network
+no-jit 	0.008225013986014	0.007976	0.006318	0.020987 << а вот не bare-metal у меня нет context-switching и больше ядер, сеть стала быстрее на +37%
+jit     0.0079046816367265	0.0077845	0.006264	0.020894
 
 c6gn.xlarge (arm, 2.5 GHz)
 php 789 ms
