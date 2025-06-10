@@ -185,7 +185,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         }
 
         $this->_buffer .= $data;
-        $msgArray = $this->_decodeMessageArray();
+        $msgArray = $this->_decodeMessageArray(); // @todo inline method
 
         // если так окажется, то я что-то прочитал, но сообщение невозможно распарсить
         // то я делаю пустое сообщение как-будто я пришел по timeout,
@@ -194,6 +194,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         if (!$msgArray) {
             $msgArray[] = [self::_FRAME_SELECT_TIMEOUT, ''];
         }
+        // @todo direct calls, no arrays
         $this->_processMsgArray($ts, $msgArray);
     }
 
@@ -373,14 +374,20 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
             }
 
             // Обработка опкодов
-            if ($opcode === 0x8) {
-                $messages[] = [self::_FRAME_CLOSED, $payload];
-            } elseif ($opcode === 0xA) {
-                $messages[] = [self::_FRAME_PONG, $payload];
-            } elseif ($opcode === 0x9) {
-                $messages[] = [self::_FRAME_PING, $payload];
-            } else {
-                $messages[] = [self::_FRAME_DATA, $payload];
+            // @todo no array - direct calls
+            switch ($opcode) {
+                case 0x8:
+                    $messages[] = [self::_FRAME_CLOSED, $payload];
+                    break;
+                case 0x9:
+                    $messages[] = [self::_FRAME_PING, $payload];
+                    break;
+                case 0xA:
+                    $messages[] = [self::_FRAME_PONG, $payload];
+                    break;
+                default:
+                    $messages[] = [self::_FRAME_DATA, $payload];
+                    break;
             }
 
             // Сдвигаем указатель на следующий фрейм

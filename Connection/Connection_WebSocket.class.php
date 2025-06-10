@@ -253,14 +253,20 @@ class Connection_WebSocket implements Connection_IConnection {
 
             // Обработка опкодов
             // @todo вместо того чтобы клеить массив сильно лучше вызывать методы обработки
-            if ($opcode === 0x8) {
-                $messages[] = [self::_FRAME_CLOSED, $payload];
-            } elseif ($opcode === 0xA) {
-                $messages[] = [self::_FRAME_PONG, $payload];
-            } elseif ($opcode === 0x9) {
-                $messages[] = [self::_FRAME_PING, $payload];
-            } else {
-                $messages[] = [self::_FRAME_DATA, $payload];
+            // @todo deprecate consts
+            switch ($opcode) {
+                case 0x8:
+                    $messages[] = [self::_FRAME_CLOSED, $payload];
+                    break;
+                case 0x9:
+                    $messages[] = [self::_FRAME_PING, $payload];
+                    break;
+                case 0xA:
+                    $messages[] = [self::_FRAME_PONG, $payload];
+                    break;
+                default:
+                    $messages[] = [self::_FRAME_DATA, $payload];
+                    break;
             }
 
             // Сдвигаем указатель на следующий фрейм
