@@ -9,9 +9,10 @@ PHP 8.2.28 (cli) (built: Mar 13 2025 18:21:38) (NTS)
 Copyright (c) The PHP Group
 Zend Engine v4.2.28, Copyright (c) Zend Technologies with Zend OPcache v8.2.28, Copyright (c), by Zend Technologies
 
-opcache.enable_cli => Off => Off
-
-AWS EC2 c6gn.xlarge
+AWS EC2 c6gn.xlarge // c8g.xlarge
+Важная ремарка: в процессе тестов я менял сервер, но это всегда оставался ARM Gravition*.
+Важно смотреть не на абсолютное значение в ms (тем более оно на 1М итераций), а на соотношение одного способа к другому:
+так можно понять как писать надо/ненадо ради ультра-производительности.
 
 PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"
 NAME="Debian GNU/Linux"
@@ -32,6 +33,7 @@ VERSION_CODENAME=bookworm
   И если такого кода дофига - пиздец производительности, просто тратим силы на поиск переменных.
 - foreach сильно быстрее for
 - closure & lamda это ад
+- call trees не оптимизируются, никакого инлайнера внутри нет
 
 ==============================================================
 
