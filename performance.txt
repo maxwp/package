@@ -236,6 +236,24 @@ private function _test() {
 
 ==============================================================
 
+call tree inlining
+
+Кто-бы что-бы там не пиздел, php даже с jit не умеет инлайнить методы.
+Пример:
+Есть method1, который вызывает method2, который вызывает method3, и уже в method3 выполняется присваивание свойств.
+Больше методы нигде не юзаются, все в одном классе, просто по очереди дерево вызовов 1>2>3.
+В замерах я удалил время которое занимает сама логика присвоения, оставил только время цепочки call-вызовов.
+
+Тест на 1М вызовов:
+method 1 > 2 > 3 = 36 ms / 13.8 ms jit
+method 2 > 3 = 23.5 ms / 10 ms jit
+method 3 = 11 ms / 4 ms jit
+
+jit ускоряет, но не решает проблему полностью.
+Хочешь быстро - пиши простынями :)
+
+==============================================================
+
 foreach vs for:
 
 foreach быстрее for, $a это 100 элементов int 1
@@ -511,8 +529,8 @@ NB! шо opcache+jit это жопа с eval, если есть eval smarty - в
 Синтетический тест на вызовы методов и доступ к свойствам:
 php -f 1.php // 791 ms
 php -d opcache.enable=1 -d opcache.validate_timestamps=1 -d opcache.revalidate_freq=0 -d opcache.enable_cli=1 -f 1.php // 642 ms opcache only
-php -d opcache.enable=1 -d opcache.validate_timestamps=1 -d opcache.revalidate_freq=0 -d opcache.enable_cli=1 -d opcache.jit_buffer_size=100M -d opcache.jit=function -f  1.php // 244 ms
-php -d opcache.enable=1 -d opcache.validate_timestamps=1 -d opcache.revalidate_freq=0 -d opcache.enable_cli=1 -d opcache.jit_buffer_size=100M -d opcache.jit=tracing -f  1.php // 114 ms
+php -d opcache.enable=1 -d opcache.validate_timestamps=1 -d opcache.revalidate_freq=0 -d opcache.enable_cli=1 -d opcache.jit_buffer_size=100M -d opcache.jit=function -f 1.php // 244 ms
+php -d opcache.enable=1 -d opcache.validate_timestamps=1 -d opcache.revalidate_freq=0 -d opcache.enable_cli=1 -d opcache.jit_buffer_size=100M -d opcache.jit=tracing -f 1.php // 114 ms
 
 aws gn vs g сетевухи
 Если не использовать DPDK/Kernel-by-pass то нет никакой разницы между gn или g для реального подключения по ws/udp.
