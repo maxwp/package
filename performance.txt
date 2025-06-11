@@ -144,6 +144,111 @@ $this->_a[2] = $tmp[2];
 
 ==============================================================
 
+// по массивам очень странный результат: без jit лучше формировать сразу, а с jit по очереди
+// 128 ms // 111 ms jit
+return array(
+    'type' => $x,
+    'ts_push' => $x,
+    'datastream' => $x,
+    'pair' => $x,
+    'ts' => $x,
+    'te' => $x,
+    'sequence' => $x,
+    'ask' => $x,
+    'ask_size' => $x,
+    'ask_breakout' => $x,
+    'bid' => $x,
+    'bid_size' => $x,
+    'bid_breakout' => $x,
+);
+
+// 183 ms / 100 ms
+$a = [];
+$a['type'] = $x;
+$a['ts_push'] = $x;
+$a['datastream'] = $x;
+$a['pair'] = $x;
+$a['ts'] = $x;
+$a['te'] = $x;
+$a['sequence'] = $x;
+$a['ask'] = $x;
+$a['ask_size'] = $x;
+$a['ask_breakout'] = $x;
+$a['bid'] = $x;
+$a['bid_size'] = $x;
+$a['bid_breakout'] = $x;
+return $a;
+
+// 197 ms // 72 jit << самый медленный без jit, самый быстрый с jit
+$a = $this->_template;
+$a['type'] = $x;
+$a['ts_push'] = $x;
+$a['datastream'] = $x;
+$a['pair'] = $x;
+$a['ts'] = $x;
+$a['te'] = $x;
+$a['sequence'] = $x;
+$a['ask'] = $x;
+$a['ask_size'] = $x;
+$a['ask_breakout'] = $x;
+$a['bid'] = $x;
+$a['bid_size'] = $x;
+$a['bid_breakout'] = $x;
+return $a;
+
+где
+    private array $_template = [
+        'type' => null,
+        'ts_push' => null,
+        'datastream' => null,
+        'pair' => null,
+        'ts' => null,
+        'te' => null,
+        'sequence' => null,
+        'ask' => null,
+        'ask_size' => null,
+        'ask_breakout' => null,
+        'bid' => null,
+        'bid_size' => null,
+        'bid_breakout' => null,
+    ];
+
+// 157 ms // 130 ms jit
+$a = new Data();
+$a->type = $x;
+$a->ts_push = $x;
+$a->datastream = $x;
+$a->pair = $x;
+$a->ts = $x;
+$a->te = $x;
+$a->sequence = $x;
+$a->ask = $x;
+$a->ask_size = $x;
+$a->ask_breakout = $x;
+$a->bid = $x;
+$a->bid_size = $x;
+$a->bid_breakout = $x;
+return $a;
+
+// 210 ms // 180 ms << clone объектов это пиздец
+$a = clone $this->_templateData;
+$a->type = $x;
+$a->ts_push = $x;
+$a->datastream = $x;
+$a->pair = $x;
+$a->ts = $x;
+$a->te = $x;
+$a->sequence = $x;
+$a->ask = $x;
+$a->ask_size = $x;
+$a->ask_breakout = $x;
+$a->bid = $x;
+$a->bid_size = $x;
+$a->bid_breakout = $x;
+return $a;
+
+==============================================================
+
 вытягивание ключей из массива:
 
 когда пишем строчку типа $a['key1']['key2']['a'] - то ВСЕГДА происходит бинарный поиск по хеш-таблице массива.
