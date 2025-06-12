@@ -28,7 +28,7 @@ class EE_Routing implements EE_IRouting {
         foreach ($this->_routeArray as $murl => $className) {
             // так как preg-выражения долгие, то используем их только если на то есть повод
             $found = false;
-            if (substr_count($murl, '{')) {
+            if (str_contains($murl, '{')) {
                 $this->_callbackArray = array();
 
                 // убираем из URL'a все необязательные параметры вида [*]
@@ -52,7 +52,7 @@ class EE_Routing implements EE_IRouting {
                             // var_dump($name); // - это может быть регулярное выражение
                             // var_dump($value); // - значение
 
-                            if (substr_count($name, '{')) {
+                            if (strcasecmp($name, '{')) {
                                 $expression = "{$name}";
                                 // заменяем в URL'е все {*} конструкции на (.*?) и запоминаем порядок их следования
                                 $this->_callbackArray = array();

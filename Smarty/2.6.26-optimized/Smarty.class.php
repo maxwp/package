@@ -300,7 +300,7 @@ class Smarty {
         }
 
         // if no smarty
-        if (!substr_count($code, $this->left_delimiter)) {
+        if (!str_contains($code, $this->left_delimiter)) {
             return $code;
         }
 

@@ -54,7 +54,7 @@ class TextProcessor_ActionTextToHTML implements TextProcessor_IAction {
     }
 
     private function _hightlightContentCallback($content) {
-        if (substr_count($content[0], '">')) {
+        if (str_contains($content[0], '">')) {
             return $content[0];
         }
 
@@ -63,10 +63,10 @@ class TextProcessor_ActionTextToHTML implements TextProcessor_IAction {
         }
 
         $url = $content[0];
-        if (!substr_count($url, 'http://')
-        && !substr_count($url, 'https://')
-        && !substr_count($url, 'ftp://')
-        && !substr_count($url, 'ftps://')
+        if (!str_contains($url, 'http://')
+        && !str_contains($url, 'https://')
+        && !str_contains($url, 'ftp://')
+        && !str_contains($url, 'ftps://')
         ) {
             $url = 'http://'.$url;
         }
@@ -81,7 +81,7 @@ class TextProcessor_ActionTextToHTML implements TextProcessor_IAction {
     }
     
     private function _hightlightEmailCallback($content) {
-        if (substr_count($content[0], '">')) {
+        if (str_contains($content[0], '">')) {
             return $content[0];
         }
 

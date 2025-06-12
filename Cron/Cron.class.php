@@ -44,7 +44,7 @@ class Cron extends Pattern_ASingleton {
             if (!$pid) {
                 $pid = hash('fnv1a64', $command);
             }
-            if (!substr_count($pid, '.pid')) {
+            if (!str_contains($pid, '.pid')) {
                 $pid .= '.pid';
             }
 

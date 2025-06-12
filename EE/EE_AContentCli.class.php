@@ -70,7 +70,7 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
             if ($color) {
                 $this->printSGRStart($color);
             }
-            if (substr_count($format, '%')) {
+            if (str_contains($format, '%')) {
                 print sprintf($format, $s) . $eol;
             } else {
                 print sprintf('%1$' . $format, $s) . $eol;

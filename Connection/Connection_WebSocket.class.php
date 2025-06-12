@@ -65,8 +65,8 @@ class Connection_WebSocket implements Connection_IConnection {
 
             $msgArray = [];
             if ($num_changed_streams > 0) {
-                // так как тут всего один вызов _read без параметров, то jit его заинлайнит
-                // и переносить сюда код я не буду :)
+                // @todo даже jit не будет его инлайнить, шо делать?
+                // @todo получаем true/false
                 $msgArray = $this->_read();
             }
 
@@ -191,8 +191,7 @@ class Connection_WebSocket implements Connection_IConnection {
             throw new Exception("EOF reached: connection closed by remote host");
         }
 
-        $buffer = $this->_buffer; // вытягивание буфера в locals, так сильно быстрее
-        $buffer .= $data;
+        $buffer = $this->_buffer.$data; // вытягивание буфера в locals, так сильно быстрее; и дописывание его
 
         $messages = [];
         $offset = 0;

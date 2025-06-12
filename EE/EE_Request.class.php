@@ -104,7 +104,7 @@ class EE_Request implements EE_IRequest {
     protected function _setTotalUrl($url) {
         $temp = explode('?', $url);
         $this->_totalURL = $temp[0];
-        while (substr_count($this->_totalURL, '//')) {
+        while (str_contains($this->_totalURL, '//')) {
             $this->_totalURL = str_replace('//', '/', $this->_totalURL);
         }
         if (isset($temp[1])) {

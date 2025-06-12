@@ -54,7 +54,7 @@ class Cli {
 
     public static function Print_f($s, $format, $eol = ' ') {
         if (defined('EE_PRINT')) {
-            if (substr_count($format, '%')) {
+            if (str_contains($format, '%')) {
                 print sprintf($format, $s) . $eol;
             } else {
                 print sprintf('%1$' . $format, $s) . $eol;

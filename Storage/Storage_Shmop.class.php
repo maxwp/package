@@ -50,7 +50,7 @@ class Storage_Shmop implements Storage_IHandler {
         $sem->acquire();
         $string = (float) $memory->getString();
         $newValue = $string + $value;
-        $memory->setString($newValue.'');
+        $memory->setString((string)$newValue);
         $sem->release();
 
         return $newValue;

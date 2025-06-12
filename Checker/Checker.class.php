@@ -359,7 +359,7 @@ class Checker {
     public static function CheckImageFormat($filepath, $allowMIME = array(
         'image/gif', 'image/jpeg', 'image/png', 'image/pjpeg')) {
         $sizeArray = @getimagesize($filepath);
-        if (!$sizeArray && substr_count($filepath, 'https://')) {
+        if (!$sizeArray && str_contains($filepath, 'https://')) {
             $optionArray = array(
                 'ssl' => array(
                     'verify_peer' => false,

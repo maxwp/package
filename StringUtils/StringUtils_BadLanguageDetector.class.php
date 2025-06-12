@@ -67,7 +67,7 @@ class StringUtils_BadLanguageDetector {
         $result = array();
 
         $wordsArray = array();
-        if (substr_count($text, ' ')) {
+        if (str_contains($text, ' ')) {
             if (preg_match_all('/([\pL-]+)/uis', $text, $r)) {
                 $wordsArray = $r[1];
             }

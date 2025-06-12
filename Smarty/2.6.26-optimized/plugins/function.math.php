@@ -30,7 +30,7 @@ function smarty_function_math($params, &$smarty) {
     $equation = str_replace('`','',$params['equation']);
 
     // make sure parenthesis are balanced
-    if (substr_count($equation,"(") != substr_count($equation,")")) {
+    if (str_contains($equation,"(") != str_contains($equation,")")) {
         $smarty->trigger_error("math: unbalanced parenthesis");
         return;
     }

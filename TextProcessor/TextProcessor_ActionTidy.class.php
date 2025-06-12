@@ -36,13 +36,13 @@ class TextProcessor_ActionTidy implements TextProcessor_IAction {
      */
     public function process($text) {
         $tidy = tidy_parse_string(
-        $text,
-        $this->_compressConfig,
-        'UTF8'
+            $text,
+            $this->_compressConfig,
+            'UTF8'
         );
 
         $tidy->cleanRepair();
-        return $tidy.'';
+        return (string) $tidy;
     }
 
     private $_compressConfig;

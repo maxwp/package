@@ -2,7 +2,7 @@
 class File {
 
     public function __construct($path) {
-        if (substr_count($path, '://')) {
+        if (str_contains($path, '://')) {
             throw new File_Exception("Invalid file path $path");
         }
         $this->_path = $path;

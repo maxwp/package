@@ -31,7 +31,7 @@ class TextProcessor_ActionIconv implements TextProcessor_IAction {
      * @return string
      */
 	public function process($text) {
-        return iconv($this->_from, $this->_to, $text.'');
+        return iconv($this->_from, $this->_to, (string) $text);
 	}
 
 	private $_from;
