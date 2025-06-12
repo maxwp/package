@@ -71,21 +71,26 @@ class Connection_WebSocket implements Connection_IConnection {
 
             $called = false;
             if ($num_changed_streams > 0) {
-                $data = fread($stream, 4096); // @todo drain
+                for ($drainIter = 0; $drainIter < 10; $drainIter++) {
+                    $data = fread($stream, 4096);
 
-                if ($data === false) {
-                    // в неблокирующем режиме если данных нет - то будет string ''
-                    // а если false - то это ошибка чтения
-                    // например, PHP Warning: fread(): SSL: Connection reset by peer
-                    $errorString = error_get_last()['message'];
-                    throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
-                } elseif ($data === '' && feof($stream)) {
-                    // Если fread вернул пустую строку, проверяем, достигнут ли EOF
-                    $this->disconnect();
-                    throw new Exception('EOF: connection closed by remote host');
+                    if ($data === false) {
+                        // в неблокирующем режиме если данных нет - то будет string ''
+                        // а если false - то это ошибка чтения
+                        // например, PHP Warning: fread(): SSL: Connection reset by peer
+                        $errorString = error_get_last()['message'];
+                        throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
+                    } elseif ($data === '' && feof($stream)) {
+                        // Если fread вернул пустую строку, проверяем, достигнут ли EOF
+                        $this->disconnect();
+                        throw new Exception('EOF: connection closed by remote host');
+                    } elseif ($data === '') {
+                        // больше нет данных — выходим из drain
+                        break;
+                    }
+
+                    $buffer .= $data; // дописывание в буфер
                 }
-
-                $buffer .= $data; // дописывание в буфер
 
                 $offset = 0;
                 $bufferLength = strlen($buffer);
