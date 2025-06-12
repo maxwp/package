@@ -19,7 +19,7 @@ class StreamLoop {
         // event loop
         while (1) {
             // @todo тройное равно сделает хуже
-            if ($this->_loopRunning === false) {
+            if ($this->_loopRunning === false) { // @todo locals
                 break;
             }
 
@@ -35,7 +35,7 @@ class StreamLoop {
 
             $ok = false;
             foreach ($this->_handlerArray as $handler) {
-                $streamID = (int) $handler->stream;
+                $streamID = (int) $handler->stream; // @todo locals
                 if (!$streamID) {
                     continue;
                 }
@@ -44,13 +44,13 @@ class StreamLoop {
                 // вот тут у handler'a я могу спросить до какого времени ты хочешь timeout
                 // он может вернуть 0, то есть ему насрать и он не хочет таймаут
                 if ($handler->timeoutTo > 0) {
-                    $timeoutToArray[] = $handler->timeoutTo;
+                    $timeoutToArray[] = $handler->timeoutTo; // @todo locals
                 }
 
                 // handler будет выдавать stream только в том случае, если он что-то ждет
                 // и будет указыват что именно ждет этот stream
                 if ($handler->flagRead) {
-                    $r[] = $handler->stream;
+                    $r[] = $handler->stream; // @todo locals
                     $ok = true;
                 }
                 if ($handler->flagWrite) {
@@ -65,23 +65,22 @@ class StreamLoop {
 
             // если ничего нет - пауза на тот же тайм-аут
             if (!$ok) {
-                usleep($this->_streamSelectTimeoutUS);
+                usleep($this->_streamSelectTimeoutUS); // @todo locals
                 continue;
             }
 
             // вот тут определить сколько us до ближайшего timeout'a
             // а также учитывать глобальный timeout loop'a
-            $timeoutToArray[] = $tsNow + $this->_streamSelectTimeoutUS / 1_000_000;
+            $timeoutToArray[] = $tsNow + $this->_streamSelectTimeoutUS / 1_000_000; // @todo locals
             $timeout = min($timeoutToArray) - $tsNow;
             if ($timeout <= 0) {
                 $timeout = 0;
+                // при timeout == 0 мне надо вызывать select потому что надо понять в каких потоках шо есть
             }
-
-            // @todo if timeout == 0 - то не вызывать select?
 
             $result = stream_select($r, $w, $e, 0, $timeout * 1_000_000);
             if ($result === false) {
-                throw new StreamLoop_Exception("stream_select failed");
+                throw new StreamLoop_Exception('stream_select failed');
             }
 
             $callArray = [];

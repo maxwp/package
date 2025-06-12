@@ -40,7 +40,7 @@ class Connection_WebSocket implements Connection_IConnection {
 
                 $tsPing = $time;
                 // дедлайн до которого должен прийти pong
-                $tsPong = $time + $this->_pongDeadline;
+                $tsPong = $time + $this->_pongDeadline; // @todo locals
             }
 
             if ($tsPong > 0 && $time > $tsPong) {
@@ -71,7 +71,7 @@ class Connection_WebSocket implements Connection_IConnection {
 
             $called = false;
             if ($num_changed_streams > 0) {
-                $data = fread($stream, 4096);
+                $data = fread($stream, 4096); // @todo drain
 
                 if ($data === false) {
                     // в неблокирующем режиме если данных нет - то будет string ''

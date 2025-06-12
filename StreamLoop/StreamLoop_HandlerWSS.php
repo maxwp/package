@@ -57,7 +57,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     }
 
     public function readyRead() {
-        $this->_checkEOF();
+        $this->_checkEOF(); // @todo перенести в методы, потому что в _checkRead уже есть проверка на EOF
 
         switch ($this->_state) {
             case self::_STATE_HANDSHAKE:
@@ -67,7 +67,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
                 $ts = microtime(true);
                 $this->timeoutTo = $ts + $this->_selectTimeout;
                 $this->_checkPingPong($ts);
-                $this->_checkRead();
+                $this->_checkRead(); // @todo inline here
                 return;
             case self::_STATE_WAITING_FOR_UPGRADE:
                 $this->_checkUpgrade();
@@ -139,6 +139,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         $ts = microtime(true);
         $this->timeoutTo = $ts + $this->_selectTimeout;
 
+        // @todo говно
         $msgArray = [];
         $msgArray[] = [self::_FRAME_SELECT_TIMEOUT, ''];
         $this->_processMsgArray($ts, $msgArray);
@@ -167,7 +168,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     }
 
     private function _checkRead() {
-        $data = fread($this->stream, 2000);
+        $data = fread($this->stream, 4096); // @todo 4K + drain
         $ts = microtime(true);
 
         // в неблокирующем режиме если данных нет - то будет string ''
@@ -205,6 +206,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
 
             switch ($msgType) {
                 case self::_FRAME_PING:
+                    // @todo debugs
                     Cli::Print_n("Connection_WebSocket: received iframe-ping $msgData");
                     $this->_sendPongFrame($msgData);
                     break;
@@ -251,9 +253,9 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     }
 
     private function _checkUpgrade() {
-        $line = fgets($this->stream, 2048);
+        $line = fgets($this->stream, 4096);
         if ($line !== false) {
-            $this->_buffer .= $line;
+            $this->_buffer .= $line; // @todo locals
             // пустая строка — конец блока заголовков
             if ($line == "\r\n" || $line == "\n") {
                 if (strpos($this->_buffer, '101 Switching Protocols') === false) {
@@ -277,8 +279,6 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
 
                 $this->_tsPing = 0;
                 $this->_tsPong = 0;
-
-                return;
             }
         }
     }
@@ -318,7 +318,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     private function _decodeMessageArray() {
         $messages = [];
         $offset = 0;
-        $bufferLength = strlen($this->_buffer); // @todo bufer to locals
+        $bufferLength = strlen($this->_buffer); // @todo buffer to locals
 
         while ($offset < $bufferLength) {
             // Минимальный заголовок — 2 байта
@@ -405,12 +405,12 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         fwrite($this->stream, $data);
     }
 
-    private function _sendPingFrame($payload = '') {
+    private function _sendPingFrame($payload = '') { // @todo inline it
         $encodedPing = $this->_encodeWebSocketMessage($payload, 9);
         fwrite($this->stream, $encodedPing);
     }
 
-    private function _sendPongFrame($payload = '') {
+    private function _sendPongFrame($payload = '') { // @todo inline it
         $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA);
         fwrite($this->stream, $encodedPong);
     }

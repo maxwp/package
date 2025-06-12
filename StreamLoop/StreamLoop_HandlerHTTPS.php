@@ -72,7 +72,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     public function readyRead() {
-        $this->_checkEOF();
+        $this->_checkEOF(); // @todo перенести в методы бо двойная проверка в read
 
         switch ($this->_state) {
             case self::_STATE_HANDSHAKE:
@@ -115,15 +115,13 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     public function readyExcept() {
-        $this->_checkEOF();
+        $this->_checkEOF(); // тут оставить как есть, потому что state machine не покрывает все косяки
 
         if ($this->_state == self::_STATE_HANDSHAKE) {
             $this->_checkHandshake();
             return;
         }
     }
-
-    // @todo malloc fix
 
     public function readySelectTimeout() {
         if ($this->_activeRequest && !empty($this->_activeRequest['timeout'])) {
@@ -234,9 +232,9 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     private function _checkResponseHeaders() {
-        $line = fgets($this->stream, 2048);
+        $line = fgets($this->stream, 2048); // @todo 4Kb
         if ($line !== false) {
-            $this->_buffer .= $line;
+            $this->_buffer .= $line; // @todo lo locals
             // пустая строка — конец блока заголовков
             if ($line == "\r\n" || $line == "\n") {
                 // разбираем заголовки в ассоц. массив
@@ -251,7 +249,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 $this->_statusMessage = isset($statusParts[2]) ? (string)$statusParts[2] : null;
 
                 $this->_headerArray = [];
-                for ($i = 1, $n = count($lines); $i < $n; $i++) {
+                for ($i = 1, $n = count($lines); $i < $n; $i++) { // @todo лажа
                     // Пропускаем пустые строки (например, если что-то пошло не так)
                     if ($lines[$i] === '') {
                         continue;
@@ -281,9 +279,11 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
     private function _checkResponseBody() {
         if (isset($this->_headerArray['content-length'])) {
+            // @todo buffer to locals
+
             // ровно N байт
             $length = (int)$this->_headerArray['content-length'];
-            $chunk = fread($this->stream, 8192);
+            $chunk = fread($this->stream, 8192); // @todo drain?
 
             if ($chunk !== false && $chunk !== '') {
                 $this->_buffer .= $chunk;
@@ -308,7 +308,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                     $this->_buffer
                 );
 
-                $this->_updateState(self::_STATE_READY, false, false, false, false);
+                $this->_updateState(self::_STATE_READY, false, false, false);
                 $this->_reset();
                 $this->_checkRequestQue();
             }
@@ -342,6 +342,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                             $this->_headerArray,
                             $this->_buffer
                         );
+
                         // сбрасываем state
                         $this->_updateState(self::_STATE_READY, false, false, false, false);
                         $this->_buffer = '';
