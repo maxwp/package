@@ -214,7 +214,7 @@ class Connection_WebSocket implements Connection_IConnection {
 
             if (!$called) {
                 try {
-                    $callback($ts, false); // @todo fucking Closure
+                    $callback(microtime(true), false); // @todo fucking Closure
                 } catch (Exception $userException) {
                     $this->disconnect();
                     throw $userException;
