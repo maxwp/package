@@ -22,16 +22,22 @@ class Connection_WebSocket implements Connection_IConnection {
         $tsPing = 0;
         $tsPong = 0;
 
-        $streamSelectTimeoutUS = $this->_streamSelectTimeoutUS; // вытягивание в locals
+        // вытягивание в locals
+        $stream = $this->_stream;
+        $streamSelectTimeoutUS = $this->_streamSelectTimeoutUS;
+        $pingInterval = $this->_pingInterval;
+        $buffer = '';
 
-        stream_set_blocking($this->_stream, false);
+        stream_set_blocking($stream, false);
 
         while (true) {
             $time = microtime(true);
 
             // auto ping frame
-            if ($time - $tsPing >= $this->_pingInterval) {
-                $this->_sendPingFrame();
+            if ($time - $tsPing >= $pingInterval) {
+                $encodedPing = $this->_encodeWebSocketMessage('', 9);
+                fwrite($stream, $encodedPing);
+
                 $tsPing = $time;
                 // дедлайн до которого должен прийти pong
                 $tsPong = $time + $this->_pongDeadline;
@@ -45,9 +51,9 @@ class Connection_WebSocket implements Connection_IConnection {
                 throw new Connection_Exception("Connection_WebSocket: no iframe-pong - exit");
             }
 
-            $read = [$this->_stream];
+            $read = [$stream];
             $write = null;
-            $except = [$this->_stream];
+            $except = [$stream];
 
             $num_changed_streams = stream_select($read, $write, $except, 0, $streamSelectTimeoutUS);
 
@@ -65,25 +71,22 @@ class Connection_WebSocket implements Connection_IConnection {
 
             $called = false;
             if ($num_changed_streams > 0) {
-                $data = fread($this->_stream, 4096);
+                $data = fread($stream, 4096);
 
-                // в неблокирующем режиме если данных нет - то будет string ''
-                // а если false - то это ошибка чтения
-                // например, PHP Warning: fread(): SSL: Connection reset by peer
                 if ($data === false) {
+                    // в неблокирующем режиме если данных нет - то будет string ''
+                    // а если false - то это ошибка чтения
+                    // например, PHP Warning: fread(): SSL: Connection reset by peer
                     $errorString = error_get_last()['message'];
                     throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
-                }
-
-                // Если fread вернул пустую строку, проверяем, достигнут ли EOF
-                if ($data === '' && feof($this->_stream)) {
+                } elseif ($data === '' && feof($stream)) {
+                    // Если fread вернул пустую строку, проверяем, достигнут ли EOF
                     $this->disconnect();
                     throw new Exception('EOF: connection closed by remote host');
                 }
 
-                $buffer = $this->_buffer.$data; // вытягивание буфера в locals - так сильно быстрее; и дописывание в него буфер
+                $buffer .= $data; // дописывание в буфер
 
-                $messages = [];
                 $offset = 0;
                 $bufferLength = strlen($buffer);
 
@@ -166,7 +169,8 @@ class Connection_WebSocket implements Connection_IConnection {
                                 throw $userException;
                             }
 
-                            $this->_sendPongFrame($payload);
+                            $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA);
+                            fwrite($stream, $encodedPong);
                             $called = true;
                             break;
                         case 0xA:
@@ -205,7 +209,7 @@ class Connection_WebSocket implements Connection_IConnection {
                 }
 
                 // Удаляем обработанные данные из буфера
-                $this->_buffer = substr($buffer, $offset);
+                $buffer = substr($buffer, $offset);
             }
 
             if (!$called) {
@@ -285,16 +289,6 @@ class Connection_WebSocket implements Connection_IConnection {
         return $this->_stream;
     }
 
-    private function _sendPingFrame($payload = '') {
-        $encodedPing = $this->_encodeWebSocketMessage($payload, 9);
-        fwrite($this->_stream, $encodedPing);
-    }
-
-    private function _sendPongFrame($payload = '') {
-        $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA);
-        fwrite($this->_stream, $encodedPong);
-    }
-
     /**
      * Функция для кодирования сообщений с маскировкой в WebSocket Frame
      *
@@ -354,6 +348,5 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_streamSelectTimeoutUS = 500000; // 500 ms by default
     private $_pingInterval = 1;
     private $_pongDeadline = 3;
-    private $_buffer = '';
 
 }
