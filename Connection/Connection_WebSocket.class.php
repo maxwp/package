@@ -234,14 +234,14 @@ class Connection_WebSocket implements Connection_IConnection {
 
             if (count($performanceArray) >= 1000) {
                 # debug:start
-                print "Connection_WebSocket: performance ".(Array_Static::Avg($performanceArray) * 1000)." ms\n";
+                print "Connection_WebSocket: performance select>callback ".(Array_Static::Avg($performanceArray) * 1000)." ms\n";
                 # debug:end
                 $performanceArray = [];
             }
 
             if (count($performanceReadArray) >= 1000) {
                 # debug:start
-                print "Connection_WebSocket: read ".(Array_Static::Avg($performanceReadArray) * 1000)." ms\n";
+                print "Connection_WebSocket: performance read $readFrameLength f ".(Array_Static::Avg($performanceReadArray) * 1000)." ms\n";
                 # debug:end
                 $performanceReadArray = [];
             }

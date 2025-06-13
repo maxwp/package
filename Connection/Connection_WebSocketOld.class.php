@@ -28,6 +28,9 @@ class Connection_WebSocketOld implements Connection_IConnection {
 
         stream_set_blocking($this->_stream, false);
 
+        $performanceArray = [];
+        $performanceReadArray = [];
+
         while (true) {
             $time = microtime(true);
 
@@ -52,6 +55,7 @@ class Connection_WebSocketOld implements Connection_IConnection {
             $except = [$this->_stream];
 
             $num_changed_streams = stream_select($read, $write, $except, 0, $streamSelectTimeoutUS);
+            $tsSelect = microtime(true);
 
             // согласно документации false может прилететь из-за system interrupt call
             if ($num_changed_streams === false) {
@@ -81,6 +85,7 @@ class Connection_WebSocketOld implements Connection_IConnection {
             // потому что может быть момент, что я запросил время сразу после stream_select(), а затем
             // fread() считал больше данных чем я ожидал - и тогда будет казаться что данные пришли из будущего.
             $ts = microtime(true);
+            $performanceArray[] = $ts - $tsSelect;
 
             foreach ($msgArray as $msg) {
                 $msgType = $msg[0];
@@ -127,6 +132,20 @@ class Connection_WebSocketOld implements Connection_IConnection {
                     default:
                         throw new Connection_Exception("WebSocket type $msgType not implemented");
                 }
+            }
+
+            if (count($performanceArray) >= 1000) {
+                # debug:start
+                print "Connection_WebSocket: performance select>callback ".(Array_Static::Avg($performanceArray) * 1000)." ms\n";
+                # debug:end
+                $performanceArray = [];
+            }
+
+            if (count($performanceReadArray) >= 1000) {
+                # debug:start
+                print "Connection_WebSocket: performance read 2000 f ".(Array_Static::Avg($performanceReadArray) * 1000)." ms\n";
+                # debug:end
+                $performanceReadArray = [];
             }
         }
 
