@@ -30,6 +30,7 @@ class Connection_WebSocket implements Connection_IConnection {
         $readFrameLength = $this->_readFrameLength;
         $buffer = '';
         $performanceArray = [];
+        $performanceReadArray = [];
 
         stream_set_blocking($stream, false);
 
@@ -78,7 +79,9 @@ class Connection_WebSocket implements Connection_IConnection {
                 // поэтому оптимальная история это короткой фрейм в 256 байт (под размер сообщения) и быстрая реакция на него,
                 // иначе парсинг занимает дофига времени - буфер должен быть коротким
                 // @todo dynamic drain + parse-msg in one loop?
+                $tsReadStart = microtime(true);
                 $data = fread($stream, $readFrameLength);
+                $performanceReadArray[] = microtime(true) - $tsReadStart;
 
                 if ($data === false) {
                     // в неблокирующем режиме если данных нет - то будет string ''
@@ -234,6 +237,13 @@ class Connection_WebSocket implements Connection_IConnection {
                 print "Connection_WebSocket: performance ".(Array_Static::Avg($performanceArray) * 1000)." ms\n";
                 # debug:end
                 $performanceArray = [];
+            }
+
+            if (count($performanceReadArray) >= 1000) {
+                # debug:start
+                print "Connection_WebSocket: read ".(Array_Static::Avg($performanceReadArray) * 1000)." ms\n";
+                # debug:end
+                $performanceReadArray = [];
             }
         }
 
