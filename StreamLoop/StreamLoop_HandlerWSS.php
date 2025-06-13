@@ -43,6 +43,11 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
             throw new StreamLoop_Exception("TCP connect failed immediately: $errstr ($errno)");
         }
 
+        // Устанавливаем буфер до начала SSL
+        $socket = socket_import_stream($this->stream);
+        socket_set_option($socket, SOL_SOCKET, SO_RCVBUF, 4 * 1024 * 1024);
+        socket_set_option($socket, SOL_SOCKET, SO_SNDBUF, 4 * 1024 * 1024);
+
         stream_set_blocking($this->stream, false);
 
         // отключаем буферизацию php

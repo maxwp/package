@@ -241,7 +241,7 @@ class Connection_WebSocket implements Connection_IConnection {
     }
 
     public function connect() {
-        $context = stream_context_create([
+        /*$context = stream_context_create([
             'socket' => [
                 'tcp_nodelay' => true,  // no Nagle algorithm
             ],
@@ -262,10 +262,38 @@ class Connection_WebSocket implements Connection_IConnection {
             throw new Connection_Exception("Failed to connect to {$this->_host}:{$this->_port} - $errstr ($errno)");
         }
 
-        // socket_set_option($this->_socket, SOL_SOCKET, $type, $value)
-        //$this->setSocketOption(SO_RCVBUF, 50 * 1024 * 1024);
-
         // отключаем буферизацию php
+        stream_set_read_buffer($this->_stream, 0);
+        stream_set_write_buffer($this->_stream, 0);*/
+
+        $context = stream_context_create([
+            'socket' => [
+                'tcp_nodelay' => true,  // no Nagle algorithm
+            ],
+            'ssl' => array(
+                'peer_name' => $this->_host,
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ),
+        ]);
+
+        $connectHost = $this->_ip ?: $this->_host;
+
+        $this->_stream = stream_socket_client("tcp://{$connectHost}:{$this->_port}", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context);
+        if (!$this->_stream) {
+            throw new Connection_Exception("Failed to connect to {$this->_host}:{$this->_port} - $errstr ($errno)");
+        }
+
+        // Устанавливаем буфер до начала SSL
+        $socket = socket_import_stream($this->_stream);
+        socket_set_option($socket, SOL_SOCKET, SO_RCVBUF, 4 * 1024 * 1024);
+        socket_set_option($socket, SOL_SOCKET, SO_SNDBUF, 4 * 1024 * 1024);
+
+        // SSL поверх TCP
+        if (!stream_socket_enable_crypto($this->_stream, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+            throw new Connection_Exception("Failed to setup SSL");
+        }
+
         stream_set_read_buffer($this->_stream, 0);
         stream_set_write_buffer($this->_stream, 0);
 
