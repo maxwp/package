@@ -29,6 +29,7 @@ class Connection_WebSocket implements Connection_IConnection {
         $pongDeadline = $this->_pongDeadline;
         $readFrameLength = $this->_readFrameLength;
         $buffer = '';
+        $performanceArray = [];
 
         stream_set_blocking($stream, false);
 
@@ -58,6 +59,7 @@ class Connection_WebSocket implements Connection_IConnection {
             $except = [$stream];
 
             $num_changed_streams = stream_select($read, $write, $except, 0, $streamSelectTimeoutUS);
+            $tsSelect = microtime(true);
 
             // согласно документации false может прилететь из-за system interrupt call
             if ($num_changed_streams === false) {
@@ -75,6 +77,7 @@ class Connection_WebSocket implements Connection_IConnection {
                 // важно: тут нельзя делать drain: потому что пока я вычитываю данные - я их не паршу и не реагирую,
                 // поэтому оптимальная история это короткой фрейм в 256 байт (под размер сообщения) и быстрая реакция на него,
                 // иначе парсинг занимает дофига времени - буфер должен быть коротким
+                // @todo dynamic drain + parse-msg in one loop?
                 $data = fread($stream, $readFrameLength);
 
                 if ($data === false) {
@@ -147,10 +150,11 @@ class Connection_WebSocket implements Connection_IConnection {
                         $payload = $unmaskedPayload;
                     }
 
-                    // супер важный момент: время надо получать после того, как я считаю данные.
+                    // супер важный момент: время надо получать после того, как я счтал данные и разобрал их.
                     // потому что может быть момент, что я запросил время сразу после stream_select(), а затем
                     // fread() считал больше данных чем я ожидал - и тогда будет казаться что данные пришли из будущего.
                     $ts = microtime(true);
+                    $performanceArray[] = $ts - $tsSelect;
 
                     // Обработка опкодов
                     switch ($opcode) {
@@ -173,7 +177,7 @@ class Connection_WebSocket implements Connection_IConnection {
                                 throw $userException;
                             }
 
-                            $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA);
+                            $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA); // @todo inline it
                             fwrite($stream, $encodedPong);
                             $called = true;
                             break;
@@ -224,6 +228,13 @@ class Connection_WebSocket implements Connection_IConnection {
                     throw $userException;
                 }
             }
+
+            if (count($performanceArray) >= 1000) {
+                # debug:start
+                print "Connection_WebSocket: performance ".(Array_Static::Avg($performanceArray) * 1000)." ms\n";
+                # debug:end
+                $performanceArray = [];
+            }
         }
 
         // теоретически я сюда никогда не дойду, ну да ладно
@@ -251,6 +262,9 @@ class Connection_WebSocket implements Connection_IConnection {
         if (!$this->_stream) {
             throw new Connection_Exception("Failed to connect to {$this->_host}:{$this->_port} - $errstr ($errno)");
         }
+
+        // socket_set_option($this->_socket, SOL_SOCKET, $type, $value)
+        //$this->setSocketOption(SO_RCVBUF, 50 * 1024 * 1024);
 
         // отключаем буферизацию php
         stream_set_read_buffer($this->_stream, 0);
