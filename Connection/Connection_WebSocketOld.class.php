@@ -85,11 +85,12 @@ class Connection_WebSocketOld implements Connection_IConnection {
             // потому что может быть момент, что я запросил время сразу после stream_select(), а затем
             // fread() считал больше данных чем я ожидал - и тогда будет казаться что данные пришли из будущего.
             $ts = microtime(true);
-            $performanceArray[] = $ts - $tsSelect;
 
             foreach ($msgArray as $msg) {
                 $msgType = $msg[0];
                 $msgData = $msg[1];
+
+                $performanceArray[] = $ts - $tsSelect;
 
                 switch ($msgType) {
                     case self::_FRAME_PING:
@@ -143,7 +144,7 @@ class Connection_WebSocketOld implements Connection_IConnection {
 
             if (count($performanceReadArray) >= 1000) {
                 # debug:start
-                print "Connection_WebSocket: performance read 2000 f ".(Array_Static::Avg($performanceReadArray) * 1000)." ms\n";
+                print "Connection_WebSocket: performance read 2000 ".(Array_Static::Avg($performanceReadArray) * 1000)." ms\n";
                 # debug:end
                 $performanceReadArray = [];
             }
