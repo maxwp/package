@@ -93,6 +93,8 @@ class Connection_SocketUDP implements Connection_IConnection {
         $fromPort = 0;
 
         while (1) {
+            // @todo drain flag
+
             $bytes = socket_recvfrom(
                 $this->_socket, // @todo вытянуть сокет в локальную?
                 $buf,
