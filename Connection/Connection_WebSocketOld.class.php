@@ -84,12 +84,13 @@ class Connection_WebSocketOld implements Connection_IConnection {
             // супер важный момент: время надо получать после того, как я считаю данные.
             // потому что может быть момент, что я запросил время сразу после stream_select(), а затем
             // fread() считал больше данных чем я ожидал - и тогда будет казаться что данные пришли из будущего.
-            $ts = microtime(true);
+            //$ts = microtime(true);
 
             foreach ($msgArray as $msg) {
                 $msgType = $msg[0];
                 $msgData = $msg[1];
 
+                $ts = microtime(true);
                 $performanceArray[] = $ts - $tsSelect;
 
                 switch ($msgType) {
