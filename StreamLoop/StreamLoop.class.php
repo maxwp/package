@@ -16,10 +16,13 @@ class StreamLoop {
 
         $this->_loopRunning = true;
 
+        // to locals
+        $streamSelectTimeoutUS = $this->_streamSelectTimeoutUS;
+
         // event loop
         while (1) {
-            // @todo тройное равно сделает хуже
-            if ($this->_loopRunning === false) { // @todo locals
+            // тут я не могу вынести в locals, потому что цикл могут остановить с наружи
+            if (!$this->_loopRunning) {
                 break;
             }
 
@@ -35,7 +38,8 @@ class StreamLoop {
 
             $ok = false;
             foreach ($this->_handlerArray as $handler) {
-                $streamID = (int) $handler->stream; // @todo locals
+                $stream = $handler->stream;
+                $streamID = (int) $stream; // @todo streamID спрашивать у handler, не типизировать постоянно
                 if (!$streamID) {
                     continue;
                 }
@@ -43,35 +47,36 @@ class StreamLoop {
 
                 // вот тут у handler'a я могу спросить до какого времени ты хочешь timeout
                 // он может вернуть 0, то есть ему насрать и он не хочет таймаут
-                if ($handler->timeoutTo > 0) {
-                    $timeoutToArray[] = $handler->timeoutTo; // @todo locals
+                $timeoutTo = $handler->timeoutTo; // to locals
+                if ($timeoutTo > 0) {
+                    $timeoutToArray[] = $timeoutTo;
                 }
 
                 // handler будет выдавать stream только в том случае, если он что-то ждет
                 // и будет указыват что именно ждет этот stream
                 if ($handler->flagRead) {
-                    $r[] = $handler->stream; // @todo locals
+                    $r[] = $stream;
                     $ok = true;
                 }
                 if ($handler->flagWrite) {
-                    $w[] = $handler->stream;
+                    $w[] = $stream;
                     $ok = true;
                 }
                 if ($handler->flagExcept) {
-                    $e[] = $handler->stream;
+                    $e[] = $stream;
                     $ok = true;
                 }
             }
 
             // если ничего нет - пауза на тот же тайм-аут
             if (!$ok) {
-                usleep($this->_streamSelectTimeoutUS); // @todo locals
+                usleep($streamSelectTimeoutUS);
                 continue;
             }
 
             // вот тут определить сколько us до ближайшего timeout'a
             // а также учитывать глобальный timeout loop'a
-            $timeoutToArray[] = $tsNow + $this->_streamSelectTimeoutUS / 1_000_000; // @todo locals
+            $timeoutToArray[] = $tsNow + $streamSelectTimeoutUS / 1_000_000;
             $timeout = min($timeoutToArray) - $tsNow;
             if ($timeout <= 0) {
                 $timeout = 0;
