@@ -72,12 +72,8 @@ class Connection_WebSocket implements Connection_IConnection {
 
             $called = false;
             if ($num_changed_streams > 0) {
-                // по результатам экспериментов короткие фреймы сильно удобнее: быстрее парсинг,
-                // меньше накопление в сокетах, короче пусть от select до callback (хотя это под вопросом).
-                // Сам fread реально быстрее для короткого буфера - 0.002 ms for 200 bytes, 0.006 ms for 2000 bytes.
-                // Поэтому я читаю короткой буфер, но если пришло полный $readFrameLength - читаю второй круг, аля drain.
-                // Так я экономлю вызов select и пропуск кода аж до этой точки.
-                // @todo dynamic drain + parse-msg in one loop?
+                // dynamic drain: если еще что-то осталось - увеличиваем буфер и читаем еще раз
+                // это сильно экономит вызовы stream_select
                 for ($drainIndex = 1; $drainIndex <= 10; $drainIndex++) {
                     $data = fread($stream, $readFrameLength * $drainIndex);
 
@@ -373,6 +369,6 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_streamSelectTimeoutUS = 500000; // 500 ms by default
     private $_pingInterval = 1;
     private $_pongDeadline = 3;
-    private $_readFrameLength = 256;
+    private $_readFrameLength = 512;
 
 }

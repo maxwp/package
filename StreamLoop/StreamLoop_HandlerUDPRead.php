@@ -47,9 +47,13 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
         $found = false;
 
-        for ($j = 1; $j <= $this->_drainLimit; $j++) {
+        // to locals
+        $socket = $this->_socket;
+        $drainLimit = $this->_drainLimit;
+
+        for ($j = 1; $j <= $drainLimit; $j++) {
             $bytes = socket_recvfrom(
-                $this->_socket, // @todo вытянуть сокет в локальную?
+                $socket,
                 $buffer,
                 1024,
                 MSG_DONTWAIT,
@@ -61,7 +65,7 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
                 // end of drain
                 break;
             } else {
-                // @todo теоретически можно поменять на какую-то другую структуру, а не массив
+                // @todo теоретически можно поменять на какую-то другую структуру, а не массив - потому что его тяжело клеить
                 // потому что дальше revert loop и он херовый
                 $messageArray[] = [$buffer, $fromAddress, $fromPort];
                 $found = true;
