@@ -27,6 +27,7 @@ class Connection_WebSocket implements Connection_IConnection {
         $streamSelectTimeoutUS = $this->_streamSelectTimeoutUS;
         $pingInterval = $this->_pingInterval;
         $pongDeadline = $this->_pongDeadline;
+        $readFrameLength = $this->_readFrameLength;
         $buffer = '';
 
         stream_set_blocking($stream, false);
@@ -71,26 +72,24 @@ class Connection_WebSocket implements Connection_IConnection {
 
             $called = false;
             if ($num_changed_streams > 0) {
-                for ($drainIter = 0; $drainIter < 10; $drainIter++) {
-                    $data = fread($stream, 4096);
+                // важно: тут нельзя делать drain: потому что пока я вычитываю данные - я их не паршу и не реагирую,
+                // поэтому оптимальная история это короткой фрейм в 256 байт (под размер сообщения) и быстрая реакция на него,
+                // иначе парсинг занимает дофига времени - буфер должен быть коротким
+                $data = fread($stream, $readFrameLength);
 
-                    if ($data === false) {
-                        // в неблокирующем режиме если данных нет - то будет string ''
-                        // а если false - то это ошибка чтения
-                        // например, PHP Warning: fread(): SSL: Connection reset by peer
-                        $errorString = error_get_last()['message'];
-                        throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
-                    } elseif ($data === '' && feof($stream)) {
-                        // Если fread вернул пустую строку, проверяем, достигнут ли EOF
-                        $this->disconnect();
-                        throw new Exception('EOF: connection closed by remote host');
-                    } elseif ($data === '') {
-                        // больше нет данных — выходим из drain
-                        break;
-                    }
-
-                    $buffer .= $data; // дописывание в буфер
+                if ($data === false) {
+                    // в неблокирующем режиме если данных нет - то будет string ''
+                    // а если false - то это ошибка чтения
+                    // например, PHP Warning: fread(): SSL: Connection reset by peer
+                    $errorString = error_get_last()['message'];
+                    throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
+                } elseif ($data === '' && feof($stream)) {
+                    // Если fread вернул пустую строку, проверяем, достигнут ли EOF
+                    $this->disconnect();
+                    throw new Exception('EOF: connection closed by remote host');
                 }
+
+                $buffer .= $data; // дописывание в буфер
 
                 $offset = 0;
                 $bufferLength = strlen($buffer);
@@ -346,6 +345,10 @@ class Connection_WebSocket implements Connection_IConnection {
         return $result;
     }
 
+    public function setReadFrameLength($length) {
+        $this->_readFrameLength = $length;
+    }
+
     private $_host, $_ip;
     private $_port;
     private $_path;
@@ -353,5 +356,6 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_streamSelectTimeoutUS = 500000; // 500 ms by default
     private $_pingInterval = 1;
     private $_pongDeadline = 3;
+    private $_readFrameLength = 256;
 
 }

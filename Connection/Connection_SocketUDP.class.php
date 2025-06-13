@@ -92,11 +92,13 @@ class Connection_SocketUDP implements Connection_IConnection {
         $fromAddress = '';
         $fromPort = 0;
 
+        $socket = $this->_socket;
+
         while (1) {
             // @todo drain flag
 
             $bytes = socket_recvfrom(
-                $this->_socket, // @todo вытянуть сокет в локальную?
+                $socket,
                 $buf,
                 $length,
                 0,
@@ -104,10 +106,11 @@ class Connection_SocketUDP implements Connection_IConnection {
                 $fromPort
             );
 
+            // меряем время сразу после получения
             $ts = microtime(true);
 
             if ($bytes === false) {
-                $message = socket_strerror(socket_last_error($this->_socket)); // message надо получить ДО disconnect, бо поменяется
+                $message = socket_strerror(socket_last_error($socket)); // message надо получить ДО disconnect, бо поменяется
                 $this->disconnect();
                 throw new Connection_Exception($message);
             }

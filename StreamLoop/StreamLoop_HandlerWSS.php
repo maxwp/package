@@ -168,7 +168,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     }
 
     private function _checkRead() {
-        $data = fread($this->stream, 4096); // @todo drain, но тут хитрее чем в Connection_WebSocket
+        $data = fread($this->stream, 4096); // @todo настройка оптимального пакета, это супер критично
         $ts = microtime(true);
 
         // в неблокирующем режиме если данных нет - то будет string ''
