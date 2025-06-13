@@ -78,144 +78,156 @@ class Connection_WebSocket implements Connection_IConnection {
                 // Поэтому я читаю короткой буфер, но если пришло полный $readFrameLength - читаю второй круг, аля drain.
                 // Так я экономлю вызов select и пропуск кода аж до этой точки.
                 // @todo dynamic drain + parse-msg in one loop?
-                $data = fread($stream, $readFrameLength);
+                for ($drainIndex = 1; $drainIndex <= 10; $drainIndex++) {
+                    $data = fread($stream, $readFrameLength * $drainIndex);
 
-                if ($data === false) {
-                    // в неблокирующем режиме если данных нет - то будет string ''
-                    // а если false - то это ошибка чтения
-                    // например, PHP Warning: fread(): SSL: Connection reset by peer
-                    $errorString = error_get_last()['message'];
-                    throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
-                } elseif ($data === '' && feof($stream)) {
-                    // Если fread вернул пустую строку, проверяем, достигнут ли EOF
-                    $this->disconnect();
-                    throw new Exception('EOF: connection closed by remote host');
+                    if ($data === false) {
+                        // в неблокирующем режиме если данных нет - то будет string ''
+                        // а если false - то это ошибка чтения
+                        // например, PHP Warning: fread(): SSL: Connection reset by peer
+                        $errorString = error_get_last()['message'];
+                        throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
+                    } elseif ($data === '' && feof($stream)) {
+                        // Если fread вернул пустую строку, проверяем, достигнут ли EOF
+                        $this->disconnect();
+                        throw new Exception('EOF: connection closed by remote host');
+                    }
+
+                    if ($data == '') {
+                        // stop drain and to not parse
+                        break;
+                    }
+
+                    $buffer .= $data; // дописывание в буфер
+
+                    $offset = 0;
+                    $bufferLength = strlen($buffer);
+
+                    while ($offset < $bufferLength) {
+                        // Минимальный заголовок — 2 байта
+                        if ($bufferLength - $offset < 2) {
+                            break;  // Недостаточно данных для заголовка
+                        }
+
+                        $firstByte = ord($buffer[$offset]);
+                        $secondByte = ord($buffer[$offset + 1]);
+
+                        $opcode = $firstByte & 0x0F;
+                        $isMasked = ($secondByte & 0b10000000) !== 0;
+                        $payloadLength = $secondByte & 0b01111111;
+                        $maskOffset = 2;
+
+                        // Если длина полезной нагрузки равна 126 или 127 — читаем дополнительные байты длины
+                        if ($payloadLength == 126) {
+                            if ($bufferLength - $offset < 4) {
+                                break; // Недостаточно данных для заголовка с расширенной длиной
+                            }
+                            $payloadLength = unpack('n', substr($buffer, $offset + 2, 2))[1];
+                            $maskOffset = 4;
+                        } elseif ($payloadLength == 127) {
+                            if ($bufferLength - $offset < 10) {
+                                break; // Недостаточно данных для заголовка с расширенной длиной
+                            }
+                            $payloadLength = unpack('J', substr($buffer, $offset + 2, 8))[1];
+                            $maskOffset = 10;
+                        }
+
+                        // Полная длина фрейма: заголовок, маска (если есть) и payload
+                        $frameLength = $maskOffset + ($isMasked ? 4 : 0) + $payloadLength;
+                        if ($bufferLength - $offset < $frameLength) {
+                            break; // Ждем, когда придут все данные
+                        }
+
+                        // Если сообщение замаскировано — читаем маску
+                        $mask = '';
+                        if ($isMasked) {
+                            $mask = substr($buffer, $offset + $maskOffset, 4);
+                        }
+
+                        // Читаем полезную нагрузку
+                        $payload = substr($buffer, $offset + $maskOffset + ($isMasked ? 4 : 0), $payloadLength);
+
+                        // Если сообщение замаскировано — дешифруем payload
+                        if ($isMasked) {
+                            $unmaskedPayload = '';
+                            for ($i = 0; $i < $payloadLength; $i++) {
+                                $unmaskedPayload .= $payload[$i] ^ $mask[$i % 4];
+                            }
+                            $payload = $unmaskedPayload;
+                        }
+
+                        // супер важный момент: время надо получать после того, как я счтал данные и разобрал их.
+                        // потому что может быть момент, что я запросил время сразу после stream_select(), а затем
+                        // fread() считал больше данных чем я ожидал - и тогда будет казаться что данные пришли из будущего.
+
+                        // Обработка опкодов
+                        switch ($opcode) {
+                            case 0x8:
+                                $this->disconnect();
+                                throw new Connection_Exception("Connection_WebSocket: iframe-closed");
+                            case 0x9:
+                                # debug:start
+                                Cli::Print_n("Connection_WebSocket: iframe-ping $payload");
+                                # debug:end
+
+                                // тут очень важный нюанс:
+                                // stream_select может выйти по таймауту, а может по ping.
+                                // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
+                                // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
+                                try {
+                                    $callback(microtime(true), false); // @todo fucking Closure
+                                } catch (Exception $userException) {
+                                    $this->disconnect();
+                                    throw $userException;
+                                }
+
+                                $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA); // @todo inline it
+                                fwrite($stream, $encodedPong);
+                                $called = true;
+                                break;
+                            case 0xA:
+                                # debug:start
+                                Cli::Print_n("Connection_WebSocket: iframe-pong $payload");
+                                # debug:end
+
+                                // запоминаем когда пришел pong
+                                $tsPong = 0;
+
+                                // тут очень важный нюанс:
+                                // stream_select может выйти по таймауту, а может по pong.
+                                // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
+                                // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
+                                try {
+                                    $callback(microtime(true), false); // @todo fucking Closure
+                                } catch (Exception $userException) {
+                                    $this->disconnect();
+                                    throw $userException;
+                                }
+                                $called = true;
+                                break;
+                            default:
+                                try {
+                                    $callback(microtime(true), $payload); // @todo fucking Closure
+                                } catch (Exception $userException) {
+                                    $this->disconnect();
+                                    throw $userException;
+                                }
+                                $called = true;
+                                break;
+                        }
+
+                        // Сдвигаем указатель на следующий фрейм
+                        $offset += $frameLength;
+                    }
+
+                    // Удаляем обработанные данные из буфера
+                    $buffer = substr($buffer, $offset);
+
+                    if (strlen($data) < $readFrameLength * $drainIndex) {
+                        // stop drain
+                        break;
+                    }
                 }
-
-                $buffer .= $data; // дописывание в буфер
-
-                $offset = 0;
-                $bufferLength = strlen($buffer);
-
-                while ($offset < $bufferLength) {
-                    // Минимальный заголовок — 2 байта
-                    if ($bufferLength - $offset < 2) {
-                        break;  // Недостаточно данных для заголовка
-                    }
-
-                    $firstByte = ord($buffer[$offset]);
-                    $secondByte = ord($buffer[$offset + 1]);
-
-                    $opcode = $firstByte & 0x0F;
-                    $isMasked = ($secondByte & 0b10000000) !== 0;
-                    $payloadLength = $secondByte & 0b01111111;
-                    $maskOffset = 2;
-
-                    // Если длина полезной нагрузки равна 126 или 127 — читаем дополнительные байты длины
-                    if ($payloadLength == 126) {
-                        if ($bufferLength - $offset < 4) {
-                            break; // Недостаточно данных для заголовка с расширенной длиной
-                        }
-                        $payloadLength = unpack('n', substr($buffer, $offset + 2, 2))[1];
-                        $maskOffset = 4;
-                    } elseif ($payloadLength == 127) {
-                        if ($bufferLength - $offset < 10) {
-                            break; // Недостаточно данных для заголовка с расширенной длиной
-                        }
-                        $payloadLength = unpack('J', substr($buffer, $offset + 2, 8))[1];
-                        $maskOffset = 10;
-                    }
-
-                    // Полная длина фрейма: заголовок, маска (если есть) и payload
-                    $frameLength = $maskOffset + ($isMasked ? 4 : 0) + $payloadLength;
-                    if ($bufferLength - $offset < $frameLength) {
-                        break; // Ждем, когда придут все данные
-                    }
-
-                    // Если сообщение замаскировано — читаем маску
-                    $mask = '';
-                    if ($isMasked) {
-                        $mask = substr($buffer, $offset + $maskOffset, 4);
-                    }
-
-                    // Читаем полезную нагрузку
-                    $payload = substr($buffer, $offset + $maskOffset + ($isMasked ? 4 : 0), $payloadLength);
-
-                    // Если сообщение замаскировано — дешифруем payload
-                    if ($isMasked) {
-                        $unmaskedPayload = '';
-                        for ($i = 0; $i < $payloadLength; $i++) {
-                            $unmaskedPayload .= $payload[$i] ^ $mask[$i % 4];
-                        }
-                        $payload = $unmaskedPayload;
-                    }
-
-                    // супер важный момент: время надо получать после того, как я счтал данные и разобрал их.
-                    // потому что может быть момент, что я запросил время сразу после stream_select(), а затем
-                    // fread() считал больше данных чем я ожидал - и тогда будет казаться что данные пришли из будущего.
-
-                    // Обработка опкодов
-                    switch ($opcode) {
-                        case 0x8:
-                            $this->disconnect();
-                            throw new Connection_Exception("Connection_WebSocket: iframe-closed");
-                        case 0x9:
-                            # debug:start
-                            Cli::Print_n("Connection_WebSocket: iframe-ping $payload");
-                            # debug:end
-
-                            // тут очень важный нюанс:
-                            // stream_select может выйти по таймауту, а может по ping.
-                            // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
-                            // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
-                            try {
-                                $callback(microtime(true), false); // @todo fucking Closure
-                            } catch (Exception $userException) {
-                                $this->disconnect();
-                                throw $userException;
-                            }
-
-                            $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA); // @todo inline it
-                            fwrite($stream, $encodedPong);
-                            $called = true;
-                            break;
-                        case 0xA:
-                            # debug:start
-                            Cli::Print_n("Connection_WebSocket: iframe-pong $payload");
-                            # debug:end
-
-                            // запоминаем когда пришел pong
-                            $tsPong = 0;
-
-                            // тут очень важный нюанс:
-                            // stream_select может выйти по таймауту, а может по pong.
-                            // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
-                            // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
-                            try {
-                                $callback(microtime(true), false); // @todo fucking Closure
-                            } catch (Exception $userException) {
-                                $this->disconnect();
-                                throw $userException;
-                            }
-                            $called = true;
-                            break;
-                        default:
-                            try {
-                                $callback(microtime(true), $payload); // @todo fucking Closure
-                            } catch (Exception $userException) {
-                                $this->disconnect();
-                                throw $userException;
-                            }
-                            $called = true;
-                            break;
-                    }
-
-                    // Сдвигаем указатель на следующий фрейм
-                    $offset += $frameLength;
-                }
-
-                // Удаляем обработанные данные из буфера
-                $buffer = substr($buffer, $offset);
             }
 
             if (!$called) {
