@@ -29,8 +29,6 @@ class Connection_WebSocket implements Connection_IConnection {
         $pongDeadline = $this->_pongDeadline;
         $readFrameLength = $this->_readFrameLength;
         $buffer = '';
-        $performanceArray = [];
-        $performanceReadArray = [];
 
         stream_set_blocking($stream, false);
 
@@ -60,7 +58,6 @@ class Connection_WebSocket implements Connection_IConnection {
             $except = [$stream];
 
             $num_changed_streams = stream_select($read, $write, $except, 0, $streamSelectTimeoutUS);
-            $tsSelect = microtime(true);
 
             // согласно документации false может прилететь из-за system interrupt call
             if ($num_changed_streams === false) {
@@ -75,13 +72,13 @@ class Connection_WebSocket implements Connection_IConnection {
 
             $called = false;
             if ($num_changed_streams > 0) {
-                // важно: тут нельзя делать drain: потому что пока я вычитываю данные - я их не паршу и не реагирую,
-                // поэтому оптимальная история это короткой фрейм в 256 байт (под размер сообщения) и быстрая реакция на него,
-                // иначе парсинг занимает дофига времени - буфер должен быть коротким
+                // по результатам экспериментов короткие фреймы сильно удобнее: быстрее парсинг,
+                // меньше накопление в сокетах, короче пусть от select до callback (хотя это под вопросом).
+                // Сам fread реально быстрее для короткого буфера - 0.002 ms for 200 bytes, 0.006 ms for 2000 bytes.
+                // Поэтому я читаю короткой буфер, но если пришло полный $readFrameLength - читаю второй круг, аля drain.
+                // Так я экономлю вызов select и пропуск кода аж до этой точки.
                 // @todo dynamic drain + parse-msg in one loop?
-                $tsReadStart = microtime(true);
                 $data = fread($stream, $readFrameLength);
-                $performanceReadArray[] = microtime(true) - $tsReadStart;
 
                 if ($data === false) {
                     // в неблокирующем режиме если данных нет - то будет string ''
@@ -115,13 +112,13 @@ class Connection_WebSocket implements Connection_IConnection {
                     $maskOffset = 2;
 
                     // Если длина полезной нагрузки равна 126 или 127 — читаем дополнительные байты длины
-                    if ($payloadLength === 126) {
+                    if ($payloadLength == 126) {
                         if ($bufferLength - $offset < 4) {
                             break; // Недостаточно данных для заголовка с расширенной длиной
                         }
                         $payloadLength = unpack('n', substr($buffer, $offset + 2, 2))[1];
                         $maskOffset = 4;
-                    } elseif ($payloadLength === 127) {
+                    } elseif ($payloadLength == 127) {
                         if ($bufferLength - $offset < 10) {
                             break; // Недостаточно данных для заголовка с расширенной длиной
                         }
@@ -156,8 +153,6 @@ class Connection_WebSocket implements Connection_IConnection {
                     // супер важный момент: время надо получать после того, как я счтал данные и разобрал их.
                     // потому что может быть момент, что я запросил время сразу после stream_select(), а затем
                     // fread() считал больше данных чем я ожидал - и тогда будет казаться что данные пришли из будущего.
-                    $ts = microtime(true);
-                    $performanceArray[] = $ts - $tsSelect;
 
                     // Обработка опкодов
                     switch ($opcode) {
@@ -174,7 +169,7 @@ class Connection_WebSocket implements Connection_IConnection {
                             // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                             // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                             try {
-                                $callback($ts, false); // @todo fucking Closure
+                                $callback(microtime(true), false); // @todo fucking Closure
                             } catch (Exception $userException) {
                                 $this->disconnect();
                                 throw $userException;
@@ -197,7 +192,7 @@ class Connection_WebSocket implements Connection_IConnection {
                             // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                             // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                             try {
-                                $callback($ts, false); // @todo fucking Closure
+                                $callback(microtime(true), false); // @todo fucking Closure
                             } catch (Exception $userException) {
                                 $this->disconnect();
                                 throw $userException;
@@ -206,7 +201,7 @@ class Connection_WebSocket implements Connection_IConnection {
                             break;
                         default:
                             try {
-                                $callback($ts, $payload); // @todo fucking Closure
+                                $callback(microtime(true), $payload); // @todo fucking Closure
                             } catch (Exception $userException) {
                                 $this->disconnect();
                                 throw $userException;
@@ -230,20 +225,6 @@ class Connection_WebSocket implements Connection_IConnection {
                     $this->disconnect();
                     throw $userException;
                 }
-            }
-
-            if (count($performanceArray) >= 1000) {
-                # debug:start
-                print "Connection_WebSocket: performance select>callback ".(Array_Static::Avg($performanceArray) * 1000)." ms\n";
-                # debug:end
-                $performanceArray = [];
-            }
-
-            if (count($performanceReadArray) >= 1000) {
-                # debug:start
-                print "Connection_WebSocket: performance read $readFrameLength ".(Array_Static::Avg($performanceReadArray) * 1000)." ms\n";
-                # debug:end
-                $performanceReadArray = [];
             }
         }
 
