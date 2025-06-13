@@ -26,6 +26,7 @@ class Connection_WebSocket implements Connection_IConnection {
         $stream = $this->_stream;
         $streamSelectTimeoutUS = $this->_streamSelectTimeoutUS;
         $pingInterval = $this->_pingInterval;
+        $pongDeadline = $this->_pongDeadline;
         $buffer = '';
 
         stream_set_blocking($stream, false);
@@ -35,12 +36,12 @@ class Connection_WebSocket implements Connection_IConnection {
 
             // auto ping frame
             if ($time - $tsPing >= $pingInterval) {
-                $encodedPing = $this->_encodeWebSocketMessage('', 9);
+                $encodedPing = $this->_encodeWebSocketMessage('', 9); // @todo inline it inside compiler
                 fwrite($stream, $encodedPing);
 
                 $tsPing = $time;
                 // дедлайн до которого должен прийти pong
-                $tsPong = $time + $this->_pongDeadline; // @todo locals
+                $tsPong = $time + $pongDeadline;
             }
 
             if ($tsPong > 0 && $time > $tsPong) {
@@ -63,8 +64,7 @@ class Connection_WebSocket implements Connection_IConnection {
                 throw new Connection_Exception("Connection_WebSocket: stream_select error");
             }
 
-            // @todo тут быстрее empty или сразу сравнение?
-            if (!empty($except)) {
+            if ($except) {
                 $this->disconnect();
                 throw new Connection_Exception("Connection_WebSocket: stream_select except");
             }
