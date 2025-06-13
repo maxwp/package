@@ -27,3 +27,4 @@ ClassLoader::Get()->registerClass(__DIR__.'/Connection_Socket_IReceiver.interfac
 ClassLoader::Get()->registerClass(__DIR__.'/Connection_SocketUDP.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Connection_SocketUDS.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Connection_WebSocket.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Connection_WebSocketOld.class.php');
