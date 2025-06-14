@@ -78,7 +78,7 @@ class Connection_SocketUDP implements Connection_IConnection {
      * @param Connection_Socket_IReceiver $receiver
      * @param int $length
      */
-    public function read($port, Connection_Socket_IReceiver $receiver, $length = 1024) {
+    public function read($port, Connection_Socket_IReceiver $receiver, $length = 1024, $drainReverse = false) {
         $result = socket_bind($this->_socket, '0.0.0.0', $port);
         if ($result === false) {
             $message = socket_strerror(socket_last_error($this->_socket));
@@ -87,16 +87,18 @@ class Connection_SocketUDP implements Connection_IConnection {
         }
 
         // инициализация переменных ДО цикла,
-        // все равно socket_recvfrom их перетирает
+        // все равно socket_recvfrom() их перетирает, ему нужен только указатель
         $buf = '';
         $fromAddress = '';
         $fromPort = 0;
 
+        // to locals
         $socket = $this->_socket;
 
         while (1) {
-            // @todo drain flag
+            // @todo reverse drain flag here
 
+            // читаем в блок режиме
             $bytes = socket_recvfrom(
                 $socket,
                 $buf,

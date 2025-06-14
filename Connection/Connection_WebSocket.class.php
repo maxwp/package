@@ -308,7 +308,7 @@ class Connection_WebSocket implements Connection_IConnection {
         fwrite($this->_stream, $headers);
 
         $response = fread($this->_stream, 1500);
-        if (strpos($response, '101 Switching Protocols') === false) {
+        if (!str_contains($response, '101 Switching Protocols')) {
             throw new Connection_Exception("Handshake error: ".$response);
         }
     }

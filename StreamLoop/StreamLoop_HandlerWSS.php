@@ -263,7 +263,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
             $this->_buffer .= $line; // @todo locals
             // пустая строка — конец блока заголовков
             if ($line == "\r\n" || $line == "\n") {
-                if (strpos($this->_buffer, '101 Switching Protocols') === false) {
+                if (!str_contains($this->_buffer, '101 Switching Protocols')) {
                     throw new StreamLoop_Exception("Handshake error: ".$this->_buffer);
                 }
 
