@@ -1,4 +1,8 @@
 <?php
+
+/**
+ * @deprecated
+ */
 class StreamLoop_HandlerWSS_StateMachine extends StateMachine {
 
     public const CONNECTING = 'connecting';
