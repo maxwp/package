@@ -38,8 +38,7 @@ class StreamLoop {
 
             $ok = false;
             foreach ($this->_handlerArray as $handler) {
-                $stream = $handler->stream;
-                $streamID = (int) $stream; // @todo streamID спрашивать у handler, не типизировать постоянно
+                $streamID = $handler->streamID;
                 if (!$streamID) {
                     continue;
                 }
@@ -54,6 +53,7 @@ class StreamLoop {
 
                 // handler будет выдавать stream только в том случае, если он что-то ждет
                 // и будет указыват что именно ждет этот stream
+                $stream = $handler->stream;
                 if ($handler->flagRead) {
                     $r[] = $stream;
                     $ok = true;
@@ -110,7 +110,7 @@ class StreamLoop {
 
             $tsEnd = microtime(true);
 
-            // если для потока не вызывался сейчас ни один ready
+            // если для потока не вызывался сейчас ни один ready*
             // и при этом я перешел за timeout
             // = то надо вызвать readySelectTimeout
             foreach ($linkArray as $streamD => $handler) {

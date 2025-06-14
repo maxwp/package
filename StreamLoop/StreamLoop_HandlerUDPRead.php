@@ -16,6 +16,8 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
             throw new StreamLoop_Exception("$errstr ($errno)");
         }
 
+        $this->streamID = (int) $this->stream;
+
         $this->_socket = socket_import_stream($this->stream);
         socket_set_option($this->_socket, SOL_SOCKET, SO_REUSEADDR, 1); // повторный биндинг
         socket_set_option($this->_socket, SOL_SOCKET, SO_RCVBUF, 2**20); // увеличиваем приёмный буфер ядра

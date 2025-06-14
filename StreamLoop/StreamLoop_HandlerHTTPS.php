@@ -59,6 +59,8 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
             throw new StreamLoop_Exception("TCP connect failed immediately: $errstr ($errno)");
         }
 
+        $this->streamID = (int) $this->stream;
+
         stream_set_blocking($this->stream, false);
 
         // отключаем буферизацию php
