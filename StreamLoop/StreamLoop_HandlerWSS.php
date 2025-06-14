@@ -37,7 +37,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
             $errstr,
             0, // timeout = 0, чтобы мгновенно вернулось
             STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT,
-            stream_context_create() // без ssl-опций!
+            stream_context_create() // без ssl-опций! @todo возмоэно надо будет таки перенести контекст из Connection_WebSocket
         );
         if (!$this->stream) {
             throw new StreamLoop_Exception("TCP connect failed immediately: $errstr ($errno)");

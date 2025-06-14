@@ -241,31 +241,6 @@ class Connection_WebSocket implements Connection_IConnection {
     }
 
     public function connect() {
-        /*$context = stream_context_create([
-            'socket' => [
-                'tcp_nodelay' => true,  // no Nagle algorithm
-            ],
-            'ssl' => array(
-                'peer_name' => $this->_host,
-                'verify_peer' => false,
-                'verify_peer_name' => false
-            ),
-        ]);
-
-        $connectHost = $this->_ip;
-        if (!$connectHost) {
-            $connectHost = $this->_host;
-        }
-
-        $this->_stream = stream_socket_client("ssl://{$connectHost}:{$this->_port}", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context);
-        if (!$this->_stream) {
-            throw new Connection_Exception("Failed to connect to {$this->_host}:{$this->_port} - $errstr ($errno)");
-        }
-
-        // отключаем буферизацию php
-        stream_set_read_buffer($this->_stream, 0);
-        stream_set_write_buffer($this->_stream, 0);*/
-
         $context = stream_context_create([
             'socket' => [
                 'tcp_nodelay' => true,  // no Nagle algorithm
