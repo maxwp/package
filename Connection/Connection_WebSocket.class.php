@@ -18,7 +18,7 @@ class Connection_WebSocket implements Connection_IConnection {
         $this->_streamSelectTimeoutUS = $us;
     }
 
-    public function loop($callback) { // @todo fucking Closure find usages
+    public function loop(callable $callback) {
         $tsPing = 0;
         $tsPong = 0;
 
@@ -171,7 +171,7 @@ class Connection_WebSocket implements Connection_IConnection {
                                 // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                                 // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                                 try {
-                                    $callback(microtime(true), false); // @todo fucking Closure
+                                    $callback(microtime(true), false);
                                 } catch (Exception $userException) {
                                     $this->disconnect();
                                     throw $userException;
@@ -194,7 +194,7 @@ class Connection_WebSocket implements Connection_IConnection {
                                 // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                                 // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                                 try {
-                                    $callback(microtime(true), false); // @todo fucking Closure
+                                    $callback(microtime(true), false);
                                 } catch (Exception $userException) {
                                     $this->disconnect();
                                     throw $userException;
@@ -203,7 +203,7 @@ class Connection_WebSocket implements Connection_IConnection {
                                 break;
                             default:
                                 try {
-                                    $callback(microtime(true), $payload); // @todo fucking Closure
+                                    $callback(microtime(true), $payload);
                                 } catch (Exception $userException) {
                                     $this->disconnect();
                                     throw $userException;
@@ -228,7 +228,7 @@ class Connection_WebSocket implements Connection_IConnection {
 
             if (!$called) {
                 try {
-                    $callback(microtime(true), false); // @todo fucking Closure
+                    $callback(microtime(true), false);
                 } catch (Exception $userException) {
                     $this->disconnect();
                     throw $userException;
