@@ -30,6 +30,11 @@ class StreamLoop {
 
             $onRun->onRun($tsNow);
 
+            // @todo тут проблема в том что я вынужден каждый раз клеить эти массивы
+            // на каждый цикл, вместо того чтобы формировать их динамически:
+            // в этом случаел в каждом handler должен быть указатель на этот stream loop и handler
+            // сам добавляет/убирает в эти массивы: потому что нет никакой разницы что поставить flag*/timeoutTo в handler,
+            // что заставить handler лезть в stream loop и менять там свойство (вызывать update, а SL все стянет сам)
             $r = [];
             $w = [];
             $e = [];
@@ -88,7 +93,7 @@ class StreamLoop {
                 throw new StreamLoop_Exception('stream_select failed');
             }
 
-            $callArray = [];
+            $callArray = []; // @todo йобаная динамическая аллокация, вынести ДО цикла
 
             foreach ($r as $stream) {
                 $id = (int) $stream;

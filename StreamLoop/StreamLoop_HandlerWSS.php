@@ -213,12 +213,18 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
 
             switch ($msgType) {
                 case self::_FRAME_PING:
-                    // @todo debugs
+                    # debug:start
                     Cli::Print_n("Connection_WebSocket: received iframe-ping $msgData");
+                    # debug:end
+
+                    // @todo callback here too
+
                     $this->_sendPongFrame($msgData);
                     break;
                 case self::_FRAME_PONG:
+                    # debug:start
                     Cli::Print_n("Connection_WebSocket: received iframe-pong $msgData");
+                    # debug:end
 
                     // запоминаем когда пришел pong
                     $this->_tsPong = 0;

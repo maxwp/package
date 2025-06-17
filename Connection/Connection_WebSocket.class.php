@@ -32,6 +32,8 @@ class Connection_WebSocket implements Connection_IConnection {
 
         stream_set_blocking($stream, false);
 
+        //$performanceArray = [];
+
         while (true) {
             $time = microtime(true);
 
@@ -58,6 +60,7 @@ class Connection_WebSocket implements Connection_IConnection {
             $except = [$stream];
 
             $num_changed_streams = stream_select($read, $write, $except, 0, $streamSelectTimeoutUS);
+            //$tsSelect = microtime(true);
 
             // согласно документации false может прилететь из-за system interrupt call
             if ($num_changed_streams === false) {
@@ -171,7 +174,10 @@ class Connection_WebSocket implements Connection_IConnection {
                                 // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                                 // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                                 try {
+                                    //$performanceArray['select'][] = microtime(true) - $tsSelect;
+                                    //$tCallback = microtime(true);
                                     $callback(microtime(true), false);
+                                    //$performanceArray['callback'][] = microtime(true) - $tCallback;
                                 } catch (Exception $userException) {
                                     $this->disconnect();
                                     throw $userException;
@@ -194,7 +200,10 @@ class Connection_WebSocket implements Connection_IConnection {
                                 // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                                 // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                                 try {
+                                    //$performanceArray['select'][] = microtime(true) - $tsSelect;
+                                    //$tCallback = microtime(true);
                                     $callback(microtime(true), false);
+                                    //$performanceArray['callback'][] = microtime(true) - $tCallback;
                                 } catch (Exception $userException) {
                                     $this->disconnect();
                                     throw $userException;
@@ -203,7 +212,10 @@ class Connection_WebSocket implements Connection_IConnection {
                                 break;
                             default:
                                 try {
+                                    //$performanceArray['select'][] = microtime(true) - $tsSelect;
+                                    //$tCallback = microtime(true);
                                     $callback(microtime(true), $payload);
+                                    //$performanceArray['callback'][] = microtime(true) - $tCallback;
                                 } catch (Exception $userException) {
                                     $this->disconnect();
                                     throw $userException;
@@ -228,12 +240,21 @@ class Connection_WebSocket implements Connection_IConnection {
 
             if (!$called) {
                 try {
+                    //$performanceArray['select'][] = microtime(true) - $tsSelect;
+                    //$tCallback = microtime(true);
                     $callback(microtime(true), false);
+                    //$performanceArray['callback'][] = microtime(true) - $tCallback;
                 } catch (Exception $userException) {
                     $this->disconnect();
                     throw $userException;
                 }
             }
+
+            /*if (!empty($performanceArray['select']) && count($performanceArray['select']) >= 1000) {
+                print "WebSocket_Connection: performance select=".(Array_Static::Avg($performanceArray['select']) * 1000)."\t";
+                print "callback=".(Array_Static::Avg($performanceArray['callback']) * 1000)."\n";
+                $performanceArray = [];
+            }*/
         }
 
         // теоретически я сюда никогда не дойду, ну да ладно
