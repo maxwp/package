@@ -803,7 +803,7 @@ network
 no-jit  0.005952433	0.005753	0.004636	0.014024 << top of network and performance, еще в 1.5 быстрее чем c8g shared, количество ядер решают на сетевой стек
 jit     0.005866824	0.005636	0.004512	0.015603
 
-c7gn.xlarge, c7g.xlarge (arm,  2.6Ghz, L-1M)
+c7gn.xlarge, c7g.xlarge (arm, 2.6Ghz, L-1M)
 php 655 ms
 php +opcache 435 ms, stable
 php +opcache +jit 88 ms
