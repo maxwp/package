@@ -3,40 +3,40 @@ class Cli {
 
     public static function PrintSGRStart(...$args) {
         if (defined('EE_PRINT')) {
-            print "\033[".implode(';', $args)."m";
+            echo "\033[".implode(';', $args)."m";
         }
     }
 
     public static function PrintSGREnd() {
         if (defined('EE_PRINT')) {
-            print "\033[".self::RESET."m";
+            echo "\033[".self::RESET."m";
         }
     }
 
     public static function Print($s) {
         if (defined('EE_PRINT')) {
-            print (string) $s; // это нужно для типизации в string, потому что я могу передать объект типа DateTime_Object
+            echo (string) $s; // это нужно для типизации в string, потому что я могу передать объект типа DateTime_Object
         }
     }
 
     public static function Print_n($s = '') {
         if (defined('EE_PRINT')) {
-            print "$s\n";
+            echo "$s\n";
         }
     }
 
     public static function Print_break($symbol = '-', $length = 80, $separator = "\n") {
         if (defined('EE_PRINT') ) {
-            print $separator;
-            print str_repeat($symbol, $length);
-            print $separator;
-            print "\n";
+            echo $separator;
+            echo str_repeat($symbol, $length);
+            echo $separator;
+            echo "\n";
         }
     }
 
     public static function Print_t($s = '') {
         if (defined('EE_PRINT')) {
-            print "$s\t";
+            echo "$s\t";
         }
     }
 
@@ -46,21 +46,12 @@ class Cli {
         }
     }
 
-    /**
-     * @deprecated
-     */
-    public static function Print_e($callback) {
-        if (defined('EE_PRINT')) {
-            print $callback();
-        }
-    }
-
     public static function Print_f($s, $format, $eol = ' ') {
         if (defined('EE_PRINT')) {
             if (str_contains($format, '%')) {
-                print sprintf($format, $s) . $eol;
+                echo sprintf($format, $s) . $eol;
             } else {
-                print sprintf('%1$' . $format, $s) . $eol;
+                echo sprintf('%1$' . $format, $s) . $eol;
             }
         }
     }
