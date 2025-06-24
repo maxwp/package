@@ -58,6 +58,9 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
         }
     }
 
+    /**
+     * @deprecated
+     */
     public function print_e($callback) {
         // @todo вощможно дерьмо с closure
         if (defined('EE_PRINT') || $this->_print) {

@@ -46,6 +46,9 @@ class Cli {
         }
     }
 
+    /**
+     * @deprecated
+     */
     public static function Print_e($callback) {
         if (defined('EE_PRINT')) {
             print $callback();
