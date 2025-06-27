@@ -11,81 +11,36 @@
  */
 abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
 
-    // @todo стоит ли делать вызовы Cli?
-
     public function printSGRStart(...$args) {
-        if (defined('EE_PRINT') || $this->_print) {
-            print "\033[".implode(';', $args)."m";
-        }
+        Cli::PrintSGRStart(...$args);
     }
 
     public function printSGREnd() {
-        if (defined('EE_PRINT') || $this->_print) {
-            print "\033[".Cli::RESET."m";
-        }
+        Cli::PrintSGREnd();
     }
 
     public function print($s) {
-        if (defined('EE_PRINT') || $this->_print) {
-            print (string) $s; // это нужно для типизации в string, потому что я могу передать объект типа DateTime_Object или прочий Value Objct
-        }
+        Cli::Print($s);
     }
 
     public function print_n($s = '') {
-        if (defined('EE_PRINT') || $this->_print) {
-            print "$s\n";
-        }
+        Cli::Print_n($s);
     }
 
     public function print_break($symbol = '-', $length = 80, $separator = "\n") {
-        if (defined('EE_PRINT') || $this->_print) {
-            print $separator;
-            print str_repeat($symbol, $length);
-            print $separator;
-            print "\n";
-        }
+        Cli::Print_break($symbol, $length, $separator);
     }
 
     public function print_t($s = '') {
-        if (defined('EE_PRINT') || $this->_print) {
-            print "$s\t";
-        }
+        Cli::Print_t($s);
     }
 
     public function print_r($a) {
-        if (defined('EE_PRINT') || $this->_print) {
-            print_r($a);
-        }
-    }
-
-    /**
-     * @deprecated
-     */
-    public function print_e($callback) {
-        // @todo вощможно дерьмо с closure
-        if (defined('EE_PRINT') || $this->_print) {
-            print $callback();
-        }
+        Cli::Print_r($a);
     }
 
     public function print_f($s, $format, $eol = ' ', $color = false) {
-        if (defined('EE_PRINT') || $this->_print) {
-            if ($color) {
-                $this->printSGRStart($color);
-            }
-            if (str_contains($format, '%')) {
-                print sprintf($format, $s) . $eol;
-            } else {
-                print sprintf('%1$' . $format, $s) . $eol;
-            }
-            if ($color) {
-                $this->printSGREnd();
-            }
-        }
-    }
-
-    protected function _setPrintMode(bool $mode = true) {
-        $this->_print = $mode;
+        Cli::Print_f($s, $format, $eol, $color);
     }
 
     protected function _setWorkTimeLimit(float $seconds) {
@@ -102,7 +57,5 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
     }
 
     private float $_workTimeLimit = 0;
-
-    private bool $_print = false;
 
 }

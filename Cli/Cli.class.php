@@ -2,57 +2,47 @@
 class Cli {
 
     public static function PrintSGRStart(...$args) {
-        if (defined('EE_PRINT')) {
-            echo "\033[".implode(';', $args)."m";
-        }
+        echo "\033[".implode(';', $args)."m";
     }
 
     public static function PrintSGREnd() {
-        if (defined('EE_PRINT')) {
-            echo "\033[".self::RESET."m";
-        }
+        echo "\033[".self::RESET."m";
     }
 
     public static function Print($s) {
-        if (defined('EE_PRINT')) {
-            echo (string) $s; // это нужно для типизации в string, потому что я могу передать объект типа DateTime_Object
-        }
+        echo (string) $s; // это нужно для типизации в string, потому что я могу передать объект типа DateTime_Object
     }
 
     public static function Print_n($s = '') {
-        if (defined('EE_PRINT')) {
-            echo "$s\n";
-        }
+        echo "$s\n";
     }
 
     public static function Print_break($symbol = '-', $length = 80, $separator = "\n") {
-        if (defined('EE_PRINT') ) {
-            echo $separator;
-            echo str_repeat($symbol, $length);
-            echo $separator;
-            echo "\n";
-        }
+        echo $separator;
+        echo str_repeat($symbol, $length);
+        echo $separator;
+        echo "\n";
     }
 
     public static function Print_t($s = '') {
-        if (defined('EE_PRINT')) {
-            echo "$s\t";
-        }
+        echo "$s\t";
     }
 
     public static function Print_r($a) {
-        if (defined('EE_PRINT')) {
-            print_r($a);
-        }
+        print_r($a);
     }
 
-    public static function Print_f($s, $format, $eol = ' ') {
-        if (defined('EE_PRINT')) {
-            if (str_contains($format, '%')) {
-                echo sprintf($format, $s) . $eol;
-            } else {
-                echo sprintf('%1$' . $format, $s) . $eol;
-            }
+    public static function Print_f($s, $format, $eol = ' ', $color = false) {
+        if ($color) {
+            self::PrintSGRStart($color);
+        }
+        if (str_contains($format, '%')) {
+            echo sprintf($format, $s) . $eol;
+        } else {
+            echo sprintf('%1$' . $format, $s) . $eol;
+        }
+        if ($color) {
+            self::PrintSGREnd();
         }
     }
 

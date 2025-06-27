@@ -7,14 +7,6 @@ $routing = new EE_RoutingCLI();
 $request = new EE_RequestCLI();
 $response = new EE_ResponseCLI();
 
-try {
-    if ($request->getArgument('print', EE_IRequest::ARG_SOURCE_CLI)) {
-        define('EE_PRINT', true);
-    }
-} catch (EE_Exception $e) {
-
-}
-
 EE::Get()->setRouting($routing);
 EE::Get()->execute($request, $response);
 
