@@ -12,7 +12,24 @@
 class ClassLoader extends Pattern_ASingleton {
 
     protected function __construct() {
+        global $argv;
+
         spl_autoload_register(array($this, 'loadClass'));
+
+        // автоматическое определение я режиме debug или нет?
+        // (в debug==false будет выполняться компиляция классов)
+        for ($j = 1; $j <= 100; $j++) {
+            $arg = @$argv[$j];
+            if (!$arg) {
+                continue;
+            }
+
+            $arg = preg_replace('/^--/', '', $arg);
+            if ($arg == 'debug') {
+                $this->setDebug(true);
+                break;
+            }
+        }
     }
 
     /**
@@ -26,7 +43,24 @@ class ClassLoader extends Pattern_ASingleton {
         if (!empty($this->_classArray[$className])) {
             $file = $this->_classArray[$className];
 
-            include_once($file);
+            if ($this->_debug) {
+                // просто подключаем
+                include_once $file;
+            } else {
+                // делаем компиляцию
+                $fileCompiled = $file.'.compiled';
+
+                $mtimeOriginal = @filemtime($file);
+                $mtimeCompiled = @filemtime($fileCompiled);
+                if ($mtimeOriginal > $mtimeCompiled) {
+                    $data = file_get_contents($file);
+                    $data = str_replace('# debug:start', '/* debug:start', $data);
+                    $data = str_replace('# debug:end', 'debug:end */', $data);
+                    file_put_contents($fileCompiled, $data, LOCK_EX);
+                }
+
+                include_once $fileCompiled;
+            }
         }
     }
 
@@ -125,11 +159,18 @@ class ClassLoader extends Pattern_ASingleton {
         return $a;
     }
 
+    public function setDebug(bool $debug) {
+        $this->_debug = $debug;
+
+    }
+
     /**
      * Список зарегистрированный классов
      *
      * @var array
      */
     private array $_classArray = [];
+
+    private bool $_debug = false;
 
 }
