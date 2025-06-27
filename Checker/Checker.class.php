@@ -326,22 +326,22 @@ class Checker {
      * дополнительно можно указать IPv6
      *
      * @param int $ip
-     *
-     * @author idea of atarget
-     *
      * @return bool
      */
     public static function CheckIP($ip, $format = 'ipv4') {
-        if ($format == 'ipv4') {
-            $x = @long2ip(@ip2long($ip));
-            if ($x == $ip) {
-                return true;
-            }
-        } elseif ($format == 'ipv6') {
-            if (preg_match('/((^|:)([0-9a-fA-F]{0,4})){1,8}$/', $ip)) {
-                return true;
-            }
+        switch ($format) {
+            case 'ipv4':
+                if (preg_match("/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/", $ip)) {
+                    return true;
+                }
+                break;
+            case 'ipv6':
+                if (preg_match('/((^|:)([0-9a-fA-F]{0,4})){1,8}$/', $ip)) {
+                    return true;
+                }
+                break;
         }
+
         return false;
     }
 
