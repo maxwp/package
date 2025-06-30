@@ -73,6 +73,8 @@ class Cron extends Pattern_ASingleton {
                 foreach ($value as $v) {
                     $a[] = "--$key=$v";
                 }
+            } elseif ($value === true) {
+                $a[] = "--$key";
             } else {
                 $a[] = "--$key=$value";
             }
