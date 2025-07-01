@@ -39,6 +39,7 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
     }
 
     public function readyRead() {
+        // @todo drain as option - нужно для --store
         // reverse drain read loop
         $messageArray = [];
 
