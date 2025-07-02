@@ -34,16 +34,13 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
         $this->flagRead = true; // true only for UDP
         $this->flagWrite = false;
         $this->flagExcept = false;
-
-        $this->setDrainLimit(50);
     }
 
     public function readyRead() {
-        // @todo drain as option - нужно для --store
         // reverse drain read loop
         $messageArray = [];
 
-        // в php init локальной переменной дешевле чем доступ к свойству, поэтому не могу вынести
+        // в php init локальной переменной дешевле чем доступ к свойству
         $buffer = '';
         $fromAddress = '';
         $fromPort = 0;
@@ -113,6 +110,6 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
     private StreamLoop_HandlerUDPRead_IReceiver $_receiver;
 
-    private int $_drainLimit = 0;
+    private int $_drainLimit = 1;
 
 }
