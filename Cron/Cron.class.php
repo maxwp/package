@@ -27,7 +27,10 @@ class Cron extends Pattern_ASingleton {
         $result = $this->_getRedisLocal()->sAdd('cron', json_encode($data));
 
         $command = $this->_makeCommand($data);
+
+        # debug:start
         print "Added to cron: $command ($result)\n";
+        # debug:end
     }
 
     public function process($dirpath) {
@@ -55,7 +58,9 @@ class Cron extends Pattern_ASingleton {
             }
 
             $path = "/usr/bin/flock -n $dirpath/pid/$pid /usr/bin/php $dirpath/$command $logString";
+            # debug:start
             print "Run: ".$path . "\n";
+            # debug:end
             exec($path);
         }
     }
