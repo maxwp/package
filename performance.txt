@@ -52,6 +52,44 @@ if (isset($data['result']) && $data['result'] == 'pong') {} // 15.8 ms
 if ($data['result'] == 'pong') {} // 9.8 ms
 if (@$data['result'] == 'pong') {} // 12.8 ms
 
+// 18 ms
+if (($this->_seqArray[$key] ?? -1) >= $j) {
+    continue;
+}
+$this->_seqArray[$key] = $j;
+
+// 25 ms
+if (isset($this->_seqArray[$key]) && $j <= $this->_seqArray[$key]) {
+    continue;
+}
+$this->_seqArray[$key] = $j;
+
+// 30 ms
+$link = &$this->_seqArray[$key];
+if (isset($link) && $j <= $link) {
+    continue;
+}
+$link = $j;
+
+// 14 ms - но с notice разово << это самый лучший вариант, но надо инициировать ключи заранее
+if ($j <= $this->_seqArray[$key]) {
+    continue;
+}
+$this->_seqArray[$key] = $j;
+
+// 16 ms
+if ($j <= @$this->_seqArray[$key]) {
+    continue;
+}
+$this->_seqArray[$key] = $j;
+
+// 20 ms
+$prev = @$this->_seqArray[$key];
+if ($j <= $prev) {
+    continue;
+}
+$this->_seqArray[$key] = $j;
+
 ==============================================================
 
 // получение указателя (доступ к пременной)
