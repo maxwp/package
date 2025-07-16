@@ -122,10 +122,8 @@ class Connection_SocketUDP implements Connection_IConnection {
             }
 
             // я сюда не дойду если $buffer пустой
-            $result = $receiver->onReceive($ts, $buffer, $fromAddress, $fromPort);
-
-            // если есть какой-то результат - на выход
-            if ($result) {
+            if ($receiver->onReceive($ts, $buffer, $fromAddress, $fromPort)) {
+                // если есть какой-то результат - на выход
                 break;
             }
         }

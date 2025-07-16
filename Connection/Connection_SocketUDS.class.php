@@ -71,7 +71,10 @@ class Connection_SocketUDS implements Connection_IConnection {
             }
 
             // я сюда не дойду если $buffer пустой
-            $receiver->onReceive($ts, $buffer, $fromAddress, $fromPort);
+            if ($receiver->onReceive($ts, $buffer, $fromAddress, $fromPort)) {
+                // если есть какой-то результат - на выход
+                break;
+            }
         }
     }
 
