@@ -61,6 +61,6 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
         return false;
     }
 
-    private float $_workTimeLimit = 0.0;
+    private float $_workTimeLimit = 0;
 
 }
