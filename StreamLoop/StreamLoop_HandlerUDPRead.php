@@ -64,7 +64,13 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
             if ($bytes === false) {
                 // end of drain
                 break;
-            } else {
+            } elseif ($bytes > 0) { // пустые дата-граммы мне не нужны
+                // если нет drain - то вызываем сразу передачу
+                if ($drainLimit == 1) {
+                    $this->_receiver->onReceive(microtime(true), $buffer, $fromAddress, $fromPort);
+                    return;
+                }
+
                 // @todo теоретически можно поменять на какую-то другую структуру, а не массив - потому что его тяжело клеить
                 // потому что дальше revert loop и он херовый
                 $messageArray[] = [$buffer, $fromAddress, $fromPort];
