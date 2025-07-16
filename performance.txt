@@ -701,6 +701,62 @@ call:
 
 ==============================================================
 
+DTO vs new DTO vs isset
+
+// 59 ms
+$this->_x = new DTO();
+$x = $this->_x;
+$x->a = $j;
+$x->b = $j;
+$x->c = $j;
+
+$x = new DTO(); // 56 ms
+$x->a = $j;
+$x->b = $j;
+$x->c = $j;
+$this->_x = $x;
+
+// 28 ms
+if (empty($this->_x)) { // если не известно DTO инициирован или нет
+    $this->_x = new DTO();
+}
+$x = $this->_x;
+$x->a = $j;
+$x->b = $j;
+$x->c = $j;
+
+// 24 ms
+if ($this->_xEmpty) { // еще быстрее, потому что нет типизации объекта к bool
+    $this->_x = new DTO();
+    $this->_xEmpty = false;
+}
+$x = $this->_x;
+$x->a = $j;
+$x->b = $j;
+$x->c = $j;
+
+// 25 ms
+if (!$this->_xInited) { // сильно легче заходить в true условия
+    $this->_x = new DTO();
+    $this->_xInited = true;
+}
+$x = $this->_x;
+$x->a = $j;
+$x->b = $j;
+$x->c = $j;
+
+// 21 ms
+$x = $this->_x; // _x это DTO и он уже проинициирован
+$x->a = $a;
+$x->b = $b;
+$x->c = $c;
+
+// 17 ms
+$this->_call($a, $b, $c); // << идеально всегда заменять на call и не заниматься присвоением хуйни в DTO или Array
+
+
+==============================================================
+
 closure & lambda:
 
 interface IReceiver {
