@@ -50,21 +50,28 @@ class Connection_SocketUDS implements Connection_IConnection {
             throw new Connection_Exception($message.' sockfile='.$this->_socketFile);
         }
 
-        $buf = '';
+        $buffer = '';
         $fromAddress = '';
         $fromPort = 0;
 
         while (1) {
-            $bytes = socket_recvfrom($this->_socket, $buf, $length, 0, $fromAddress, $fromPort);
+            $bytes = socket_recvfrom($this->_socket, $buffer, $length, 0, $fromAddress, $fromPort);
+
+            // меряем время сразу после получения
             $ts = microtime(true);
 
-            if ($bytes === false) {
+            // тут более правильно проверять на === false,
+            // но в реальности пустой дата-граммы быть не может
+            // и чтобы не делать внизу проверку на if ($buffer) с типизацией string $buffer to bool
+            // я прямо тут проверяю не пустые ли байты, тем более что чаще всего $bytes это int
+            if ($bytes <= 0) {
                 $message = socket_strerror(socket_last_error($this->_socket)); // message надо получить ДО disconnect, бо поменяется
                 $this->disconnect();
                 throw new Connection_Exception($message);
             }
 
-            $receiver->onReceive($ts, $buf, $fromAddress, $fromPort);
+            // я сюда не дойду если $buffer пустой
+            $receiver->onReceive($ts, $buffer, $fromAddress, $fromPort);
         }
     }
 
