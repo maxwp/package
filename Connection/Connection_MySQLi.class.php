@@ -69,12 +69,12 @@ implements Connection_IDatabaseAdapter {
 
         // issue #63722 - умный старт транзакций:
         // нет смысла открывать транзакцию пока нет запросов
-        if ($this->_transactionStart) {
-            // сначала сбрасываем флаг
-            $this->_transactionStart = false;
-
+        if ($this->_transactionRequested) {
             // затем запускаем транзакцию
             $this->query('START TRANSACTION');
+
+            // сбрасываем флаг
+            $this->_transactionRequested = false;
         }
 
         $result = $this->_link->query($queryString);
@@ -116,13 +116,14 @@ implements Connection_IDatabaseAdapter {
      */
     public function transactionStart($force = false) {
         // транзакцию нужно открывать либо по force, либо когда счетчик = 0
-        if (!$this->_transactionCount || $force) {
-            $this->_transactionStart = true;
-
-            // см метод query, там умный старт транзакции только когда есть первый запрос
+        // см метод query, там умный старт транзакции только когда есть первый запрос
+        if ($this->_transactionCount <= 0) {
+            $this->_transactionRequested = true;
+        } elseif ($force) {
+            $this->_transactionRequested = true;
         }
 
-        $this->_transactionCount ++;
+        $this->_transactionCount += 1;
         return true;
     }
 
@@ -134,15 +135,16 @@ implements Connection_IDatabaseAdapter {
      */
     public function transactionCommit($force = false) {
         // коммит нужно выполнить только если force или транзакция одна
-        if ($force || $this->_transactionCount == 1) {
+        if ($this->_transactionCount == 1 || $force) {
             // если транзакция была запрошена но не запущена - то не надо и коммитить
-            if ($this->_transactionStart) {
-                $this->_transactionStart = false;
+            if ($this->_transactionRequested) {
+                $this->_transactionRequested = false;
             } else {
                 $this->query('COMMIT');
             }
         }
-        $this->_transactionCount --;
+
+        $this->_transactionCount -= 1;
 
         if ($this->_transactionCount < 0) {
             $this->_transactionCount = 0;
@@ -157,10 +159,10 @@ implements Connection_IDatabaseAdapter {
      */
     public function transactionRollback($force = false) {
         // rollback нужно выполнить только если force или транзакция одна
-        if ($force || $this->_transactionCount == 1) {
+        if ($this->_transactionCount == 1 || $force) {
             // если транзакция была запрошена но не запущена - то не надо и отменять
-            if ($this->_transactionStart) {
-                $this->_transactionStart = false;
+            if ($this->_transactionRequested) {
+                $this->_transactionRequested = false;
             } else {
                 $this->query('ROLLBACK');
             }
@@ -179,7 +181,7 @@ implements Connection_IDatabaseAdapter {
     public function transactionClear() {
         $this->query('ROLLBACK');
 
-        $this->_transactionStart = false;
+        $this->_transactionRequested = false;
         $this->_transactionCount = 0;
     }
 
@@ -263,6 +265,6 @@ implements Connection_IDatabaseAdapter {
 
     private $_transactionCount = 0;
 
-    private $_transactionStart = false;
+    private $_transactionRequested = false; // @todo поменять на started/inited
 
 }
