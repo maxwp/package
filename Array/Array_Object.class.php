@@ -18,7 +18,7 @@ class Array_Object extends ArrayObject {
     public function max() {
         $max = false;
         foreach ($this as $x) {
-            if ($max === false || $x > $max) {
+            if ($x > $max || $max === false) {
                 $max = $x;
             }
         }
@@ -28,7 +28,7 @@ class Array_Object extends ArrayObject {
     public function min() {
         $min = false;
         foreach ($this as $x) {
-            if ($min === false || $x < $min) {
+            if ($x < $min || $min === false) {
                 $min = $x;
             }
         }

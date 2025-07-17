@@ -216,9 +216,12 @@ class Checker {
         $x = @strtotime($datetime);
 
         // если дата меньше 1970 - false
-        if (!$x || $x < '-2211759589') {
+        if (!$x) {
+            return false;
+        } elseif ($x < '-2211759589') { // @todo wtf magic
             return false;
         }
+
         return true;
     }
 

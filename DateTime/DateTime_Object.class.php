@@ -154,7 +154,9 @@ class DateTime_Object {
     public static function Create($datetime = false) {
         if (!$datetime) {
             return new DateTime_Object(time());
-        } elseif (is_int($datetime) || is_float($datetime)) {
+        } elseif (is_int($datetime)) {
+            return new DateTime_Object($datetime);
+        } elseif (is_float($datetime)) {
             return new DateTime_Object($datetime);
         } else {
             return new DateTime_Object(strtotime($datetime));

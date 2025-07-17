@@ -30,12 +30,13 @@ class EE_Typing {
             case self::TYPE_INT:
                 return (int) $value;
             case self::TYPE_BOOL:
-                if ($value == 'true') {
-                    return true;
-                } elseif ($value == 'false') {
-                    return false;
-                } else {
-                    return (bool) $value;
+                switch ($value) {
+                    case 'true':
+                        return true;
+                    case 'false':
+                        return false;
+                    default:
+                        return (bool) $value;
                 }
             case self::TYPE_ARRAY:
                 if (!$value) {
@@ -52,7 +53,9 @@ class EE_Typing {
                 return (float) $value;
             case self::TYPE_DATE:
                 $x = strtotime($value);
-                if (!$x || $x < 0) {
+                if (!$x) {
+                    return '';
+                } elseif ($x < 0) {
                     return '';
                 } else {
                     return date('Y-m-d', $x);
@@ -60,7 +63,9 @@ class EE_Typing {
             case self::TYPE_DATETIME:
                 // @todo тут полная хуйня нужен timestamp
                 $x = strtotime($value);
-                if (!$x || $x < 0) {
+                if (!$x) {
+                    return '';
+                } elseif ($x < 0) {
                     return '';
                 } else {
                     return date('Y-m-d H:i:s', $x);

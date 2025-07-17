@@ -235,46 +235,48 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
     private function _checkResponseHeaders() {
         $line = fgets($this->stream, 2048); // @todo 4Kb
-        if ($line !== false) {
-            $this->_buffer .= $line; // @todo lo locals
-            // пустая строка — конец блока заголовков
-            if ($line == "\r\n" || $line == "\n") {
-                // разбираем заголовки в ассоц. массив
-                $lines = explode("\r\n", $this->_buffer);
 
-                // Формат статус-строки: HTTP/1.1 200 OK
-                $statusParts = explode(' ', $lines[0], 3);
-                // $statusParts[0] = "HTTP/1.1"
-                // $statusParts[1] = "200"
-                // $statusParts[2] = "OK"
-                $this->_statusCode = isset($statusParts[1]) ? (int)$statusParts[1] : 0;
-                $this->_statusMessage = isset($statusParts[2]) ? (string)$statusParts[2] : null;
+        $this->_buffer .= $line; // @todo lo locals?
 
-                $this->_headerArray = [];
-                for ($i = 1, $n = count($lines); $i < $n; $i++) { // @todo лажа
-                    // Пропускаем пустые строки (например, если что-то пошло не так)
-                    if ($lines[$i] === '') {
-                        continue;
-                    }
-                    // Разделяем заголовок на имя и значение
-                    [$name, $value] = explode(': ', $lines[$i], 2);
-                    $this->_headerArray[strtolower($name)] = $value;
+        // пустая строка — конец блока заголовков
+        if ($line == "\r\n" || $line == "\n") {
+            // разбираем заголовки в ассоц. массив
+            $lines = explode("\r\n", $this->_buffer);
+
+            // Формат статус-строки: HTTP/1.1 200 OK
+            $statusParts = explode(' ', $lines[0], 3);
+            // $statusParts[0] = "HTTP/1.1"
+            // $statusParts[1] = "200"
+            // $statusParts[2] = "OK"
+
+            // @todo лажа
+            $this->_statusCode = isset($statusParts[1]) ? (int)$statusParts[1] : 0;
+            $this->_statusMessage = isset($statusParts[2]) ? (string)$statusParts[2] : null;
+
+            $this->_headerArray = [];
+            $n = count($lines);
+            for ($i = 1; $i < $n; $i++) { // @todo лажа
+                // Пропускаем пустые строки (например, если что-то пошло не так)
+                if (!$lines[$i]) {
+                    continue;
                 }
-
-                $this->_updateState(
-                    self::_STATE_WAIT_FOR_RESPONSE_BODY,
-                    true,
-                    false,
-                    false,
-                    false,
-                );
-                $this->_buffer = '';
-
-                return;
+                // Разделяем заголовок на имя и значение
+                [$name, $value] = explode(': ', $lines[$i], 2);
+                $this->_headerArray[strtolower($name)] = $value;
             }
+
+            $this->_updateState(
+                self::_STATE_WAIT_FOR_RESPONSE_BODY,
+                true,
+                false,
+                false,
+            );
+            $this->_buffer = '';
+
+            return;
         }
 
-        if ($line === '') {
+        if ($line === false) {
             $this->_checkEOF();
         }
     }
@@ -287,11 +289,14 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
             $length = (int)$this->_headerArray['content-length'];
             $chunk = fread($this->stream, 8192); // @todo drain?
 
-            if ($chunk !== false && $chunk !== '') {
-                $this->_buffer .= $chunk;
-            }
+            // дописываемся всегда: так быстрее, потому что как правило $chunk это string или empty string.
+            // И даже если он false - то дальше сработао проверка
+            $this->_buffer .= $chunk;
 
-            if ($chunk === '') {
+            if ($chunk === false) {
+                // в неблокирующем режиме если данных нет - то будет string ''
+                // а если false - то это ошибка чтения
+                // например, PHP Warning: fread(): SSL: Connection reset by peer
                 $this->_checkEOF();
             }
 
@@ -315,6 +320,8 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 $this->_checkRequestQue();
             }
         } elseif (isset($this->_headerArray['transfer-encoding']) && strtolower($this->_headerArray['transfer-encoding']) === 'chunked') {
+            // @todo этот блок пока-что не пашет и я его не проверял
+
             // loop, чтобы «прокачать» как можно больше данных за один вызов
             while (true) {
                 // 1) Если ещё не читали размер текущего чанка
@@ -366,8 +373,12 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 // 2) Читаем из тела чанка столько, сколько есть
                 $toRead = $this->_currentChunkSize - $this->_currentChunkRead;
                 $part = fread($this->stream, min(8192, $toRead));
-                if ($part === false || $part === '') {
+                if ($part === '') {
                     // пока нечего читать
+                    return;
+                }
+                if ($part === false) {
+                    // @todo соединение закрыто
                     return;
                 }
                 $this->_buffer .= $part;
@@ -441,6 +452,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     private $_activeRequestTS = 0;
     private SplQueue $_requestQue;
 
+    // @todo to int-const
     private const _STATE_CONNECTING = 'connecting';
     private const _STATE_HANDSHAKE = 'handshake';
     private const _STATE_WAIT_FOR_RESPONSE_HEADERS = 'wait-for-response-headers';
