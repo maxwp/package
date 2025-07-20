@@ -47,7 +47,7 @@ class StreamLoop {
                 if (!$streamID) {
                     continue;
                 }
-                $linkArray[$streamID] = $handler; // @todo improve только если что-то поменялось
+                $linkArray[$streamID] = $handler;
 
                 // вот тут у handler'a я могу спросить до какого времени ты хочешь timeout
                 // он может вернуть 0, то есть ему насрать и он не хочет таймаут
@@ -93,24 +93,24 @@ class StreamLoop {
                 throw new StreamLoop_Exception('stream_select failed');
             }
 
-            $callArray = []; // @todo йобаная динамическая аллокация, вынести ДО цикла
+            $calledArray = []; // @todo йобаная динамическая аллокация, вынести ДО цикла
 
             foreach ($r as $stream) {
                 $id = (int) $stream;
                 $linkArray[$id]->readyRead();
-                $callArray[$id] = true;
+                $calledArray[$id] = true;
             }
 
             foreach ($w as $stream) {
                 $id = (int) $stream;
                 $linkArray[$id]->readyWrite();
-                $callArray[$id] = true;
+                $calledArray[$id] = true;
             }
 
             foreach ($e as $stream) {
                 $id = (int) $stream;
                 $linkArray[$id]->readyExcept();
-                $callArray[$id] = true;
+                $calledArray[$id] = true;
             }
 
             $tsEnd = microtime(true);
@@ -120,7 +120,7 @@ class StreamLoop {
             // = то надо вызвать readySelectTimeout
             foreach ($linkArray as $streamD => $handler) {
                 if ($handler->timeoutTo > 0
-                    && empty($callArray[$streamD])
+                    && empty($calledArray[$streamD])
                     && $handler->timeoutTo <= $tsEnd
                 ) {
                     $handler->readySelectTimeout();

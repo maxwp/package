@@ -86,14 +86,16 @@ class Connection_WebSocket implements Connection_IConnection {
                         // например, PHP Warning: fread(): SSL: Connection reset by peer
                         $errorString = error_get_last()['message'];
                         throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
-                    } elseif ($data === '' && feof($stream)) {
+                    } elseif ($data === '') {
                         // Если fread вернул пустую строку, проверяем, достигнут ли EOF
-                        $this->disconnect();
-                        throw new Exception('EOF: connection closed by remote host');
+                        if (feof($stream)) {
+                            $this->disconnect();
+                            throw new Exception('EOF: connection closed by remote host');
+                        }
                     }
 
                     if ($data == '') {
-                        // stop drain and to not parse
+                        // stop drain and do not parse
                         break;
                     }
 
