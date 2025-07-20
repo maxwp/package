@@ -1,8 +1,20 @@
 <?php
 class StreamLoop {
 
-    public function addHandler(StreamLoop_AHandler $handler) {
-        $this->_handlerArray[] = $handler;
+    /**
+     * Регистрация handler'a: в этот момент у меня уже должен быть stream & streamID,
+     * иначе его нельзя зарегистрировать.
+     *
+     * @param StreamLoop_AHandler $handler
+     * @return void
+     */
+    public function registerHandler(StreamLoop_AHandler $handler) {
+        $this->_handlerArray[$handler->streamID] = $handler;
+    }
+
+    public function unregisterHandler($handler) {
+        // @todo как менять handler?
+        unset($this->_handlerArray[$handler->streamID]);
     }
 
     public function stop() {
@@ -30,51 +42,14 @@ class StreamLoop {
 
             $onRun->onRun($tsNow);
 
-            // @todo тут проблема в том что я вынужден каждый раз клеить эти массивы
-            // на каждый цикл, вместо того чтобы формировать их динамически:
-            // в этом случаел в каждом handler должен быть указатель на этот stream loop и handler
-            // сам добавляет/убирает в эти массивы: потому что нет никакой разницы что поставить flag*/timeoutTo в handler,
-            // что заставить handler лезть в stream loop и менять там свойство (вызывать update, а SL все стянет сам)
-            $r = [];
-            $w = [];
-            $e = [];
-            $linkArray = [];
-            $timeoutToArray = [];
-
-            $ok = false;
-            foreach ($this->_handlerArray as $handler) {
-                $streamID = $handler->streamID;
-                if (!$streamID) {
-                    continue;
-                }
-                $linkArray[$streamID] = $handler;
-
-                // вот тут у handler'a я могу спросить до какого времени ты хочешь timeout
-                // он может вернуть 0, то есть ему насрать и он не хочет таймаут
-                $timeoutTo = $handler->timeoutTo; // to locals
-                if ($timeoutTo > 0) {
-                    $timeoutToArray[] = $timeoutTo;
-                }
-
-                // handler будет выдавать stream только в том случае, если он что-то ждет
-                // и будет указыват что именно ждет этот stream
-                $stream = $handler->stream;
-                if ($handler->flagRead) {
-                    $r[] = $stream;
-                    $ok = true;
-                }
-                if ($handler->flagWrite) {
-                    $w[] = $stream;
-                    $ok = true;
-                }
-                if ($handler->flagExcept) {
-                    $e[] = $stream;
-                    $ok = true;
-                }
-            }
+            // копирование массивов, в них уже задано что нужно для stream_select
+            $r = $this->selectReadArray;
+            $w = $this->selectWriteArray;
+            $e = $this->selectExceptArray;
+            $timeoutToArray = $this->selectTimeoutToArray;
 
             // если ничего нет - пауза на тот же тайм-аут
-            if (!$ok) {
+            if (!$r && !$w && !$e) {
                 usleep($streamSelectTimeoutUS);
                 continue;
             }
@@ -93,37 +68,37 @@ class StreamLoop {
                 throw new StreamLoop_Exception('stream_select failed');
             }
 
-            $calledArray = []; // @todo йобаная динамическая аллокация, вынести ДО цикла
+            $calledArray = [];
 
             foreach ($r as $stream) {
                 $id = (int) $stream;
-                $linkArray[$id]->readyRead();
+                $this->_handlerArray[$id]->readyRead();
                 $calledArray[$id] = true;
             }
 
             foreach ($w as $stream) {
                 $id = (int) $stream;
-                $linkArray[$id]->readyWrite();
+                $this->_handlerArray[$id]->readyWrite();
                 $calledArray[$id] = true;
             }
 
             foreach ($e as $stream) {
                 $id = (int) $stream;
-                $linkArray[$id]->readyExcept();
+                $this->_handlerArray[$id]->readyExcept();
                 $calledArray[$id] = true;
             }
 
             $tsEnd = microtime(true);
 
-            // если для потока не вызывался сейчас ни один ready*
+            // если для handler не вызывался сейчас ни один ready*
             // и при этом я перешел за timeout
             // = то надо вызвать readySelectTimeout
-            foreach ($linkArray as $streamD => $handler) {
-                if ($handler->timeoutTo > 0
-                    && empty($calledArray[$streamD])
-                    && $handler->timeoutTo <= $tsEnd
-                ) {
-                    $handler->readySelectTimeout();
+            foreach ($this->_handlerArray as $streamID => $handler) {
+                $tto = $handler->timeoutTo; // to locals
+                if ($tto > 0 && $tto <= $tsEnd) {
+                    if (empty($calledArray[$streamID])) {
+                        $handler->readySelectTimeout();
+                    }
                 }
             }
         }
@@ -133,13 +108,17 @@ class StreamLoop {
         $this->_streamSelectTimeoutUS = $us;
     }
 
+    private $_streamSelectTimeoutUS = 1_000_000;
+
+    private $_loopRunning;
     /**
      * @var array<StreamLoop_AHandler>
      */
     private $_handlerArray = [];
 
-    private $_streamSelectTimeoutUS = 1_000_000;
-
-    private $_loopRunning;
+    public $selectReadArray = [];
+    public $selectWriteArray = [];
+    public $selectExceptArray = [];
+    public $selectTimeoutToArray = [];
 
 }

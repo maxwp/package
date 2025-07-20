@@ -1,10 +1,9 @@
 <?php
 class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
-    // @todo как сделать универсально с drain forward/back и без него?
-    // потому что hedger тоже будет юзать этот же SL_UDP
+    public function __construct(StreamLoop $loop, $host, $port, StreamLoop_HandlerUDPRead_IReceiver $receiver) {
+        parent::__construct($loop);
 
-    public function __construct($host, $port, StreamLoop_HandlerUDPRead_IReceiver $receiver) {
         $this->stream = stream_socket_server(
             sprintf('udp://%s:%d', $host, $port),
             $errno,
@@ -18,10 +17,15 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
         $this->streamID = (int) $this->stream;
 
+        // регистрация handler'a в loop'e
+        $this->_loop->registerHandler($this);
+
         $this->_socket = socket_import_stream($this->stream);
         socket_set_option($this->_socket, SOL_SOCKET, SO_REUSEADDR, 1); // повторный биндинг
         socket_set_option($this->_socket, SOL_SOCKET, SO_RCVBUF, 2**20); // увеличиваем приёмный буфер ядра
         socket_set_nonblock($this->_socket); // делаем неблокирующим
+
+        // @todo add busy_poll mode
 
         // Отключаем все таймауты и буферизацию PHP
         stream_set_read_buffer($this->stream, 0);
@@ -31,9 +35,7 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
         $this->_receiver = $receiver;
 
-        $this->flagRead = true; // true only for UDP
-        $this->flagWrite = false;
-        $this->flagExcept = false;
+        $this->_loop->selectReadArray[$this->streamID] = $this->stream;
     }
 
     public function readyRead() {
@@ -71,7 +73,7 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
                     return;
                 }
 
-                // @todo теоретически можно поменять на какую-то другую структуру, а не массив - потому что его тяжело клеить
+                // @todo теоретически можно поменять на какую-то другую структуру, а не массив - потому что его тяжеловато клеить
                 // потому что дальше revert loop и он херовый
                 $messageArray[] = [$buffer, $fromAddress, $fromPort];
                 $found = true;
@@ -87,29 +89,37 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
         // 2. ну и это экономия на microtime-call
         $ts = microtime(true);
 
-        // вдуваем сообщения в обратном порядке
-        $cnt = count($messageArray);
-        $receiver = $this->_receiver; // вытянуть сюда его дешевле чем юзать в цикле
-        for ($j = $cnt - 1; $j >= 0; $j--) {
-            $message = $messageArray[$j];
-            $receiver->onReceive($ts, $message[0], $message[1], $message[2]);
+        $receiver = $this->_receiver; // to locals
+        if ($this->_drainReverse) {
+            // вдуваем сообщения в обратном порядке
+            $cnt = count($messageArray);
+            for ($j = $cnt - 1; $j >= 0; $j--) {
+                $message = $messageArray[$j];
+                $receiver->onReceive($ts, $message[0], $message[1], $message[2]);
+            }
+        } else {
+            // вдуваем сообщения в прямом порядке
+            foreach ($messageArray as $message) {
+                $receiver->onReceive($ts, $message[0], $message[1], $message[2]);
+            }
         }
     }
 
     public function readyWrite() {
-
+        // nothing for UDP
     }
 
     public function readyExcept() {
-
+        // nothing for UDP
     }
 
     public function readySelectTimeout() {
-
+        // nothing for UDP
     }
 
-    public function setDrainLimit(int $limit) {
+    public function setDrain(int $limit, bool $reverse) {
         $this->_drainLimit = $limit;
+        $this->_drainReverse = $reverse;
     }
 
     private $_socket;
@@ -117,5 +127,6 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
     private StreamLoop_HandlerUDPRead_IReceiver $_receiver;
 
     private int $_drainLimit = 1;
+    private bool $_drainReverse = false;
 
 }
