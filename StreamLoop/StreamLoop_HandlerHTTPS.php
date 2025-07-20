@@ -1,7 +1,9 @@
 <?php
 class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
-    public function __construct($host, $port, $ip = false) {
+    public function __construct(StreamLoop $loop, $host, $port, $ip = false) {
+        parent::__construct($loop);
+
         $this->_host = $host;
         $this->_port = $port;
         $this->setIP($ip);
@@ -40,13 +42,13 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     public function connect() {
+        $this->_loop->unregisterHandler($this);
+
         $this->_reset();
 
         $this->_activeRequest = true;
-        $this->_updateState(self::_STATE_CONNECTING, false, true, false);
 
         $ip = $this->_ip ? $this->_ip : $this->_host;
-
         $this->stream = stream_socket_client(
             "tcp://{$ip}:{$this->_port}",
             $errno,
@@ -60,6 +62,10 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         }
 
         $this->streamID = (int) $this->stream;
+
+        $this->_loop->registerHandler($this);
+
+        $this->_updateState(self::_STATE_CONNECTING, false, true, false);
 
         stream_set_blocking($this->stream, false);
 
@@ -165,9 +171,9 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         $this->_activeRequest = $this->_requestQue->dequeue();
         $this->_activeRequestTS = microtime(true);
         if (!empty($this->_activeRequest['timeout'])) {
-            $this->timeoutTo = $this->_activeRequestTS + $this->_activeRequest['timeout'];
+            $this->_loop->updateHandlerTimeout($this, $this->_activeRequestTS + $this->_activeRequest['timeout']);
         } else {
-            $this->timeoutTo = 0;
+            $this->_loop->updateHandlerTimeout($this, 0);
         }
 
         $request = $this->_activeRequest['method']." ".$this->_activeRequest['path']." HTTP/1.1\r\n";
@@ -420,9 +426,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
     private function _updateState($state, $flagRead, $flagWrite, $flagExcept) {
         $this->_state = $state;
-        $this->flagRead = $flagRead;
-        $this->flagWrite = $flagWrite;
-        $this->flagExcept = $flagExcept;
+        $this->_loop->updateHandlerFlags($this, $flagRead, $flagWrite, $flagExcept);
     }
 
     public function getState() {
@@ -436,7 +440,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         $this->_headerArray = [];
         $this->_activeRequestTS = 0;
         $this->_activeRequest = false;
-        $this->timeoutTo = 0;
+        $this->_loop->updateHandlerTimeout($this, 0);
     }
 
     private $_host, $_port, $_ip;
