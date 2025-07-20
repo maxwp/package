@@ -1,7 +1,9 @@
 <?php
 class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
 
-    public function __construct($host, $port, $path, $writeArray, $ip) {
+    public function __construct(StreamLoop $loop, $host, $port, $path, $writeArray, $ip) {
+        parent::__construct($loop);
+
         $this->_host = $host;
         $this->_port = $port;
         $this->_path = $path;
@@ -29,7 +31,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     public function connect() {
         $this->_buffer = '';
 
-        $this->_updateState(self::_STATE_CONNECTING, false, true, false);
+        $this->_loop->unregisterHandler($this);
 
         $this->stream = stream_socket_client(
             "tcp://{$this->_ip}:{$this->_port}",
@@ -44,6 +46,10 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         }
 
         $this->streamID = (int) $this->stream;
+
+        $this->_loop->registerHandler($this);
+
+        $this->_updateState(self::_STATE_CONNECTING, false, true, false);
 
         // Устанавливаем буфер до начала SSL
         $socket = socket_import_stream($this->stream);
@@ -60,7 +66,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     public function disconnect() {
         fclose($this->stream);
         $this->_buffer = '';
-        $this->timeoutTo = 0;
+        $this->_loop->updateHandlerTimeout($this, 0);
     }
 
     public function readyRead() {
@@ -72,7 +78,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
                 return;
             case self::_STATE_WEBSOCKET_READY:
                 $ts = microtime(true);
-                $this->timeoutTo = $ts + $this->_selectTimeout;
+                $this->_loop->updateHandlerTimeout($this, $ts + $this->_selectTimeout);
                 $this->_checkPingPong($ts);
                 $this->_checkRead(); // @todo inline here
                 return;
@@ -144,7 +150,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         }
 
         $ts = microtime(true);
-        $this->timeoutTo = $ts + $this->_selectTimeout;
+        $this->_loop->updateHandlerTimeout($this, $ts + $this->_selectTimeout);
 
         // @todo говно
         $msgArray = [];
@@ -322,10 +328,9 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     }
 
     private function _updateState($state, $flagRead, $flagWrite, $flagExcept) {
+        // @todo maybe inline
         $this->_state = $state;
-        $this->flagRead = $flagRead;
-        $this->flagWrite = $flagWrite;
-        $this->flagExcept = $flagExcept;
+        $this->_loop->updateHandlerFlags($this, $flagRead, $flagWrite, $flagExcept);
     }
 
     private function _decodeMessageArray() {

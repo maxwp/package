@@ -12,9 +12,10 @@ class StreamLoop {
         $this->_handlerArray[$handler->streamID] = $handler;
     }
 
-    public function unregisterHandler($handler) {
-        // @todo как менять handler?
-        unset($this->_handlerArray[$handler->streamID]);
+    public function unregisterHandler(StreamLoop_AHandler $handler) {
+        if ($handler->streamID) {
+            unset($this->_handlerArray[$handler->streamID]);
+        }
     }
 
     public function stop() {
@@ -43,9 +44,9 @@ class StreamLoop {
             $onRun->onRun($tsNow);
 
             // копирование массивов, в них уже задано что нужно для stream_select
-            $r = $this->selectReadArray;
-            $w = $this->selectWriteArray;
-            $e = $this->selectExceptArray;
+            $r = $this->_selectReadArray;
+            $w = $this->_selectWriteArray;
+            $e = $this->_selectExceptArray;
             $timeoutToArray = $this->selectTimeoutToArray;
 
             // если ничего нет - пауза на тот же тайм-аут
@@ -93,14 +94,51 @@ class StreamLoop {
             // если для handler не вызывался сейчас ни один ready*
             // и при этом я перешел за timeout
             // = то надо вызвать readySelectTimeout
-            foreach ($this->_handlerArray as $streamID => $handler) {
-                $tto = $handler->timeoutTo; // to locals
-                if ($tto > 0 && $tto <= $tsEnd) {
+            foreach ($this->selectTimeoutToArray as $streamID => $timeoutTo) {
+                if ($timeoutTo > 0 && $timeoutTo <= $tsEnd) {
                     if (empty($calledArray[$streamID])) {
-                        $handler->readySelectTimeout();
+                        $this->_handlerArray[$streamID]->readySelectTimeout();
                     }
                 }
             }
+        }
+    }
+
+    public function updateHandlerFlags(StreamLoop_AHandler $handler, $flagRead, $flagWrite, $flagExcept) {
+        if (!$handler->streamID) {
+            return;
+        }
+
+        // to locals
+        $stream = $handler->stream;
+        $streamID = $handler->streamID;
+
+        // @todo менять только если что-то поменялось у меня?
+
+        if ($flagRead) {
+            $this->_selectReadArray[$streamID] = $stream;
+        } else {
+            unset($this->_selectReadArray[$streamID]);
+        }
+
+        if ($flagWrite) {
+            $this->_selectWriteArray[$streamID] = $stream;
+        } else {
+            unset($this->_selectWriteArray[$streamID]);
+        }
+
+        if ($flagExcept) {
+            $this->_selectExceptArray[$streamID] = $stream;
+        } else {
+            unset($this->_selectExceptArray[$streamID]);
+        }
+    }
+
+    public function updateHandlerTimeout(StreamLoop_AHandler $handler, $timeout) {
+        if ($timeout > 0) {
+            $this->selectTimeoutToArray[$handler->streamID] = $timeout;
+        } else {
+            unset($this->selectTimeoutToArray[$handler->streamID]);
         }
     }
 
@@ -116,9 +154,9 @@ class StreamLoop {
      */
     private $_handlerArray = [];
 
-    public $selectReadArray = [];
-    public $selectWriteArray = [];
-    public $selectExceptArray = [];
+    private array $_selectReadArray = [];
+    private array $_selectWriteArray = [];
+    private array $_selectExceptArray = [];
     public $selectTimeoutToArray = [];
 
 }

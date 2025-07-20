@@ -35,7 +35,7 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
         $this->_receiver = $receiver;
 
-        $this->_loop->selectReadArray[$this->streamID] = $this->stream;
+        $this->_loop->updateHandlerFlags($this, true, false, false);
     }
 
     public function readyRead() {

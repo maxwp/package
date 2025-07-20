@@ -12,7 +12,6 @@ abstract class StreamLoop_AHandler {
 
     public $stream;
     public $streamID;
-    public $timeoutTo = 0;
     /**
      * @var StreamLoop
      */
