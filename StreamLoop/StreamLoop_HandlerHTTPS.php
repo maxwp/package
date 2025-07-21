@@ -303,11 +303,13 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     private function _checkResponseBody() {
         // @todo inline it
 
-        if (isset($this->_headerArray['content-length'])) {
+        $headerArray = $this->_headerArray;
+
+        if (isset($headerArray['content-length'])) {
             // @todo buffer to locals
 
             // ровно N байт
-            $length = (int) $this->_headerArray['content-length'];
+            $length = (int) $headerArray['content-length'];
             $chunk = fread($this->stream, 8192); // @todo dynamic drain like in WS
 
             // дописываемся всегда: так быстрее, потому что как правило $chunk это string или empty string.
@@ -325,7 +327,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                     $tsNow,
                     $this->_statusCode,
                     $this->_statusMessage,
-                    $this->_headerArray,
+                    $headerArray,
                     $this->_buffer
                 );
 
@@ -373,7 +375,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                         );
 
                         // сбрасываем state
-                        $this->_updateState(self::_STATE_READY, false, false, false, false);
+                        $this->_updateState(self::_STATE_READY, false, false, false);
                         $this->_buffer = '';
                         $this->_headerArray = [];
                         $this->_statusCode = 0;

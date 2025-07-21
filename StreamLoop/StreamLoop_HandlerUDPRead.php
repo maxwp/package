@@ -63,6 +63,9 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
 
         if ($bytes > 0) {
             $receiver->onReceive(microtime(true), $buffer, $fromAddress, $fromPort);
+        } else {
+            // редкая ситуация select сказал что данные есть, но ничего не прочиталось
+            return;
         }
 
         // если дальше drain нет - на выход
