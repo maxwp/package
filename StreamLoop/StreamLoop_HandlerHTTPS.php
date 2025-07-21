@@ -20,8 +20,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         // надо попробовать
     }
 
-    // @todo отказаться от callable
-    public function request(string $method, string $path, string $body, array $headerArray, callable $callback, float $timeout = 0) {
+    public function request($method, $path, $body, $headerArray, $callback, $timeout = 0) {
         // добавляем запрос в очередь
         $this->_requestQue->enqueue(array(
             'method' => strtoupper($method),
@@ -29,7 +28,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
             'body' => $body,
             'headerArray' => $headerArray,
             'callback' => $callback,
-            'timeout' => $timeout,
+            'timeout' => (float) $timeout, // timeout нужен всегда
         ));
 
         if (!$this->_activeRequest) {
@@ -38,6 +37,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     public function setIP($ip) {
+        // этот метод нужен чтобы на лету менять ip не пересоздавая полностью весь handler
         $this->_ip = $ip;
     }
 
@@ -49,7 +49,8 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         $this->_activeRequest = true;
 
         $ip = $this->_ip ? $this->_ip : $this->_host;
-        $this->stream = stream_socket_client(
+
+        $stream = stream_socket_client(
             "tcp://{$ip}:{$this->_port}",
             $errno,
             $errstr,
@@ -57,21 +58,22 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
             STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT,
             stream_context_create()  // без ssl-опций!
         );
-        if (!$this->stream) {
+        if (!$stream) {
             throw new StreamLoop_Exception("TCP connect failed immediately: $errstr ($errno)");
         }
 
-        $this->streamID = (int) $this->stream;
+        $this->streamID = (int) $stream;
+        $this->stream = $stream;
 
         $this->_loop->registerHandler($this);
 
         $this->_updateState(self::_STATE_CONNECTING, false, true, false);
 
-        stream_set_blocking($this->stream, false);
+        stream_set_blocking($stream, false);
 
         // отключаем буферизацию php
-        stream_set_read_buffer($this->stream, 0);
-        stream_set_write_buffer($this->stream, 0);
+        stream_set_read_buffer($stream, 0);
+        stream_set_write_buffer($stream, 0);
     }
 
     public function disconnect() {
@@ -80,8 +82,6 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     public function readyRead($tsSelect) {
-        $this->_checkEOF(); // @todo перенести в методы бо двойная проверка в read
-
         switch ($this->_state) {
             case self::_STATE_HANDSHAKE:
                 $this->_checkHandshake();
@@ -99,14 +99,16 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         switch ($this->_state) {
             case self::_STATE_CONNECTING:
                 // коннект установился, я готов к записи
-                stream_context_set_option($this->stream, array(
+                $stream = $this->stream;
+
+                stream_context_set_option($stream, array(
                     'ssl' => [
                         'verify_peer'       => false,
                         'verify_peer_name'  => false,
                     ],
                 ));
-                stream_context_set_option($this->stream, 'ssl', 'peer_name', $this->_host);
-                stream_context_set_option($this->stream, 'ssl', 'allow_self_signed', true);
+                stream_context_set_option($stream, 'ssl', 'peer_name', $this->_host);
+                stream_context_set_option($stream, 'ssl', 'allow_self_signed', true);
 
                 $this->_updateState(self::_STATE_HANDSHAKE, true, true, false, false);
                 $this->_checkHandshake();
@@ -131,21 +133,28 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         }
     }
 
-    public function readySelectTimeout($tsSelect) {
-        if ($this->_activeRequest && !empty($this->_activeRequest['timeout'])) {
-            $ts = microtime(true);
-            if ($ts - $this->_activeRequestTS >= $this->_activeRequest['timeout']) {
-                $cb = $this->_activeRequest['callback'];
-                $cb($this->_activeRequestTS, $ts, 408, 'Request Timeout', [], '');
+    // @todo встроить tsSelect во все callback
 
-                $this->disconnect();
-                $this->connect();
+    public function readySelectTimeout($tsSelect) {
+        if ($this->_activeRequest) {
+            $timeout = $this->_activeRequest['timeout'];
+            if ($timeout > 0) {
+                $ts = microtime(true);
+                $tsRequest = $this->_activeRequestTS;
+                if ($ts - $tsRequest >= $timeout) {
+                    $cb = $this->_activeRequest['callback'];
+                    $cb($tsRequest, $ts, 408, 'Request Timeout', [], '');
+
+                    $this->disconnect();
+                    $this->connect();
+                }
             }
         }
     }
 
     private function _checkEOF() {
         if (feof($this->stream)) {
+            // @todo говно с double typing
             if ($this->_activeRequest && is_array($this->_activeRequest)) {
                 $cb = $this->_activeRequest['callback'];
                 $cb(
@@ -164,11 +173,15 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     private function _checkRequestQue() {
-        if ($this->_requestQue->isEmpty()) {
+        // to locals
+        $que = $this->_requestQue;
+
+        if ($que->isEmpty()) {
             return;
         }
 
-        $this->_activeRequest = $this->_requestQue->dequeue();
+        // @todo to locals
+        $this->_activeRequest = $que->dequeue();
         $this->_activeRequestTS = microtime(true);
         if (!empty($this->_activeRequest['timeout'])) {
             $this->_loop->updateHandlerTimeout($this, $this->_activeRequestTS + $this->_activeRequest['timeout']);
@@ -215,7 +228,6 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
             true,
             false,
             false,
-            false
         );
     }
 
@@ -226,21 +238,21 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
             STREAM_CRYPTO_METHOD_TLS_CLIENT
         );
 
-        if ($return === false) {
-            throw new StreamLoop_Exception("Failed to setup SSL");
-        }
-
         if ($return === true) {
             $this->_reset();
 
             $this->_updateState(self::_STATE_READY, false, false, false, false);
 
             $this->_checkRequestQue();
+        } elseif ($return === false) {
+            throw new StreamLoop_Exception("Failed to setup SSL");
         }
+
+        $this->_checkEOF();
     }
 
     private function _checkResponseHeaders() {
-        $line = fgets($this->stream, 2048); // @todo 4Kb
+        $line = fgets($this->stream, 4096);
 
         $this->_buffer .= $line; // @todo lo locals?
 
@@ -278,11 +290,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 false,
             );
             $this->_buffer = '';
-
-            return;
-        }
-
-        if ($line === false) {
+        } elseif ($line === false) {
             $this->_checkEOF();
         }
     }
@@ -292,19 +300,12 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
             // @todo buffer to locals
 
             // ровно N байт
-            $length = (int)$this->_headerArray['content-length'];
-            $chunk = fread($this->stream, 8192); // @todo drain?
+            $length = (int) $this->_headerArray['content-length'];
+            $chunk = fread($this->stream, 8192); // @todo dynamic drain like in WS
 
             // дописываемся всегда: так быстрее, потому что как правило $chunk это string или empty string.
             // И даже если он false - то дальше сработао проверка
             $this->_buffer .= $chunk;
-
-            if ($chunk === false) {
-                // в неблокирующем режиме если данных нет - то будет string ''
-                // а если false - то это ошибка чтения
-                // например, PHP Warning: fread(): SSL: Connection reset by peer
-                $this->_checkEOF();
-            }
 
             if (strlen($this->_buffer) == $length) {
                 $tsNow = microtime(true);
@@ -324,8 +325,14 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 $this->_updateState(self::_STATE_READY, false, false, false);
                 $this->_reset();
                 $this->_checkRequestQue();
+            } elseif ($chunk === false) {
+                // в неблокирующем режиме если данных нет - то будет string ''
+                // а если false - то это ошибка чтения
+                // например, PHP Warning: fread(): SSL: Connection reset by peer
+                $this->_checkEOF();
             }
         } elseif (isset($this->_headerArray['transfer-encoding']) && strtolower($this->_headerArray['transfer-encoding']) === 'chunked') {
+            throw new StreamLoop_Exception('Chunked not supported');
             // @todo этот блок пока-что не пашет и я его не проверял
 
             // loop, чтобы «прокачать» как можно больше данных за один вызов
@@ -407,6 +414,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 // или вернёмся, если данных не хватит
             }
         } else {
+            throw new StreamLoop_Exception('Unknown encoding mode');
             // @todo
             // нет длины и не chunked — придётся читать до timeout или
             // возвращать то, что есть, и оставить соединение открытым
@@ -445,8 +453,6 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
     private $_host, $_port, $_ip;
 
-    private $_state = '';
-
     private $_buffer = '';
     private $_headerArray = [];
     private $_statusCode = 0;
@@ -454,13 +460,13 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
     private $_activeRequest;
     private $_activeRequestTS = 0;
-    private SplQueue $_requestQue;
+    private SplQueue $_requestQue; // @todo дека медленее массива
 
-    // @todo to int-const
-    private const _STATE_CONNECTING = 'connecting';
-    private const _STATE_HANDSHAKE = 'handshake';
-    private const _STATE_WAIT_FOR_RESPONSE_HEADERS = 'wait-for-response-headers';
-    private const _STATE_WAIT_FOR_RESPONSE_BODY = 'wait-for-response-body';
-    private const _STATE_READY = 'ready';
+    private $_state;
+    private const _STATE_CONNECTING = 1;
+    private const _STATE_HANDSHAKE = 2;
+    private const _STATE_WAIT_FOR_RESPONSE_HEADERS = 3;
+    private const _STATE_WAIT_FOR_RESPONSE_BODY = 4;
+    private const _STATE_READY = 5;
 
 }
