@@ -46,7 +46,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
         $this->_reset();
 
-        $this->_activeRequest = true;
+        $this->_activeRequest = true; // @todo от это жопа
 
         $ip = $this->_ip ? $this->_ip : $this->_host;
 
@@ -136,7 +136,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     // @todo встроить tsSelect во все callback
 
     public function readySelectTimeout($tsSelect) {
-        if ($this->_activeRequest) {
+        if ($this->_activeRequest && isset($this->_activeRequest['timeout'])) { // @todo жопа
             $timeout = $this->_activeRequest['timeout'];
             if ($timeout > 0) {
                 $ts = microtime(true);
@@ -182,7 +182,9 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
         // @todo to locals
         $this->_activeRequest = $que->dequeue();
-        $this->_activeRequestTS = microtime(true);
+        $this->_activeRequestTS = microtime(true); // время когда я начал запрос
+
+        // @todo все ниже после вдувания в порт
         if (!empty($this->_activeRequest['timeout'])) {
             $this->_loop->updateHandlerTimeout($this, $this->_activeRequestTS + $this->_activeRequest['timeout']);
         } else {
@@ -199,7 +201,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         }
 
         $request .= "Host: {$this->_host}\r\n";
-        //$request .= "Connection: close\r\n";
+        //$request .= "Connection: close\r\n"; // нельзя писать close для keep-alive
         $request .= "Connection: keep-alive\r\n";
         $request .= "\r\n";
         if ($this->_activeRequest['body']) {
@@ -241,7 +243,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         if ($return === true) {
             $this->_reset();
 
-            $this->_updateState(self::_STATE_READY, false, false, false, false);
+            $this->_updateState(self::_STATE_READY, false, false, false);
 
             $this->_checkRequestQue();
         } elseif ($return === false) {
@@ -252,6 +254,8 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     private function _checkResponseHeaders() {
+        // @todo inline it
+
         $line = fgets($this->stream, 4096);
 
         $this->_buffer .= $line; // @todo lo locals?
@@ -268,8 +272,8 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
             // $statusParts[2] = "OK"
 
             // @todo лажа
-            $this->_statusCode = isset($statusParts[1]) ? (int)$statusParts[1] : 0;
-            $this->_statusMessage = isset($statusParts[2]) ? (string)$statusParts[2] : null;
+            $this->_statusCode = isset($statusParts[1]) ? (int) $statusParts[1] : 0;
+            $this->_statusMessage = isset($statusParts[2]) ? (string) $statusParts[2] : null;
 
             $this->_headerArray = [];
             $n = count($lines);
@@ -289,6 +293,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 false,
                 false,
             );
+
             $this->_buffer = '';
         } elseif ($line === false) {
             $this->_checkEOF();
@@ -296,6 +301,8 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     private function _checkResponseBody() {
+        // @todo inline it
+
         if (isset($this->_headerArray['content-length'])) {
             // @todo buffer to locals
 

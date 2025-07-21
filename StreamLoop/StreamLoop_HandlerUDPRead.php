@@ -63,10 +63,7 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
                 $fromPort
             );
 
-            if ($bytes === false) {
-                // end of drain
-                break;
-            } elseif ($bytes > 0) { // пустые дата-граммы мне не нужны
+            if ($bytes > 0) { // пустые дата-граммы мне не нужны
                 // если нет drain - то вызываем сразу передачу
                 if ($drainLimit == 1) {
                     $this->_receiver->onReceive(microtime(true), $buffer, $fromAddress, $fromPort);
@@ -77,6 +74,11 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
                 // потому что дальше revert loop и он херовый
                 $messageArray[] = [$buffer, $fromAddress, $fromPort];
                 $found = true;
+            } else {
+                // тут более правильно проверять на === false,
+                // но в реальности пустой дата-граммы быть не может
+                // end of drain
+                break;
             }
         }
 

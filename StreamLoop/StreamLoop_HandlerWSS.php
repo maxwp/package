@@ -422,12 +422,11 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
             STREAM_CRYPTO_METHOD_TLS_CLIENT
         );
 
-        if ($return === false) {
-            throw new StreamLoop_Exception("Failed to setup SSL");
-        }
-
+        // тут нужны ===, потому что если вернется int 0 - то надо пробовать еще раз
         if ($return === true) {
             $this->_updateState(self::_STATE_READY, false, true, false);
+        } elseif ($return === false) {
+            throw new StreamLoop_Exception("Failed to setup SSL");
         }
     }
 
@@ -505,7 +504,6 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     private $_buffer = '';
     private $_state = 0;
 
-    // @todo int-const
     private const _STATE_CONNECTING = 1;
     private const _STATE_HANDSHAKE = 2;
     private const _STATE_READY = 3;

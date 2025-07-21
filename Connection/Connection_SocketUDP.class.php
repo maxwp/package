@@ -96,8 +96,6 @@ class Connection_SocketUDP implements Connection_IConnection {
         $socket = $this->_socket;
 
         while (1) {
-            // @todo reverse drain flag here
-
             // читаем в блок режиме
             $bytes = socket_recvfrom(
                 $socket,
