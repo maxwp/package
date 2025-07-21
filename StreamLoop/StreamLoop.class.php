@@ -13,8 +13,12 @@ class StreamLoop {
     }
 
     public function unregisterHandler(StreamLoop_AHandler $handler) {
-        if ($handler->streamID) {
-            unset($this->_handlerArray[$handler->streamID]);
+        $streamID = $handler->streamID;
+        if ($streamID) {
+            unset($this->_handlerArray[$streamID]);
+            unset($this->_selectReadArray[$streamID]);
+            unset($this->_selectWriteArray[$streamID]);
+            unset($this->_selectExceptArray[$streamID]);
         }
     }
 

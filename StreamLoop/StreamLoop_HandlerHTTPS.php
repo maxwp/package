@@ -83,6 +83,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     public function disconnect() {
+        $this->_loop->unregisterHandler($this);
         $this->_reset();
         fclose($this->stream);
     }
@@ -122,7 +123,9 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                         }
                         // Разделяем заголовок на имя и значение
                         $x = explode(':', $line, 2);
-                        $this->_headerArray[strtolower(trim($x[0]))] = trim($x[1]);
+                        if (count($x) == 2) {
+                            $this->_headerArray[strtolower(trim($x[0]))] = trim($x[1]);
+                        }
                     }
 
                     $this->_updateState(
