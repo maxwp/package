@@ -65,25 +65,27 @@ class StreamLoop {
             }
 
             $result = stream_select($r, $w, $e, 0, $timeout * 1_000_000);
-            // @todo ts ловить после select и передавать в readyXXX
+
+            // меряем время select'a
+            $tsSelect = microtime(true);
 
             $calledArray = [];
 
             foreach ($r as $stream) {
                 $id = (int) $stream;
-                $this->_handlerArray[$id]->readyRead();
+                $this->_handlerArray[$id]->readyRead($tsSelect);
                 $calledArray[$id] = true;
             }
 
             foreach ($w as $stream) {
                 $id = (int) $stream;
-                $this->_handlerArray[$id]->readyWrite();
+                $this->_handlerArray[$id]->readyWrite($tsSelect);
                 $calledArray[$id] = true;
             }
 
             foreach ($e as $stream) {
                 $id = (int) $stream;
-                $this->_handlerArray[$id]->readyExcept();
+                $this->_handlerArray[$id]->readyExcept($tsSelect);
                 $calledArray[$id] = true;
             }
 
@@ -102,7 +104,7 @@ class StreamLoop {
             foreach ($this->selectTimeoutToArray as $streamID => $timeoutTo) {
                 if ($timeoutTo > 0 && $timeoutTo <= $tsEnd) {
                     if (empty($calledArray[$streamID])) {
-                        $this->_handlerArray[$streamID]->readySelectTimeout();
+                        $this->_handlerArray[$streamID]->readySelectTimeout($tsSelect);
                     }
                 }
             }

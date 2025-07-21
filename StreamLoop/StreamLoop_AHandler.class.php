@@ -1,10 +1,10 @@
 <?php
 abstract class StreamLoop_AHandler {
 
-    abstract public function readyRead();
-    abstract public function readyWrite();
-    abstract public function readyExcept();
-    abstract public function readySelectTimeout();
+    abstract public function readyRead($tsSelect);
+    abstract public function readyWrite($tsSelect);
+    abstract public function readyExcept($tsSelect);
+    abstract public function readySelectTimeout($tsSelect);
 
     public function __construct(StreamLoop $loop) {
         $this->_loop = $loop;

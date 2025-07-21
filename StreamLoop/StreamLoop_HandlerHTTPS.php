@@ -79,7 +79,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         fclose($this->stream);
     }
 
-    public function readyRead() {
+    public function readyRead($tsSelect) {
         $this->_checkEOF(); // @todo перенести в методы бо двойная проверка в read
 
         switch ($this->_state) {
@@ -95,7 +95,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         }
     }
 
-    public function readyWrite() {
+    public function readyWrite($tsSelect) {
         switch ($this->_state) {
             case self::_STATE_CONNECTING:
                 // коннект установился, я готов к записи
@@ -122,7 +122,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         }
     }
 
-    public function readyExcept() {
+    public function readyExcept($tsSelect) {
         $this->_checkEOF(); // тут оставить как есть, потому что state machine не покрывает все косяки
 
         if ($this->_state == self::_STATE_HANDSHAKE) {
@@ -131,7 +131,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         }
     }
 
-    public function readySelectTimeout() {
+    public function readySelectTimeout($tsSelect) {
         if ($this->_activeRequest && !empty($this->_activeRequest['timeout'])) {
             $ts = microtime(true);
             if ($ts - $this->_activeRequestTS >= $this->_activeRequest['timeout']) {

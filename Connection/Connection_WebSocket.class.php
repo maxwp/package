@@ -32,8 +32,6 @@ class Connection_WebSocket implements Connection_IConnection {
 
         stream_set_blocking($stream, false);
 
-        //$performanceArray = [];
-
         while (true) {
             $time = microtime(true);
 
@@ -42,9 +40,9 @@ class Connection_WebSocket implements Connection_IConnection {
             $except = [$stream];
 
             $num_changed_streams = stream_select($read, $write, $except, 0, $streamSelectTimeoutUS);
-            //$tsSelect = microtime(true);
-            // @todo ловить время после select и именно его передавать в callback
-            // так надо сделать чтобы замерять реальную производительность websocker'a
+
+            // меряем время select'a
+            $tsSelect = microtime(true);
 
             $called = false;
             if ($num_changed_streams > 0) {
@@ -150,10 +148,7 @@ class Connection_WebSocket implements Connection_IConnection {
                                 // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                                 // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                                 try {
-                                    //$performanceArray['select'][] = microtime(true) - $tsSelect;
-                                    //$tCallback = microtime(true);
-                                    $callback(microtime(true), false);
-                                    //$performanceArray['callback'][] = microtime(true) - $tCallback;
+                                    $callback($tsSelect, microtime(true), false);
                                     $called = true;
                                 } catch (Exception $userException) {
                                     $this->disconnect();
@@ -173,10 +168,7 @@ class Connection_WebSocket implements Connection_IConnection {
                                 // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                                 // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                                 try {
-                                    //$performanceArray['select'][] = microtime(true) - $tsSelect;
-                                    //$tCallback = microtime(true);
-                                    $callback(microtime(true), false);
-                                    //$performanceArray['callback'][] = microtime(true) - $tCallback;
+                                    $callback($tsSelect, microtime(true), false);
                                     $called = true;
                                 } catch (Exception $userException) {
                                     $this->disconnect();
@@ -188,10 +180,7 @@ class Connection_WebSocket implements Connection_IConnection {
                                 break;
                             default: // FRAME with payload
                                 try {
-                                    //$performanceArray['select'][] = microtime(true) - $tsSelect;
-                                    //$tCallback = microtime(true);
-                                    $callback(microtime(true), $payload);
-                                    //$performanceArray['callback'][] = microtime(true) - $tCallback;
+                                    $callback($tsSelect, microtime(true), $payload);
                                     $called = true;
                                 } catch (Exception $userException) {
                                     $this->disconnect();
@@ -221,10 +210,7 @@ class Connection_WebSocket implements Connection_IConnection {
 
             if (!$called) {
                 try {
-                    //$performanceArray['select'][] = microtime(true) - $tsSelect;
-                    //$tCallback = microtime(true);
-                    $callback(microtime(true), false);
-                    //$performanceArray['callback'][] = microtime(true) - $tCallback;
+                    $callback($tsSelect, microtime(true), false);
                 } catch (Exception $userException) {
                     $this->disconnect();
                     throw $userException;
@@ -235,12 +221,6 @@ class Connection_WebSocket implements Connection_IConnection {
                 $this->disconnect();
                 throw new Connection_Exception("Connection_WebSocket: stream_select except");
             }
-
-            /*if (!empty($performanceArray['select']) && count($performanceArray['select']) >= 1000) {
-                print "WebSocket_Connection: performance select=".(Array_Static::Avg($performanceArray['select']) * 1000)."\t";
-                print "callback=".(Array_Static::Avg($performanceArray['callback']) * 1000)."\n";
-                $performanceArray = [];
-            }*/
 
             // пинг-понг внизу после select'a
             // auto ping frame

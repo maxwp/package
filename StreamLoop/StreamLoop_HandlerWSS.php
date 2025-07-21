@@ -72,7 +72,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         $this->_loop->updateHandlerTimeout($this, 0);
     }
 
-    public function readyRead() {
+    public function readyRead($tsSelect) {
         switch ($this->_state) {
             case self::_STATE_HANDSHAKE:
                 $this->_checkHandshake();
@@ -183,7 +183,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
                                 // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                                 // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                                 try {
-                                    $callback(microtime(true), false);
+                                    $callback($tsSelect, microtime(true), false);
                                     $called = true;
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
@@ -205,7 +205,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
                                 // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                                 // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                                 try {
-                                    $callback(microtime(true), false);
+                                    $callback($tsSelect, microtime(true), false);
                                     $called = true;
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
@@ -218,7 +218,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
                                 break;
                             default: // FRAME PAYLOAD
                                 try {
-                                    $callback(microtime(true), $payload);
+                                    $callback($tsSelect, microtime(true), $payload);
                                     $called = true;
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
@@ -241,7 +241,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
                     // а вызвать что-то надо
                     if (!$called) {
                         try {
-                            $callback(microtime(true), false);
+                            $callback($tsSelect, microtime(true), false);
                         } catch (Exception $userException) {
                             // тут вылетаем, но надо сделать disconnect
                             $this->disconnect();
@@ -265,7 +265,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         }
     }
 
-    public function readyWrite() {
+    public function readyWrite($tsSelect) {
         // to locals
         $stream = $this->stream;
 
@@ -306,7 +306,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         }
     }
 
-    public function readyExcept() {
+    public function readyExcept($tsSelect) {
         $this->_checkEOF();
 
         switch ($this->_state) {
@@ -319,7 +319,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         }
     }
 
-    public function readySelectTimeout() {
+    public function readySelectTimeout($tsSelect) {
         // для WSS фиксированно задан период 0.25 сек когда он должен слать что-то что он жив,
         // это и есть _FRAME_SELECT_TIMEOUT
         // он срабатывает на stream_select
@@ -330,17 +330,18 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         }
 
         $ts = microtime(true);
-        $this->_loop->updateHandlerTimeout($this, $ts + $this->_selectTimeout);
 
         // frame select timeout
         try {
             $callback = $this->_callbackMessage;
-            $callback($ts, '');
+            $callback($tsSelect, $ts, '');
         } catch (Exception $userException) {
             // тут вылетаем, но надо сделать disconnect
             $this->disconnect();
             throw $userException;
         }
+
+        $this->_loop->updateHandlerTimeout($this, $ts + $this->_selectTimeout);
 
         $this->_checkPingPong($ts);
     }

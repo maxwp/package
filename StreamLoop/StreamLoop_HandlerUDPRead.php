@@ -38,7 +38,7 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
         $this->_loop->updateHandlerFlags($this, true, false, false);
     }
 
-    public function readyRead() {
+    public function readyRead($tsSelect) {
         // reverse drain read loop
         $messageArray = [];
 
@@ -105,15 +105,15 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
         }
     }
 
-    public function readyWrite() {
+    public function readyWrite($tsSelect) {
         // nothing for UDP
     }
 
-    public function readyExcept() {
+    public function readyExcept($tsSelect) {
         // nothing for UDP
     }
 
-    public function readySelectTimeout() {
+    public function readySelectTimeout($tsSelect) {
         // nothing for UDP
     }
 
