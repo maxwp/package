@@ -39,21 +39,43 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
     }
 
     public function readyRead($tsSelect) {
-        // reverse drain read loop
-        $messageArray = [];
-
         // в php init локальной переменной дешевле чем доступ к свойству
         $buffer = '';
         $fromAddress = '';
         $fromPort = 0;
 
-        $found = false;
-
         // to locals
         $socket = $this->_socket;
-        $drainLimit = $this->_drainLimit;
+        $drainLimit = $this->_drainLimit; // как правило drain есть, поэтому я выношу всегда в locals
+        $receiver = $this->_receiver; // как правило readyRead срабатывает если что-то есть
 
-        for ($j = 1; $j <= $drainLimit; $j++) {
+        // первое сообщене всегда, независимо от drain
+        // так нужно сделать, потому что в 90% случаев сообщение в порту всего одно
+        // и не надо тратиться на циклы с массивами
+        $bytes = socket_recvfrom(
+            $socket,
+            $buffer,
+            1024,
+            MSG_DONTWAIT,
+            $fromAddress,
+            $fromPort
+        );
+
+        if ($bytes > 0) {
+            $receiver->onReceive(microtime(true), $buffer, $fromAddress, $fromPort);
+        }
+
+        // если дальше drain нет - на выход
+        if ($drainLimit <= 1) {
+            return;
+        }
+
+        $found = 0;
+        $bufferArray = [];
+        $fromAddressArray = [];
+        $fromPortArray = [];
+
+        for ($drainIndex = 2; $drainIndex <= $drainLimit; $drainIndex++) {
             $bytes = socket_recvfrom(
                 $socket,
                 $buffer,
@@ -64,16 +86,11 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
             );
 
             if ($bytes > 0) { // пустые дата-граммы мне не нужны
-                // если нет drain - то вызываем сразу передачу
-                if ($drainLimit == 1) {
-                    $this->_receiver->onReceive(microtime(true), $buffer, $fromAddress, $fromPort);
-                    return;
-                }
-
-                // @todo теоретически можно поменять на какую-то другую структуру, а не массив - потому что его тяжеловато клеить
-                // потому что дальше revert loop и он херовый
-                $messageArray[] = [$buffer, $fromAddress, $fromPort];
-                $found = true;
+                // три параллельных массива быстрее чем один вложенный
+                $bufferArray[] = $buffer;
+                $fromAddressArray[] = $fromAddress;
+                $fromPortArray[] = $fromPort;
+                $found += 1;
             } else {
                 // тут более правильно проверять на === false,
                 // но в реальности пустой дата-граммы быть не может
@@ -83,7 +100,7 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
         }
 
         // если вдруг ничего нет - на выход
-        if (!$found) {
+        if ($found == 0) {
             return;
         }
 
@@ -91,18 +108,15 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
         // 2. ну и это экономия на microtime-call
         $ts = microtime(true);
 
-        $receiver = $this->_receiver; // to locals
         if ($this->_drainReverse) {
             // вдуваем сообщения в обратном порядке
-            $cnt = count($messageArray);
-            for ($j = $cnt - 1; $j >= 0; $j--) {
-                $message = $messageArray[$j];
-                $receiver->onReceive($ts, $message[0], $message[1], $message[2]);
+            for ($j = $found - 1; $j >= 0; $j--) {
+                $receiver->onReceive($ts, $bufferArray[$j], $fromAddressArray[$j], $fromPortArray[$j]);
             }
         } else {
             // вдуваем сообщения в прямом порядке
-            foreach ($messageArray as $message) {
-                $receiver->onReceive($ts, $message[0], $message[1], $message[2]);
+            for ($j = 0; $j < $found; $j++) {
+                $receiver->onReceive($ts, $bufferArray[$j], $fromAddressArray[$j], $fromPortArray[$j]);
             }
         }
     }

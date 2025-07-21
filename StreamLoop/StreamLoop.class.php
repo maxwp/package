@@ -47,7 +47,7 @@ class StreamLoop {
             $r = $this->_selectReadArray;
             $w = $this->_selectWriteArray;
             $e = $this->_selectExceptArray;
-            $timeoutToArray = $this->selectTimeoutToArray;
+            $timeoutToArray = $this->_selectTimeoutToArray;
 
             // если ничего нет - пауза на тот же тайм-аут
             if (!$r && !$w && !$e) {
@@ -101,7 +101,7 @@ class StreamLoop {
             // если для handler не вызывался сейчас ни один ready*
             // и при этом я перешел за timeout
             // = то надо вызвать readySelectTimeout
-            foreach ($this->selectTimeoutToArray as $streamID => $timeoutTo) {
+            foreach ($this->_selectTimeoutToArray as $streamID => $timeoutTo) {
                 if ($timeoutTo > 0 && $timeoutTo <= $tsEnd) {
                     if (empty($calledArray[$streamID])) {
                         $this->_handlerArray[$streamID]->readySelectTimeout($tsSelect);
@@ -143,9 +143,9 @@ class StreamLoop {
 
     public function updateHandlerTimeout(StreamLoop_AHandler $handler, $timeout) {
         if ($timeout > 0) {
-            $this->selectTimeoutToArray[$handler->streamID] = $timeout;
+            $this->_selectTimeoutToArray[$handler->streamID] = $timeout;
         } else {
-            unset($this->selectTimeoutToArray[$handler->streamID]);
+            unset($this->_selectTimeoutToArray[$handler->streamID]);
         }
     }
 
@@ -164,6 +164,6 @@ class StreamLoop {
     private array $_selectReadArray = [];
     private array $_selectWriteArray = [];
     private array $_selectExceptArray = [];
-    public $selectTimeoutToArray = [];
+    private $_selectTimeoutToArray = []; // @todo на кучу
 
 }
