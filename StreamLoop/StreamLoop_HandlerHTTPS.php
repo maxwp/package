@@ -83,7 +83,6 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     public function disconnect() {
-        $this->_loop->unregisterHandler($this);
         $this->_reset();
         fclose($this->stream);
     }
@@ -96,49 +95,59 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 $this->_checkHandshake();
                 return;
             case self::_STATE_WAIT_FOR_RESPONSE_HEADERS:
-                $line = fgets($this->stream, 4096); // @todo drain
+                // drain read headers
+                while (1) {
+                    $line = fgets($this->stream, 4096); // я читаю через fgetS и врядли будет строка больше 4Kb
 
-                $this->_buffer .= $line;
+                    $this->_buffer .= $line;
 
-                // пустая строка — конец блока заголовков
-                if ($line == "\r\n" || $line == "\n") {
-                    // разбираем заголовки в ассоц. массив
-                    $lines = explode("\r\n", $this->_buffer);
+                    // такая строка — конец блока заголовков
+                    if ($line == "\r\n" || $line == "\n") {
+                        // разбираем заголовки в ассоц. массив
+                        $lines = explode("\r\n", $this->_buffer);
 
-                    // Формат статус-строки: HTTP/1.1 200 OK
-                    $statusParts = explode(' ', $lines[0], 3);
-                    // $statusParts[0] = "HTTP/1.1"
-                    // $statusParts[1] = "200"
-                    // $statusParts[2] = "OK"
+                        // Формат статус-строки: HTTP/1.1 200 OK
+                        $statusParts = explode(' ', $lines[0], 3);
+                        // $statusParts[0] = "HTTP/1.1"
+                        // $statusParts[1] = "200"
+                        // $statusParts[2] = "OK"
 
-                    // @todo лажа
-                    $this->_statusCode = isset($statusParts[1]) ? (int) $statusParts[1] : 0;
-                    $this->_statusMessage = isset($statusParts[2]) ? (string) $statusParts[2] : null;
+                        // @todo лажа
+                        $this->_statusCode = isset($statusParts[1]) ? (int) $statusParts[1] : 0;
+                        $this->_statusMessage = isset($statusParts[2]) ? (string) $statusParts[2] : null;
 
-                    $this->_headerArray = [];
-                    foreach ($lines as $line) {
-                        // Пропускаем пустые строки (например, если что-то пошло не так)
-                        if (!$line) {
-                            continue;
+                        $this->_headerArray = [];
+                        foreach ($lines as $line) {
+                            // Пропускаем пустые строки (например, если что-то пошло не так)
+                            if (!$line) {
+                                continue;
+                            }
+                            // Разделяем заголовок на имя и значение
+                            $x = explode(':', $line, 2);
+                            if (count($x) == 2) {
+                                $this->_headerArray[strtolower(trim($x[0]))] = trim($x[1]);
+                            }
                         }
-                        // Разделяем заголовок на имя и значение
-                        $x = explode(':', $line, 2);
-                        if (count($x) == 2) {
-                            $this->_headerArray[strtolower(trim($x[0]))] = trim($x[1]);
-                        }
+
+                        $this->_updateState(
+                            self::_STATE_WAIT_FOR_RESPONSE_BODY,
+                            true,
+                            false,
+                            false,
+                        );
+
+                        $this->_buffer = '';
+
+                        return;
+                    } elseif ($line === '') {
+                        // пока данных нет - конец drain headers
+                        break;
+                    } elseif ($line === false) {
+                        $this->_checkEOF();
+                        break;
                     }
-
-                    $this->_updateState(
-                        self::_STATE_WAIT_FOR_RESPONSE_BODY,
-                        true,
-                        false,
-                        false,
-                    );
-
-                    $this->_buffer = '';
-                } elseif ($line === false) {
-                    $this->_checkEOF();
                 }
+
                 return;
             case self::_STATE_WAIT_FOR_RESPONSE_BODY:
                 $headerArray = $this->_headerArray;
@@ -146,35 +155,53 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                 if (isset($headerArray['content-length'])) {
                     // ровно N байт
                     $length = (int) $headerArray['content-length'];
-                    $chunk = fread($this->stream, 8192); // @todo dynamic drain like in WS
 
-                    // дописываемся всегда: так быстрее, потому что как правило $chunk это string или empty string.
-                    // И даже если он false - то дальше сработао проверка
-                    $this->_buffer .= $chunk;
+                    // to locals
+                    $stream = $this->stream;
+                    $buffer = $this->_buffer;
 
-                    if (strlen($this->_buffer) == $length) {
-                        // @todo возможно своя структура response с таймерами:
-                        // когда начал, когда закончил, что было в запросе,
-                        // id потому что мне идентифицировать его как-то надо
-                        $cb = $this->_activeRequest['callback'];
-                        $cb(
-                            $this->_activeRequestTS,
-                            microtime(true),
-                            $this->_statusCode,
-                            $this->_statusMessage,
-                            $headerArray,
-                            $this->_buffer
-                        );
+                    // dynamic drain read
+                    for ($drainIndex = 1; $drainIndex <= 10; $drainIndex++) {
+                        $chunk = fread($stream, 1024 * $drainIndex);
 
-                        $this->_updateState(self::_STATE_READY, false, false, false);
-                        $this->_reset();
-                        $this->_checkRequestQue();
-                    } elseif ($chunk === false) {
-                        // в неблокирующем режиме если данных нет - то будет string ''
-                        // а если false - то это ошибка чтения
-                        // например, PHP Warning: fread(): SSL: Connection reset by peer
-                        $this->_checkEOF();
+                        // дописываемся всегда: так быстрее, потому что как правило $chunk это string или empty string.
+                        // И даже если он false - то дальше сработао проверка
+                        $buffer .= $chunk;
+
+                        if (strlen($buffer) == $length) {
+                            // @todo возможно своя структура response с таймерами:
+                            // когда начал, когда закончил, что было в запросе,
+                            // id потому что мне идентифицировать его как-то надо
+                            $cb = $this->_activeRequest['callback'];
+                            $cb(
+                                $this->_activeRequestTS,
+                                microtime(true),
+                                $this->_statusCode,
+                                $this->_statusMessage,
+                                $headerArray,
+                                $buffer
+                            );
+
+                            $buffer = '';
+                            
+                            $this->_updateState(self::_STATE_READY, false, false, false);
+                            $this->_reset();
+                            $this->_checkRequestQue();
+
+                            break;
+                        } elseif ($chunk === '') {
+                            // drain stop
+                            break;
+                        } elseif ($chunk === false) {
+                            // в неблокирующем режиме если данных нет - то будет string ''
+                            // а если false - то это ошибка чтения
+                            // например, PHP Warning: fread(): SSL: Connection reset by peer
+                            $this->_checkEOF();
+                            break;
+                        }
                     }
+
+                    $this->_buffer = $buffer;
                 } else {
                     throw new StreamLoop_Exception('Unsupported encoding');
                     // see _checkResponseBody();
