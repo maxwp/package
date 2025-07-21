@@ -8,7 +8,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         $this->_port = $port;
         $this->setIP($ip);
 
-        $this->_requestQue = new SplQueue();
+        $this->requestQue = new SplQueue();
 
         // соединение я начинаю устанавливать сразу же
         // @todo в будущем можно переделать на установку соединения по требованию, но пока это просто не актульано
@@ -21,14 +21,20 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     public function request($method, $path, $body, $headerArray, $callback, $timeout = 0) {
+        if ($timeout) {
+            $timeout = (float) $timeout;
+        } else {
+            $timeout = 10; // 10 sec everytime
+        }
+
         // добавляем запрос в очередь
-        $this->_requestQue->enqueue(array(
+        $this->requestQue->enqueue(array(
             'method' => strtoupper($method),
             'path' => $path,
             'body' => $body,
             'headerArray' => $headerArray,
             'callback' => $callback,
-            'timeout' => (float) $timeout, // timeout нужен всегда
+            'timeout' => $timeout, // timeout нужен всегда
         ));
 
         if (!$this->_activeRequest) {
@@ -81,16 +87,95 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         fclose($this->stream);
     }
 
+    // @todo встроить tsSelect во все callback
+
     public function readyRead($tsSelect) {
         switch ($this->_state) {
             case self::_STATE_HANDSHAKE:
                 $this->_checkHandshake();
                 return;
             case self::_STATE_WAIT_FOR_RESPONSE_HEADERS:
-                $this->_checkResponseHeaders();
+                $line = fgets($this->stream, 4096); // @todo drain
+
+                $this->_buffer .= $line;
+
+                // пустая строка — конец блока заголовков
+                if ($line == "\r\n" || $line == "\n") {
+                    // разбираем заголовки в ассоц. массив
+                    $lines = explode("\r\n", $this->_buffer);
+
+                    // Формат статус-строки: HTTP/1.1 200 OK
+                    $statusParts = explode(' ', $lines[0], 3);
+                    // $statusParts[0] = "HTTP/1.1"
+                    // $statusParts[1] = "200"
+                    // $statusParts[2] = "OK"
+
+                    // @todo лажа
+                    $this->_statusCode = isset($statusParts[1]) ? (int) $statusParts[1] : 0;
+                    $this->_statusMessage = isset($statusParts[2]) ? (string) $statusParts[2] : null;
+
+                    $this->_headerArray = [];
+                    foreach ($lines as $line) {
+                        // Пропускаем пустые строки (например, если что-то пошло не так)
+                        if (!$line) {
+                            continue;
+                        }
+                        // Разделяем заголовок на имя и значение
+                        $x = explode(':', $line, 2);
+                        $this->_headerArray[strtolower(trim($x[0]))] = trim($x[1]);
+                    }
+
+                    $this->_updateState(
+                        self::_STATE_WAIT_FOR_RESPONSE_BODY,
+                        true,
+                        false,
+                        false,
+                    );
+
+                    $this->_buffer = '';
+                } elseif ($line === false) {
+                    $this->_checkEOF();
+                }
                 return;
             case self::_STATE_WAIT_FOR_RESPONSE_BODY:
-                $this->_checkResponseBody();
+                $headerArray = $this->_headerArray;
+
+                if (isset($headerArray['content-length'])) {
+                    // ровно N байт
+                    $length = (int) $headerArray['content-length'];
+                    $chunk = fread($this->stream, 8192); // @todo dynamic drain like in WS
+
+                    // дописываемся всегда: так быстрее, потому что как правило $chunk это string или empty string.
+                    // И даже если он false - то дальше сработао проверка
+                    $this->_buffer .= $chunk;
+
+                    if (strlen($this->_buffer) == $length) {
+                        // @todo возможно своя структура response с таймерами:
+                        // когда начал, когда закончил, что было в запросе,
+                        // id потому что мне идентифицировать его как-то надо
+                        $cb = $this->_activeRequest['callback'];
+                        $cb(
+                            $this->_activeRequestTS,
+                            microtime(true),
+                            $this->_statusCode,
+                            $this->_statusMessage,
+                            $headerArray,
+                            $this->_buffer
+                        );
+
+                        $this->_updateState(self::_STATE_READY, false, false, false);
+                        $this->_reset();
+                        $this->_checkRequestQue();
+                    } elseif ($chunk === false) {
+                        // в неблокирующем режиме если данных нет - то будет string ''
+                        // а если false - то это ошибка чтения
+                        // например, PHP Warning: fread(): SSL: Connection reset by peer
+                        $this->_checkEOF();
+                    }
+                } else {
+                    throw new StreamLoop_Exception('Unsupported encoding');
+                    // see _checkResponseBody();
+                }
                 return;
         }
     }
@@ -133,8 +218,6 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         }
     }
 
-    // @todo встроить tsSelect во все callback
-
     public function readySelectTimeout($tsSelect) {
         if ($this->_activeRequest && isset($this->_activeRequest['timeout'])) { // @todo жопа
             $timeout = $this->_activeRequest['timeout'];
@@ -174,45 +257,39 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
     private function _checkRequestQue() {
         // to locals
-        $que = $this->_requestQue;
+        $que = $this->requestQue;
 
         if ($que->isEmpty()) {
             return;
         }
 
-        // @todo to locals
-        $this->_activeRequest = $que->dequeue();
-        $this->_activeRequestTS = microtime(true); // время когда я начал запрос
+        // to locals
+        $activeRequest = $que->dequeue();
+        $activeRequestTS = microtime(true);
+        $body = $activeRequest['body'];
 
-        // @todo все ниже после вдувания в порт
-        if (!empty($this->_activeRequest['timeout'])) {
-            $this->_loop->updateHandlerTimeout($this, $this->_activeRequestTS + $this->_activeRequest['timeout']);
-        } else {
-            $this->_loop->updateHandlerTimeout($this, 0);
-        }
+        $this->_activeRequest = $activeRequest;
+        $this->_activeRequestTS = $activeRequestTS; // время когда я начал запрос
 
-        $request = $this->_activeRequest['method']." ".$this->_activeRequest['path']." HTTP/1.1\r\n";
-        foreach ($this->_activeRequest['headerArray'] as $value) {
+        $request = $activeRequest['method']." ".$activeRequest['path']." HTTP/1.1\r\n";
+        foreach ($activeRequest['headerArray'] as $value) {
             $request .= "{$value}\r\n";
         }
-        if ($this->_activeRequest['body']) {
-            $length = strlen($this->_activeRequest['body']);
-            $request .= "Content-Length: {$length}\r\n";
+        if ($body) {
+            $request .= "Content-Length: ".strlen($body)."\r\n";
         }
 
         $request .= "Host: {$this->_host}\r\n";
         //$request .= "Connection: close\r\n"; // нельзя писать close для keep-alive
         $request .= "Connection: keep-alive\r\n";
         $request .= "\r\n";
-        if ($this->_activeRequest['body']) {
-            $request .= $this->_activeRequest['body'];
-        }
+        $request .= $body; // даже если body пустота - ну и ладно, это бытсрее if (body) ...
 
         $n = fwrite($this->stream, $request);
         if ($n === false) {
-            $cb = $this->_activeRequest['callback'];
+            $cb = $activeRequest['callback'];
             $cb(
-                $this->_activeRequestTS,
+                $activeRequestTS,
                 microtime(true),
                 0, // http code 0
                 'Connection closed by server', // ясное сообщение
@@ -224,6 +301,9 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
             $this->connect();
             return;
         }
+
+        // timeout есть всегда
+        $this->_loop->updateHandlerTimeout($this, $activeRequestTS + $activeRequest['timeout']);
 
         $this->_updateState(
             self::_STATE_WAIT_FOR_RESPONSE_HEADERS,
@@ -253,78 +333,23 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         $this->_checkEOF();
     }
 
-    private function _checkResponseHeaders() {
-        // @todo inline it
-
-        $line = fgets($this->stream, 4096);
-
-        $this->_buffer .= $line; // @todo lo locals?
-
-        // пустая строка — конец блока заголовков
-        if ($line == "\r\n" || $line == "\n") {
-            // разбираем заголовки в ассоц. массив
-            $lines = explode("\r\n", $this->_buffer);
-
-            // Формат статус-строки: HTTP/1.1 200 OK
-            $statusParts = explode(' ', $lines[0], 3);
-            // $statusParts[0] = "HTTP/1.1"
-            // $statusParts[1] = "200"
-            // $statusParts[2] = "OK"
-
-            // @todo лажа
-            $this->_statusCode = isset($statusParts[1]) ? (int) $statusParts[1] : 0;
-            $this->_statusMessage = isset($statusParts[2]) ? (string) $statusParts[2] : null;
-
-            $this->_headerArray = [];
-            $n = count($lines);
-            for ($i = 1; $i < $n; $i++) { // @todo лажа
-                // Пропускаем пустые строки (например, если что-то пошло не так)
-                if (!$lines[$i]) {
-                    continue;
-                }
-                // Разделяем заголовок на имя и значение
-                [$name, $value] = explode(': ', $lines[$i], 2);
-                $this->_headerArray[strtolower($name)] = $value;
-            }
-
-            $this->_updateState(
-                self::_STATE_WAIT_FOR_RESPONSE_BODY,
-                true,
-                false,
-                false,
-            );
-
-            $this->_buffer = '';
-        } elseif ($line === false) {
-            $this->_checkEOF();
-        }
-    }
-
-    private function _checkResponseBody() {
-        // @todo inline it
-
+    /*private function _checkResponseBody() {
         $headerArray = $this->_headerArray;
 
         if (isset($headerArray['content-length'])) {
-            // @todo buffer to locals
-
             // ровно N байт
             $length = (int) $headerArray['content-length'];
-            $chunk = fread($this->stream, 8192); // @todo dynamic drain like in WS
+            $chunk = fread($this->stream, 8192);
 
             // дописываемся всегда: так быстрее, потому что как правило $chunk это string или empty string.
             // И даже если он false - то дальше сработао проверка
             $this->_buffer .= $chunk;
 
             if (strlen($this->_buffer) == $length) {
-                $tsNow = microtime(true);
-                // @todo возможно своя структура response с таймерами:
-                // когда начал, когда закончил, что было в запросе,
-                // id потому что мне идентифицировать его как-то надо
                 $cb = $this->_activeRequest['callback'];
                 $cb(
                     $this->_activeRequestTS,
-                    $tsNow,
+                    microtime(true),
                     $this->_statusCode,
                     $this->_statusMessage,
                     $headerArray,
@@ -432,14 +457,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
     }
 
     private $_currentChunkSize = null;
-    private int $_currentChunkRead = 0;
-
-    /**
-     * @return SplQueue
-     */
-    public function getRequestQue() {
-        return $this->_requestQue;
-    }
+    private int $_currentChunkRead = 0;*/
 
     private function _updateState($state, $flagRead, $flagWrite, $flagExcept) {
         $this->_state = $state;
@@ -469,7 +487,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
     private $_activeRequest;
     private $_activeRequestTS = 0;
-    private SplQueue $_requestQue; // @todo дека медленее массива
+    public readonly SplQueue $requestQue; // @todo дека медленее массива?
 
     private $_state;
     private const _STATE_CONNECTING = 1;
