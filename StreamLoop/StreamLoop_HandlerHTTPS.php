@@ -183,7 +183,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
                             );
 
                             $buffer = '';
-                            
+
                             $this->_updateState(self::_STATE_READY, false, false, false);
                             $this->_reset();
                             $this->_checkRequestQue();
