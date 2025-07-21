@@ -65,9 +65,7 @@ class StreamLoop {
             }
 
             $result = stream_select($r, $w, $e, 0, $timeout * 1_000_000);
-            if ($result === false) {
-                throw new StreamLoop_Exception('stream_select failed');
-            }
+            // @todo ts ловить после select и передавать в readyXXX
 
             $calledArray = [];
 
@@ -89,6 +87,13 @@ class StreamLoop {
                 $calledArray[$id] = true;
             }
 
+            if (!$calledArray) {
+                if ($result === false) {
+                    throw new StreamLoop_Exception('stream_select failed');
+                }
+            }
+
+            // заново узнаем время, потому что вызовы readyXXX могли занять время
             $tsEnd = microtime(true);
 
             // если для handler не вызывался сейчас ни один ready*

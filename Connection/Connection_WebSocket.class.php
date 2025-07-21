@@ -37,41 +37,14 @@ class Connection_WebSocket implements Connection_IConnection {
         while (true) {
             $time = microtime(true);
 
-            // auto ping frame
-            if ($time - $tsPing >= $pingInterval) {
-                $encodedPing = $this->_encodeWebSocketMessage('', 9); // @todo inline it inside compiler
-                fwrite($stream, $encodedPing);
-
-                $tsPing = $time;
-                // дедлайн до которого должен прийти pong
-                $tsPong = $time + $pongDeadline;
-            }
-
-            if ($tsPong > 0 && $time > $tsPong) {
-                // если задан дедлайн pong,
-                // и время уже больше этого дедлайна, то это означает что pong не пришет
-                // и мы идем на выход
-                $this->disconnect();
-                throw new Connection_Exception("Connection_WebSocket: no iframe-pong - exit");
-            }
-
             $read = [$stream];
             $write = null;
             $except = [$stream];
 
             $num_changed_streams = stream_select($read, $write, $except, 0, $streamSelectTimeoutUS);
             //$tsSelect = microtime(true);
-
-            // согласно документации false может прилететь из-за system interrupt call
-            if ($num_changed_streams === false) {
-                $this->disconnect();
-                throw new Connection_Exception("Connection_WebSocket: stream_select error");
-            }
-
-            if ($except) {
-                $this->disconnect();
-                throw new Connection_Exception("Connection_WebSocket: stream_select except");
-            }
+            // @todo ловить время после select и именно его передавать в callback
+            // так надо сделать чтобы замерять реальную производительность websocker'a
 
             $called = false;
             if ($num_changed_streams > 0) {
@@ -91,12 +64,10 @@ class Connection_WebSocket implements Connection_IConnection {
                         if (feof($stream)) {
                             $this->disconnect();
                             throw new Exception('EOF: connection closed by remote host');
+                        } else {
+                            // stop drain and do not parse
+                            break;
                         }
-                    }
-
-                    if ($data == '') {
-                        // stop drain and do not parse
-                        break;
                     }
 
                     $buffer .= $data; // дописывание в буфер
@@ -119,18 +90,21 @@ class Connection_WebSocket implements Connection_IConnection {
                         $maskOffset = 2;
 
                         // Если длина полезной нагрузки равна 126 или 127 — читаем дополнительные байты длины
-                        if ($payloadLength == 126) {
-                            if ($bufferLength - $offset < 4) {
-                                break; // Недостаточно данных для заголовка с расширенной длиной
-                            }
-                            $payloadLength = unpack('n', substr($buffer, $offset + 2, 2))[1];
-                            $maskOffset = 4;
-                        } elseif ($payloadLength == 127) {
-                            if ($bufferLength - $offset < 10) {
-                                break; // Недостаточно данных для заголовка с расширенной длиной
-                            }
-                            $payloadLength = unpack('J', substr($buffer, $offset + 2, 8))[1];
-                            $maskOffset = 10;
+                        switch ($payloadLength) {
+                            case 126:
+                                if ($bufferLength - $offset < 4) {
+                                    break(2); // Недостаточно данных для заголовка с расширенной длиной
+                                }
+                                $payloadLength = unpack('n', substr($buffer, $offset + 2, 2))[1];
+                                $maskOffset = 4;
+                                break;
+                            case 127:
+                                if ($bufferLength - $offset < 10) {
+                                    break(2); // Недостаточно данных для заголовка с расширенной длиной
+                                }
+                                $payloadLength = unpack('J', substr($buffer, $offset + 2, 8))[1];
+                                $maskOffset = 10;
+                                break;
                         }
 
                         // Полная длина фрейма: заголовок, маска (если есть) и payload
@@ -157,18 +131,18 @@ class Connection_WebSocket implements Connection_IConnection {
                             $payload = $unmaskedPayload;
                         }
 
-                        // супер важный момент: время надо получать после того, как я счтал данные и разобрал их.
+                        // супер важный момент: время надо получать после того, как я прочитал данные и разобрал их.
                         // потому что может быть момент, что я запросил время сразу после stream_select(), а затем
                         // fread() считал больше данных чем я ожидал - и тогда будет казаться что данные пришли из будущего.
 
                         // Обработка опкодов
                         switch ($opcode) {
-                            case 0x8:
+                            case 0x8: // FRAME CLOSED
                                 $this->disconnect();
-                                throw new Connection_Exception("Connection_WebSocket: iframe-closed");
-                            case 0x9:
+                                throw new Connection_Exception("Connection_WebSocket: frame-closed");
+                            case 0x9: // FRAME PING
                                 # debug:start
-                                Cli::Print_n("Connection_WebSocket: iframe-ping $payload");
+                                Cli::Print_n("Connection_WebSocket: frame-ping $payload");
                                 # debug:end
 
                                 // тут очень важный нюанс:
@@ -180,6 +154,7 @@ class Connection_WebSocket implements Connection_IConnection {
                                     //$tCallback = microtime(true);
                                     $callback(microtime(true), false);
                                     //$performanceArray['callback'][] = microtime(true) - $tCallback;
+                                    $called = true;
                                 } catch (Exception $userException) {
                                     $this->disconnect();
                                     throw $userException;
@@ -187,15 +162,11 @@ class Connection_WebSocket implements Connection_IConnection {
 
                                 $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA); // @todo inline it
                                 fwrite($stream, $encodedPong);
-                                $called = true;
                                 break;
-                            case 0xA:
+                            case 0xA: // FRAME PONG
                                 # debug:start
-                                Cli::Print_n("Connection_WebSocket: iframe-pong $payload");
+                                Cli::Print_n("Connection_WebSocket: frame-pong $payload");
                                 # debug:end
-
-                                // запоминаем когда пришел pong
-                                $tsPong = 0;
 
                                 // тут очень важный нюанс:
                                 // stream_select может выйти по таймауту, а может по pong.
@@ -206,23 +177,27 @@ class Connection_WebSocket implements Connection_IConnection {
                                     //$tCallback = microtime(true);
                                     $callback(microtime(true), false);
                                     //$performanceArray['callback'][] = microtime(true) - $tCallback;
+                                    $called = true;
                                 } catch (Exception $userException) {
                                     $this->disconnect();
                                     throw $userException;
                                 }
-                                $called = true;
+
+                                // запоминаем когда пришел pong
+                                $tsPong = 0;
                                 break;
-                            default:
+                            default: // FRAME with payload
                                 try {
                                     //$performanceArray['select'][] = microtime(true) - $tsSelect;
                                     //$tCallback = microtime(true);
                                     $callback(microtime(true), $payload);
                                     //$performanceArray['callback'][] = microtime(true) - $tCallback;
+                                    $called = true;
                                 } catch (Exception $userException) {
                                     $this->disconnect();
                                     throw $userException;
                                 }
-                                $called = true;
+
                                 break;
                         }
 
@@ -238,6 +213,10 @@ class Connection_WebSocket implements Connection_IConnection {
                         break;
                     }
                 }
+            } elseif ($num_changed_streams === false) {
+                // согласно документации false может прилететь из-за system interrupt call
+                $this->disconnect();
+                throw new Connection_Exception("Connection_WebSocket: stream_select error");
             }
 
             if (!$called) {
@@ -252,11 +231,35 @@ class Connection_WebSocket implements Connection_IConnection {
                 }
             }
 
+            if ($except) {
+                $this->disconnect();
+                throw new Connection_Exception("Connection_WebSocket: stream_select except");
+            }
+
             /*if (!empty($performanceArray['select']) && count($performanceArray['select']) >= 1000) {
                 print "WebSocket_Connection: performance select=".(Array_Static::Avg($performanceArray['select']) * 1000)."\t";
                 print "callback=".(Array_Static::Avg($performanceArray['callback']) * 1000)."\n";
                 $performanceArray = [];
             }*/
+
+            // пинг-понг внизу после select'a
+            // auto ping frame
+            if ($time - $tsPing >= $pingInterval) {
+                $encodedPing = $this->_encodeWebSocketMessage('', 9); // @todo inline it inside compiler
+                fwrite($stream, $encodedPing);
+
+                $tsPing = $time;
+                // дедлайн до которого должен прийти pong
+                $tsPong = $time + $pongDeadline;
+            }
+
+            if ($tsPong > 0 && $time > $tsPong) {
+                // если задан дедлайн pong,
+                // и время уже больше этого дедлайна, то это означает что pong не пришет
+                // и мы идем на выход
+                $this->disconnect();
+                throw new Connection_Exception("Connection_WebSocket: no iframe-pong - exit");
+            }
         }
 
         // теоретически я сюда никогда не дойду, ну да ладно
@@ -373,7 +376,8 @@ class Connection_WebSocket implements Connection_IConnection {
         }
 
         // Добавляем маскированное сообщение в фрейм
-        foreach (str_split($maskedMessage) as $char) {
+        $smm = str_split($maskedMessage);
+        foreach ($smm as $char) {
             $frame[] = ord($char);
         }
 

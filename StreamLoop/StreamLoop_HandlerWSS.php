@@ -19,11 +19,10 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         $this->connect();
     }
 
-    // @todo отказаться от callable
     public function onMessage(callable $callback) {
         $this->_callbackMessage = $callback;
     }
-    // @todo отказаться от callable
+
     public function onError(callable $callback) {
         $this->_callbackError = $callback;
     }
@@ -31,9 +30,12 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     public function connect() {
         $this->_buffer = '';
 
-        $this->_loop->unregisterHandler($this);
+        // to locals
+        $loop = $this->_loop;
 
-        $this->stream = stream_socket_client(
+        $loop->unregisterHandler($this);
+
+        $stream = stream_socket_client(
             "tcp://{$this->_ip}:{$this->_port}",
             $errno,
             $errstr,
@@ -41,26 +43,27 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
             STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT,
             stream_context_create() // без ssl-опций! @todo возмоэно надо будет таки перенести контекст из Connection_WebSocket
         );
-        if (!$this->stream) {
+        if (!$stream) {
             throw new StreamLoop_Exception("TCP connect failed immediately: $errstr ($errno)");
         }
 
-        $this->streamID = (int) $this->stream;
+        $this->streamID = (int) $stream;
+        $this->stream = $stream;
 
-        $this->_loop->registerHandler($this);
+        $loop->registerHandler($this);
 
         $this->_updateState(self::_STATE_CONNECTING, false, true, false);
 
         // Устанавливаем буфер до начала SSL
-        $socket = socket_import_stream($this->stream);
+        $socket = socket_import_stream($stream);
         socket_set_option($socket, SOL_SOCKET, SO_RCVBUF, 4 * 1024 * 1024);
         socket_set_option($socket, SOL_SOCKET, SO_SNDBUF, 4 * 1024 * 1024);
 
-        stream_set_blocking($this->stream, false);
+        stream_set_blocking($stream, false);
 
         // отключаем буферизацию php
-        stream_set_read_buffer($this->stream, 0);
-        stream_set_write_buffer($this->stream, 0);
+        stream_set_read_buffer($stream, 0);
+        stream_set_write_buffer($stream, 0);
     }
 
     public function disconnect() {
@@ -70,17 +73,191 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     }
 
     public function readyRead() {
-        $this->_checkEOF(); // @todo перенести в методы, потому что в _checkRead уже есть проверка на EOF
-
         switch ($this->_state) {
             case self::_STATE_HANDSHAKE:
                 $this->_checkHandshake();
                 return;
             case self::_STATE_WEBSOCKET_READY:
+                $readFrameLength = $this->_readFrameLength;
+                $stream = $this->stream;
+                $buffer = $this->_buffer;
+
+                $called = false;
+
+                // dynamic drain: если еще что-то осталось - увеличиваем буфер и читаем еще раз
+                // это сильно экономит вызовы stream_select
+                for ($drainIndex = 1; $drainIndex <= 10; $drainIndex++) {
+                    $data = fread($stream, $readFrameLength * $drainIndex);
+
+                    if ($data === false) {
+                        // в неблокирующем режиме если данных нет - то будет string ''
+                        // а если false - то это ошибка чтения
+                        // например, PHP Warning: fread(): SSL: Connection reset by peer
+                        $errorString = error_get_last()['message'];
+                        throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
+                    } elseif ($data === '') {
+                        // Если fread вернул пустую строку, проверяем, достигнут ли EOF
+                        $this->_checkEOF();
+                        // EOF: connection closed by remote host
+
+                        break; // stop drain
+                    }
+
+                    $buffer .= $data; // дописываемся в буфер
+                    $offset = 0;
+                    $bufferLength = strlen($buffer);
+
+                    while ($offset < $bufferLength) {
+                        // Минимальный заголовок — 2 байта
+                        if ($bufferLength - $offset < 2) {
+                            break;  // Недостаточно данных для заголовка
+                        }
+
+                        $firstByte = ord($buffer[$offset]);
+                        $secondByte = ord($buffer[$offset + 1]);
+
+                        $opcode = $firstByte & 0x0F;
+                        $isMasked = ($secondByte & 0b10000000) !== 0;
+                        $payloadLength = $secondByte & 0b01111111;
+                        $maskOffset = 2;
+
+                        // Если длина полезной нагрузки равна 126 или 127 — читаем дополнительные байты длины
+                        switch ($payloadLength) {
+                            case 126:
+                                if ($bufferLength - $offset < 4) {
+                                    break(2); // Недостаточно данных для заголовка с расширенной длиной
+                                }
+                                $payloadLength = unpack('n', substr($buffer, $offset + 2, 2))[1];
+                                $maskOffset = 4;
+                                break;
+                            case 127:
+                                if ($bufferLength - $offset < 10) {
+                                    break(2); // Недостаточно данных для заголовка с расширенной длиной
+                                }
+                                $payloadLength = unpack('J', substr($buffer, $offset + 2, 8))[1];
+                                $maskOffset = 10;
+                                break;
+                        }
+
+                        // Полная длина фрейма: заголовок, маска (если есть) и payload
+                        $frameLength = $maskOffset + ($isMasked ? 4 : 0) + $payloadLength;
+                        if ($bufferLength - $offset < $frameLength) {
+                            break; // Ждем, когда придут все данные
+                        }
+
+                        // Если сообщение замаскировано — читаем маску
+                        $mask = '';
+                        if ($isMasked) {
+                            $mask = substr($buffer, $offset + $maskOffset, 4);
+                        }
+
+                        // Читаем полезную нагрузку
+                        $payload = substr($buffer, $offset + $maskOffset + ($isMasked ? 4 : 0), $payloadLength);
+
+                        // Если сообщение замаскировано — дешифруем payload
+                        if ($isMasked) {
+                            $unmaskedPayload = '';
+                            for ($i = 0; $i < $payloadLength; $i++) {
+                                $unmaskedPayload .= $payload[$i] ^ $mask[$i % 4];
+                            }
+                            $payload = $unmaskedPayload;
+                        }
+
+                        // to locals
+                        $callback = $this->_callbackMessage;
+
+                        // Обработка опкодов
+                        switch ($opcode) {
+                            case 0x8: // FRAME CLOSED
+                                $this->disconnect();
+                                $cb = $this->_callbackError;
+                                $cb(microtime(true), "StreamLoop_HandlerWSS: frame-closed");
+                                break;
+                            case 0x9: // FRAME PING
+                                # debug:start
+                                Cli::Print_n("StreamLoop_HandlerWSS: frame-ping $payload");
+                                # debug:end
+
+                                // тут очень важный нюанс:
+                                // stream_select может выйти по таймауту, а может по ping.
+                                // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
+                                // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
+                                try {
+                                    $callback(microtime(true), false);
+                                    $called = true;
+                                } catch (Exception $userException) {
+                                    // тут вылетаем, но надо сделать disconnect
+                                    $this->disconnect();
+                                    throw $userException;
+                                }
+
+                                $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA);
+                                fwrite($stream, $encodedPong);
+                                break;
+                            case 0xA:
+                                // FRAME PONG
+                                # debug:start
+                                Cli::Print_n("StreamLoop_HandlerWSS: frame-pong $payload");
+                                # debug:end
+
+                                // тут очень важный нюанс:
+                                // stream_select может выйти по таймауту, а может по pong.
+                                // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
+                                // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
+                                try {
+                                    $callback(microtime(true), false);
+                                    $called = true;
+                                } catch (Exception $userException) {
+                                    // тут вылетаем, но надо сделать disconnect
+                                    $this->disconnect();
+                                    throw $userException;
+                                }
+
+                                // запоминаем когда пришел pong
+                                $this->_tsPong = 0;
+                                break;
+                            default: // FRAME PAYLOAD
+                                try {
+                                    $callback(microtime(true), $payload);
+                                    $called = true;
+                                } catch (Exception $userException) {
+                                    // тут вылетаем, но надо сделать disconnect
+                                    $this->disconnect();
+                                    throw $userException;
+                                }
+                                break;
+                        }
+
+                        // Сдвигаем указатель на следующий фрейм
+                        $offset += $frameLength;
+                    }
+
+                    // Удаляем обработанные данные из буфера
+                    $buffer = substr($buffer, $offset);
+
+                    // если так окажется, то я что-то прочитал, но сообщение невозможно распарсить
+                    // то я делаю пустое сообщение как-будто я пришел по timeout,
+                    // это особенность именно websocket layer, потому что там фрейм может прилететь не полный и я его не распаршу,
+                    // а вызвать что-то надо
+                    if (!$called) {
+                        try {
+                            $callback(microtime(true), false);
+                        } catch (Exception $userException) {
+                            // тут вылетаем, но надо сделать disconnect
+                            $this->disconnect();
+                            throw $userException;
+                        }
+                    }
+                }
+
+                // сохраняем буфер или что от него осталось
+                $this->_buffer = $buffer;
+
+                // ping-pong в конце
                 $ts = microtime(true);
                 $this->_loop->updateHandlerTimeout($this, $ts + $this->_selectTimeout);
                 $this->_checkPingPong($ts);
-                $this->_checkRead(); // @todo inline here
+
                 return;
             case self::_STATE_WAITING_FOR_UPGRADE:
                 $this->_checkUpgrade();
@@ -89,17 +266,20 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     }
 
     public function readyWrite() {
+        // to locals
+        $stream = $this->stream;
+
         switch ($this->_state) {
             case self::_STATE_CONNECTING:
                 // коннект установился, я готов к записи
-                stream_context_set_option($this->stream, array(
+                stream_context_set_option($stream, array(
                     'ssl' => [
                         'verify_peer'       => false,
                         'verify_peer_name'  => false,
                     ],
                 ));
-                stream_context_set_option($this->stream, 'ssl', 'peer_name', $this->_host);
-                stream_context_set_option($this->stream, 'ssl', 'allow_self_signed', true);
+                stream_context_set_option($stream, 'ssl', 'peer_name', $this->_host);
+                stream_context_set_option($stream, 'ssl', 'allow_self_signed', true);
 
                 $this->_updateState(self::_STATE_HANDSHAKE, true, true, false);
                 $this->_checkHandshake();
@@ -119,7 +299,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
                     . "Sec-WebSocket-Key: $key\r\n"
                     . "Sec-WebSocket-Version: 13\r\n"
                     . "\r\n";
-                fwrite($this->stream, $headers);
+                fwrite($stream, $headers);
                 $this->_updateState(self::_STATE_WAITING_FOR_UPGRADE, true, false, false);
                 $this->_checkUpgrade();
                 return;
@@ -129,13 +309,13 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     public function readyExcept() {
         $this->_checkEOF();
 
-        if ($this->_state == self::_STATE_HANDSHAKE) {
-            $this->_checkHandshake();
-            return;
-        }
-        if ($this->_state == self::_STATE_WAITING_FOR_UPGRADE) {
-            $this->_checkUpgrade();
-            return;
+        switch ($this->_state) {
+            case self::_STATE_HANDSHAKE:
+                $this->_checkHandshake();
+                return;
+            case self::_STATE_WAITING_FOR_UPGRADE:
+                $this->_checkUpgrade();
+                return;
         }
     }
 
@@ -152,10 +332,15 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         $ts = microtime(true);
         $this->_loop->updateHandlerTimeout($this, $ts + $this->_selectTimeout);
 
-        // @todo говно
-        $msgArray = [];
-        $msgArray[] = [self::_FRAME_SELECT_TIMEOUT, ''];
-        $this->_processMsgArray($ts, $msgArray);
+        // frame select timeout
+        try {
+            $callback = $this->_callbackMessage;
+            $callback($ts, '');
+        } catch (Exception $userException) {
+            // тут вылетаем, но надо сделать disconnect
+            $this->disconnect();
+            throw $userException;
+        }
 
         $this->_checkPingPong($ts);
     }
@@ -164,8 +349,13 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         // websocket layer ping
         // auto ping frame
         if ($ts - $this->_tsPing >= $this->_pingInterval) {
-            $this->_sendPingFrame();
-            Cli::Print_n("Connection_WebSocket: sent iframe-ping");
+            $encodedPing = $this->_encodeWebSocketMessage('', 9);
+            fwrite($this->stream, $encodedPing);
+
+            # debug:start
+            Cli::Print_n("StreamLoop_HandlerWSS: sent frame-ping");
+            # debug:end
+
             $this->_tsPing = $ts;
             // дедлайн до которого должен прийти pong
             $this->_tsPong = $ts + $this->_pongDeadline;
@@ -176,104 +366,15 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
             // и время уже больше этого дедлайна, то это означает что pong не пришет
             // и мы идем на выход
             $this->disconnect();
-            throw new Connection_Exception("Connection_WebSocket: no iframe-pong - exit");
-        }
-    }
-
-    private function _checkRead() {
-        $data = fread($this->stream, 256); // @todo хитрый drain из Connection_WebSocket
-        $ts = microtime(true);
-
-        // в неблокирующем режиме если данных нет - то будет string ''
-        // а если false - то это ошибка чтения
-        // например, PHP Warning: fread(): SSL: Connection reset by peer
-        if ($data === false) {
-            $errorString = error_get_last()['message'];
-            throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
-        }
-
-        // Если fread вернул пустую строку, проверяем, достигнут ли EOF
-        if ($data === '') {
-            $this->_checkEOF();
-            return;
-        }
-
-        $this->_buffer .= $data;
-        $msgArray = $this->_decodeMessageArray(); // @todo inline method
-
-        // если так окажется, то я что-то прочитал, но сообщение невозможно распарсить
-        // то я делаю пустое сообщение как-будто я пришел по timeout,
-        // это особенность изменно websocket layer, потому что там фрейм может прилететь не полный и я его не распаршу,
-        // а вызвать что-то надо
-        if (!$msgArray) {
-            $msgArray[] = [self::_FRAME_SELECT_TIMEOUT, ''];
-        }
-        // @todo direct calls, no arrays
-        $this->_processMsgArray($ts, $msgArray);
-    }
-
-    private function _processMsgArray($ts, $msgArray) {
-        foreach ($msgArray as $msg) {
-            $msgType = $msg[0];
-            $msgData = $msg[1];
-
-            switch ($msgType) {
-                case self::_FRAME_PING:
-                    # debug:start
-                    Cli::Print_n("Connection_WebSocket: received iframe-ping $msgData");
-                    # debug:end
-
-                    // @todo callback here too
-
-                    $this->_sendPongFrame($msgData);
-                    break;
-                case self::_FRAME_PONG:
-                    # debug:start
-                    Cli::Print_n("Connection_WebSocket: received iframe-pong $msgData");
-                    # debug:end
-
-                    // запоминаем когда пришел pong
-                    $this->_tsPong = 0;
-
-                    // тут очень важный нюанс:
-                    // stream_select может выйти по таймауту, а может по pong.
-                    // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать $callback,
-                    // потому что внутри callback может быть логика, которая ожидает что она будет выполняться ровно каждые 0.5..1.0 sec,
-                    // например тот же DRSTC snapshot (S) или application layer ping.
-                    try {
-                        $callback = $this->_callbackMessage;
-                        $callback($ts, false);
-                    } catch (Exception $userException) {
-                        // тут вылетаем, но надо сделать disconnect
-                        $this->disconnect();
-                        throw $userException;
-                    }
-                    break;
-                case self::_FRAME_CLOSED:
-                    $this->disconnect();
-                    $cb = $this->_callbackError;
-                    $cb($ts, "WebSocket: iframe-closed");
-                    break;
-                case self::_FRAME_SELECT_TIMEOUT:
-                case self::_FRAME_DATA:
-                    try {
-                        $callback = $this->_callbackMessage;
-                        $callback($ts, $msgData);
-                    } catch (Exception $userException) {
-                        // тут вылетаем, но надо сделать disconnect
-                        $this->disconnect();
-                        throw $userException;
-                    }
-                    break;
-                default:
-                    throw new Connection_Exception("WebSocket type $msgType not implemented");
-            }
+            throw new Connection_Exception("StreamLoop_HandlerWSS: no frame-pong - exit");
         }
     }
 
     private function _checkUpgrade() {
         $line = fgets($this->stream, 4096);
-        if ($line !== false) {
+        if ($line === false) {
+            $this->_checkEOF();
+        } else {
             $this->_buffer .= $line; // @todo locals
             // пустая строка — конец блока заголовков
             if ($line == "\r\n" || $line == "\n") {
@@ -312,6 +413,8 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
     }
 
     private function _checkHandshake() {
+        $this->_checkEOF();
+
         $return = stream_socket_enable_crypto(
             $this->stream,
             true,
@@ -333,104 +436,13 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         $this->_loop->updateHandlerFlags($this, $flagRead, $flagWrite, $flagExcept);
     }
 
-    private function _decodeMessageArray() {
-        $messages = [];
-        $offset = 0;
-        $bufferLength = strlen($this->_buffer); // @todo buffer to locals
-
-        while ($offset < $bufferLength) {
-            // Минимальный заголовок — 2 байта
-            if ($bufferLength - $offset < 2) {
-                break;  // Недостаточно данных для заголовка
-            }
-
-            $firstByte = ord($this->_buffer[$offset]);
-            $secondByte = ord($this->_buffer[$offset + 1]);
-
-            $opcode = $firstByte & 0x0F;
-            $isMasked = ($secondByte & 0b10000000) !== 0;
-            $payloadLength = $secondByte & 0b01111111;
-            $maskOffset = 2;
-
-            // Если длина полезной нагрузки равна 126 или 127 — читаем дополнительные байты длины
-            if ($payloadLength === 126) {
-                if ($bufferLength - $offset < 4) {
-                    break; // Недостаточно данных для заголовка с расширенной длиной
-                }
-                $payloadLength = unpack('n', substr($this->_buffer, $offset + 2, 2))[1];
-                $maskOffset = 4;
-            } elseif ($payloadLength === 127) {
-                if ($bufferLength - $offset < 10) {
-                    break; // Недостаточно данных для заголовка с расширенной длиной
-                }
-                $payloadLength = unpack('J', substr($this->_buffer, $offset + 2, 8))[1];
-                $maskOffset = 10;
-            }
-
-            // Полная длина фрейма: заголовок, маска (если есть) и payload
-            $frameLength = $maskOffset + ($isMasked ? 4 : 0) + $payloadLength;
-            if ($bufferLength - $offset < $frameLength) {
-                break; // Ждем, когда придут все данные
-            }
-
-            // Если сообщение замаскировано — читаем маску
-            $mask = '';
-            if ($isMasked) {
-                $mask = substr($this->_buffer, $offset + $maskOffset, 4);
-            }
-
-            // Читаем полезную нагрузку
-            $payload = substr($this->_buffer, $offset + $maskOffset + ($isMasked ? 4 : 0), $payloadLength);
-
-            // Если сообщение замаскировано — дешифруем payload
-            if ($isMasked) {
-                $unmaskedPayload = '';
-                for ($i = 0; $i < $payloadLength; $i++) {
-                    $unmaskedPayload .= $payload[$i] ^ $mask[$i % 4];
-                }
-                $payload = $unmaskedPayload;
-            }
-
-            // Обработка опкодов
-            // @todo no array - direct calls
-            switch ($opcode) {
-                case 0x8:
-                    $messages[] = [self::_FRAME_CLOSED, $payload];
-                    break;
-                case 0x9:
-                    $messages[] = [self::_FRAME_PING, $payload];
-                    break;
-                case 0xA:
-                    $messages[] = [self::_FRAME_PONG, $payload];
-                    break;
-                default:
-                    $messages[] = [self::_FRAME_DATA, $payload];
-                    break;
-            }
-
-            // Сдвигаем указатель на следующий фрейм
-            $offset += $frameLength;
-        }
-
-        // Удаляем обработанные данные из буфера
-        $this->_buffer = substr($this->_buffer, $offset);
-
-        return $messages;
-    }
-
     public function write($data) {
         $data = $this->_encodeWebSocketMessage($data);
         fwrite($this->stream, $data);
     }
 
-    private function _sendPingFrame($payload = '') { // @todo inline it
-        $encodedPing = $this->_encodeWebSocketMessage($payload, 9);
-        fwrite($this->stream, $encodedPing);
-    }
-
-    private function _sendPongFrame($payload = '') { // @todo inline it
-        $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA);
-        fwrite($this->stream, $encodedPong);
+    public function setReadFrameLength($length) {
+        $this->_readFrameLength = $length;
     }
 
     /**
@@ -474,7 +486,8 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         }
 
         // Добавляем маскированное сообщение в фрейм
-        foreach (str_split($maskedMessage) as $char) {
+        $smm = str_split($maskedMessage);
+        foreach ($smm as $char) {
             $frame[] = ord($char);
         }
 
@@ -485,28 +498,23 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         return $result;
     }
 
-    private $_host, $_port, $_path, $_ip, $_writeArray;
+    private $_host, $_port, $_path, $_ip;
+    private $_writeArray;
     private $_callbackMessage, $_callbackError;
     private $_buffer = '';
+    private $_state = 0;
 
-    private $_state = '';
-
-    private const _STATE_CONNECTING = 'connecting';
-    private const _STATE_HANDSHAKE = 'handshake';
-    private const _STATE_READY = 'ready';
-    private const _STATE_WAITING_FOR_UPGRADE = 'waiting-for-upgrade';
-    private const _STATE_WEBSOCKET_READY = 'websocket-ready';
-
+    // @todo int-const
+    private const _STATE_CONNECTING = 1;
+    private const _STATE_HANDSHAKE = 2;
+    private const _STATE_READY = 3;
+    private const _STATE_WAITING_FOR_UPGRADE = 4;
+    private const _STATE_WEBSOCKET_READY = 5;
     private $_tsPing = 0;
     private $_tsPong = 0;
     private $_pingInterval = 1;
     private $_pongDeadline = 3;
-
-    private const _FRAME_PING = 'frame-ping';
-    private const _FRAME_PONG = 'frame-pong';
-    private const _FRAME_CLOSED = 'frame-closed';
-    private const _FRAME_DATA = 'frame-data';
-    private const _FRAME_SELECT_TIMEOUT = 'frame-select-timeout';
     private $_selectTimeout = 0.25; // @todo setup
+    private $_readFrameLength = 512;
 
 }
