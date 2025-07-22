@@ -1,12 +1,13 @@
 <?php
 class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
-    public function __construct(StreamLoop $loop, $host, $port, $ip = false) {
+    public function __construct(StreamLoop $loop, $host, $port, $ip = false, $bindPort = false) {
         parent::__construct($loop);
 
         $this->_host = $host;
         $this->_port = $port;
         $this->setIP($ip);
+        $this->_bindPort = (int) $bindPort;
 
         $this->requestQue = new SplQueue();
 
@@ -56,13 +57,21 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
 
         $ip = $this->_ip ? $this->_ip : $this->_host;
 
+        // супер важно: надо создавать контекст без ssl-опций!
+        $context = stream_context_create([
+            'socket' => [
+                'tcp_nodelay' => true,  // no Nagle algorithm
+                'bindto' => "0.0.0.0:{$this->_bindPort}",
+            ],
+        ]);
+
         $stream = stream_socket_client(
             "tcp://{$ip}:{$this->_port}",
             $errno,
             $errstr,
             0, // timeout = 0, чтобы мгновенно вернулось
             STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT,
-            stream_context_create()  // без ssl-опций!
+            $context
         );
         if (!$stream) {
             throw new StreamLoop_Exception("TCP connect failed immediately: $errstr ($errno)");
@@ -508,7 +517,7 @@ class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
         $this->_loop->updateHandlerTimeout($this, 0);
     }
 
-    private $_host, $_port, $_ip;
+    private $_host, $_port, $_ip, $_bindPort;
 
     private $_buffer = '';
     private $_headerArray = [];

@@ -1,7 +1,7 @@
 <?php
 class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
 
-    public function __construct(StreamLoop $loop, $host, $port, $path, $writeArray, $ip) {
+    public function __construct(StreamLoop $loop, $host, $port, $path, $writeArray, $ip = false, $bindPort = false) {
         parent::__construct($loop);
 
         $this->_host = $host;
@@ -9,6 +9,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         $this->_path = $path;
         $this->_writeArray = $writeArray;
         $this->_ip = $ip ? $ip : $this->_host;
+        $this->_bindPort = (int) $bindPort;
 
         // @todo как слепить в кучу websocket over https?
         // @todo сначала надо придумать как сделать StateMachine, чтобы я мог помещать команду с событиями onXXX,
@@ -35,13 +36,21 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
 
         $loop->unregisterHandler($this);
 
+        // супер важно: надо создавать контекст без ssl-опций!
+        $context = stream_context_create([
+            'socket' => [
+                'tcp_nodelay' => true,  // no Nagle algorithm
+                'bindto' => "0.0.0.0:{$this->_bindPort}",
+            ],
+        ]);
+
         $stream = stream_socket_client(
             "tcp://{$this->_ip}:{$this->_port}",
             $errno,
             $errstr,
             0, // timeout = 0, чтобы мгновенно вернулось
             STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT,
-            stream_context_create() // без ssl-опций! @todo возмоэно надо будет таки перенести контекст из Connection_WebSocket
+            $context, // @todo возмоэно надо будет таки перенести контекст из Connection_WebSocket
         );
         if (!$stream) {
             throw new StreamLoop_Exception("TCP connect failed immediately: $errstr ($errno)");
@@ -498,7 +507,7 @@ class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
         return $result;
     }
 
-    private $_host, $_port, $_path, $_ip;
+    private $_host, $_port, $_path, $_ip, $_bindPort;
     private $_writeArray;
     private $_callbackMessage, $_callbackError;
     private $_buffer = '';
