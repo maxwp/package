@@ -1,42 +1,5 @@
 <?php
-class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
-
-    public function __construct(StreamLoop $loop, $host, $port, StreamLoop_HandlerUDPRead_IReceiver $receiver) {
-        parent::__construct($loop);
-
-        $this->stream = stream_socket_server(
-            sprintf('udp://%s:%d', $host, $port),
-            $errno,
-            $errstr,
-            STREAM_SERVER_BIND
-        );
-        if ($this->stream === false) {
-            // критическая ошибка — завершаем
-            throw new StreamLoop_Exception("$errstr ($errno)");
-        }
-
-        $this->streamID = (int) $this->stream;
-
-        // регистрация handler'a в loop'e
-        $this->_loop->registerHandler($this);
-
-        $this->_socket = socket_import_stream($this->stream);
-        socket_set_option($this->_socket, SOL_SOCKET, SO_REUSEADDR, 1); // повторный биндинг
-        socket_set_option($this->_socket, SOL_SOCKET, SO_RCVBUF, 2**20); // увеличиваем приёмный буфер ядра
-        socket_set_nonblock($this->_socket); // делаем неблокирующим
-
-        // @todo add busy_poll mode
-
-        // Отключаем все таймауты и буферизацию PHP
-        stream_set_read_buffer($this->stream, 0);
-        stream_set_write_buffer($this->stream, 0);
-
-        stream_set_blocking($this->stream, false);
-
-        $this->_receiver = $receiver;
-
-        $this->_loop->updateHandlerFlags($this, true, false, false);
-    }
+class StreamLoop_HandlerUDP_DrainBackward extends StreamLoop_HandlerUDP {
 
     public function readyRead($tsSelect) {
         // в php init локальной переменной дешевле чем доступ к свойству
@@ -111,16 +74,9 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
         // 2. ну и это экономия на microtime-call
         $ts = microtime(true);
 
-        if ($this->_drainReverse) {
-            // вдуваем сообщения в обратном порядке
-            for ($j = $found - 1; $j >= 0; $j--) {
-                $receiver->onReceive($ts, $bufferArray[$j], $fromAddressArray[$j], $fromPortArray[$j]);
-            }
-        } else {
-            // вдуваем сообщения в прямом порядке
-            for ($j = 0; $j < $found; $j++) {
-                $receiver->onReceive($ts, $bufferArray[$j], $fromAddressArray[$j], $fromPortArray[$j]);
-            }
+        // вдуваем сообщения в обратном порядке
+        for ($j = $found - 1; $j >= 0; $j--) {
+            $receiver->onReceive($ts, $bufferArray[$j], $fromAddressArray[$j], $fromPortArray[$j]);
         }
     }
 
@@ -136,16 +92,10 @@ class StreamLoop_HandlerUDPRead extends StreamLoop_AHandler {
         // nothing for UDP
     }
 
-    public function setDrain(int $limit, bool $reverse) {
+    public function setDrain(int $limit) {
         $this->_drainLimit = $limit;
-        $this->_drainReverse = $reverse;
     }
 
-    private $_socket;
-
-    private StreamLoop_HandlerUDPRead_IReceiver $_receiver;
-
     private int $_drainLimit = 1;
-    private bool $_drainReverse = false;
 
 }
