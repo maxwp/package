@@ -26,18 +26,13 @@ class StreamLoop {
         $this->_loopRunning = false;
     }
 
-    public function run(StreamLoop_IRun $onRun) {
-        // @todo я не уверен что мне вообще этот onRun нужен,
-        // возможно проще всунуть виртуальный handler и управлять с наружи
-
+    public function run() {
         if (!$this->_handlerArray) {
             throw new StreamLoop_Exception('No handler array');
         }
 
+        // @todo как остановить?
         $this->_loopRunning = true;
-
-        // to locals
-        $streamSelectTimeoutUS = $this->_streamSelectTimeoutUS;
 
         // event loop
         while (1) {
@@ -48,32 +43,33 @@ class StreamLoop {
 
             $tsNow = microtime(true);
 
-            $onRun->onRun($tsNow);
-
             // копирование массивов, в них уже задано что нужно для stream_select
             $r = $this->_selectReadArray;
             $w = $this->_selectWriteArray;
             $e = $this->_selectExceptArray;
             $timeoutToArray = $this->_selectTimeoutToArray;
 
-            // если ничего нет - пауза на тот же тайм-аут
-            if (!$r && !$w && !$e) {
-                usleep($streamSelectTimeoutUS);
-                continue;
-            }
-
             // вот тут определить сколько us до ближайшего timeout'a
-            // а также учитывать глобальный timeout loop'a
-            $timeoutToArray[] = $tsNow + $streamSelectTimeoutUS / 1_000_000;
-            $timeout = min($timeoutToArray) - $tsNow;
-            if ($timeout <= 0) {
-                $timeout = 0;
-                // при timeout == 0 мне надо вызывать select потому что надо понять в каких потоках шо есть
+            if ($timeoutToArray) {
+                $timeoutS = 0;
+                $timeoutUS = (min($timeoutToArray) - $tsNow) * 1_000_000;
+                if ($timeoutUS <= 0) {
+                    $timeoutUS = 0;
+                }
+            } else {
+                // timeout может быть null - если нет timeout array вообще - то все сокеты (стримы) будут ждать вечно
+                $timeoutUS = null;
+                $timeoutS = null;
             }
 
-            // @todo timeout может быть null - если нет timeout array и не задан $streamSelectTimeoutUS
-
-            $result = stream_select($r, $w, $e, 0, $timeout * 1_000_000);
+            // так как в stream_select надо всегда передавать rwe, а если у нас нет стримов - то эмуляция
+            // usleep()
+            if (!$r && !$w && !$e) {
+                usleep($timeoutUS);
+                $result = 0; // int
+            } else {
+                $result = stream_select($r, $w, $e, $timeoutS, $timeoutUS);
+            }
 
             // меряем время select'a
             $tsSelect = microtime(true);
@@ -158,12 +154,6 @@ class StreamLoop {
         }
     }
 
-    public function setStreamSelectTimeout($us) {
-        $this->_streamSelectTimeoutUS = $us;
-    }
-
-    private $_streamSelectTimeoutUS = 1_000_000;
-
     private $_loopRunning;
     /**
      * @var array<StreamLoop_AHandler>
@@ -173,6 +163,6 @@ class StreamLoop {
     private array $_selectReadArray = [];
     private array $_selectWriteArray = [];
     private array $_selectExceptArray = [];
-    private $_selectTimeoutToArray = []; // @todo на кучу
+    private $_selectTimeoutToArray = []; // @todo на кучу heap?
 
 }

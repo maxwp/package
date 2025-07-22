@@ -56,7 +56,7 @@ class StreamLoop_HandlerUDP_DrainBackward extends StreamLoop_HandlerUDP {
                 $bufferArray[] = $buffer;
                 $fromAddressArray[] = $fromAddress;
                 $fromPortArray[] = $fromPort;
-                $found += 1;
+                $found ++;
             } else {
                 // тут более правильно проверять на === false,
                 // но в реальности пустой дата-граммы быть не может

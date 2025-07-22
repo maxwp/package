@@ -123,7 +123,7 @@ implements Connection_IDatabaseAdapter {
             $this->_transactionRequested = true;
         }
 
-        $this->_transactionCount += 1;
+        $this->_transactionCount ++;
         return true;
     }
 
