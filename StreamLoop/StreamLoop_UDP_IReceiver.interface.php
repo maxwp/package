@@ -1,5 +1,5 @@
 <?php
-interface StreamLoop_HandlerUDP_IReceiver {
+interface StreamLoop_UDP_IReceiver {
 
     public function onReceive($ts, $message, $fromAddress, $fromPort);
 

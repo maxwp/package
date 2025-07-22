@@ -1,5 +1,5 @@
 <?php
-class StreamLoop_HandlerWSS extends StreamLoop_AHandler {
+class StreamLoop_WebSocket extends StreamLoop_AHandler {
 
     public function __construct(StreamLoop $loop, $host, $port, $path, $writeArray, $ip = false, $bindPort = false) {
         parent::__construct($loop);

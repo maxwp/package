@@ -1,5 +1,5 @@
 <?php
-class StreamLoop_HandlerUDP_DrainBackward extends StreamLoop_HandlerUDP {
+class StreamLoop_UDP_DrainBackward extends StreamLoop_UDP {
 
     public function readyRead($tsSelect) {
         // в php init локальной переменной дешевле чем доступ к свойству

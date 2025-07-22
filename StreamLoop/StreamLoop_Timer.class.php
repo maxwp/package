@@ -1,5 +1,5 @@
 <?php
-class StreamLoop_HandlerTimer extends StreamLoop_AHandler {
+class StreamLoop_Timer extends StreamLoop_AHandler {
 
     public function __construct(StreamLoop $loop, $timeout) {
         parent::__construct($loop);

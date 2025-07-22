@@ -1,5 +1,5 @@
 <?php
-class StreamLoop_HandlerHTTPS extends StreamLoop_AHandler {
+class StreamLoop_HTTPS extends StreamLoop_AHandler {
 
     public function __construct(StreamLoop $loop, $host, $port, $ip = false, $bindPort = false) {
         parent::__construct($loop);

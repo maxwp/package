@@ -1,7 +1,7 @@
 <?php
-class StreamLoop_HandlerUDP extends StreamLoop_AHandler {
+class StreamLoop_UDP extends StreamLoop_AHandler {
 
-    public function __construct(StreamLoop $loop, $host, $port, StreamLoop_HandlerUDP_IReceiver $receiver) {
+    public function __construct(StreamLoop $loop, $host, $port, StreamLoop_UDP_IReceiver $receiver) {
         parent::__construct($loop);
 
         $this->stream = stream_socket_server(
@@ -77,6 +77,6 @@ class StreamLoop_HandlerUDP extends StreamLoop_AHandler {
     }
 
     protected $_socket;
-    protected StreamLoop_HandlerUDP_IReceiver $_receiver;
+    protected StreamLoop_UDP_IReceiver $_receiver;
 
 }
