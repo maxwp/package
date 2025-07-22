@@ -1,37 +1,11 @@
 <?php
 class StreamLoop {
 
-    /**
-     * Регистрация handler'a: в этот момент у меня уже должен быть stream & streamID,
-     * иначе его нельзя зарегистрировать.
-     *
-     * @param StreamLoop_AHandler $handler
-     * @return void
-     */
-    public function registerHandler(StreamLoop_AHandler $handler) {
-        $this->_handlerArray[$handler->streamID] = $handler;
-    }
-
-    public function unregisterHandler(StreamLoop_AHandler $handler) {
-        $streamID = $handler->streamID;
-        if ($streamID) {
-            unset($this->_handlerArray[$streamID]);
-            unset($this->_selectReadArray[$streamID]);
-            unset($this->_selectWriteArray[$streamID]);
-            unset($this->_selectExceptArray[$streamID]);
-        }
-    }
-
-    public function stop() {
-        $this->_loopRunning = false;
-    }
-
     public function run() {
         if (!$this->_handlerArray) {
             throw new StreamLoop_Exception('No handler array');
         }
 
-        // @todo как остановить?
         $this->_loopRunning = true;
 
         // event loop
@@ -62,8 +36,7 @@ class StreamLoop {
                 $timeoutS = null;
             }
 
-            // так как в stream_select надо всегда передавать rwe, а если у нас нет стримов - то эмуляция
-            // usleep()
+            // так как в stream_select надо всегда передавать rwe, а если у нас нет стримов - то эмуляция через usleep()
             if (!$r && !$w && !$e) {
                 usleep($timeoutUS);
                 $result = 0; // int
@@ -82,16 +55,22 @@ class StreamLoop {
                 $calledArray[$id] = true;
             }
 
-            foreach ($w as $stream) {
-                $id = (int) $stream;
-                $this->_handlerArray[$id]->readyWrite($tsSelect);
-                $calledArray[$id] = true;
+            // наличие if тут оправдано, потому что чаще массив пустой
+            if ($w) {
+                foreach ($w as $stream) {
+                    $id = (int) $stream;
+                    $this->_handlerArray[$id]->readyWrite($tsSelect);
+                    $calledArray[$id] = true;
+                }
             }
 
-            foreach ($e as $stream) {
-                $id = (int) $stream;
-                $this->_handlerArray[$id]->readyExcept($tsSelect);
-                $calledArray[$id] = true;
+            // наличие if тут оправдано, потому что чаще массив пустой
+            if ($e) {
+                foreach ($e as $stream) {
+                    $id = (int) $stream;
+                    $this->_handlerArray[$id]->readyExcept($tsSelect);
+                    $calledArray[$id] = true;
+                }
             }
 
             if (!$calledArray) {
@@ -113,6 +92,31 @@ class StreamLoop {
                     }
                 }
             }
+        }
+    }
+
+    public function stop() {
+        $this->_loopRunning = false;
+    }
+
+    /**
+     * Регистрация handler'a: в этот момент у меня уже должен быть stream & streamID,
+     * иначе его нельзя зарегистрировать.
+     *
+     * @param StreamLoop_AHandler $handler
+     * @return void
+     */
+    public function registerHandler(StreamLoop_AHandler $handler) {
+        $this->_handlerArray[$handler->streamID] = $handler;
+    }
+
+    public function unregisterHandler(StreamLoop_AHandler $handler) {
+        $streamID = $handler->streamID;
+        if ($streamID) {
+            unset($this->_handlerArray[$streamID]);
+            unset($this->_selectReadArray[$streamID]);
+            unset($this->_selectWriteArray[$streamID]);
+            unset($this->_selectExceptArray[$streamID]);
         }
     }
 
