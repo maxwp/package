@@ -2,10 +2,10 @@
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_Exception.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_AHandler.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_HTTPS.php');
-ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_HTTPS.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP_DrainForward.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP_DrainBackward.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP_IReceiver.interface.php');
-ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_WebSocket.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_WebSocket.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_Timer.class.php');
