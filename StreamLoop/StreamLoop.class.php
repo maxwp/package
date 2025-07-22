@@ -71,6 +71,8 @@ class StreamLoop {
                 // при timeout == 0 мне надо вызывать select потому что надо понять в каких потоках шо есть
             }
 
+            // @todo timeout может быть null - если нет timeout array и не задан $streamSelectTimeoutUS
+
             $result = stream_select($r, $w, $e, 0, $timeout * 1_000_000);
 
             // меряем время select'a
