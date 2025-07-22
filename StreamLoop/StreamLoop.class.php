@@ -27,6 +27,9 @@ class StreamLoop {
     }
 
     public function run(StreamLoop_IRun $onRun) {
+        // @todo я не уверен что мне вообще этот onRun нужен,
+        // возможно проще всунуть виртуальный handler и управлять с наружи
+
         if (!$this->_handlerArray) {
             throw new StreamLoop_Exception('No handler array');
         }
