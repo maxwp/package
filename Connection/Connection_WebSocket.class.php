@@ -33,8 +33,6 @@ class Connection_WebSocket implements Connection_IConnection {
         stream_set_blocking($stream, false);
 
         while (true) {
-            $time = microtime(true);
-
             $read = [$stream];
             $write = null;
             $except = [$stream];
@@ -137,10 +135,10 @@ class Connection_WebSocket implements Connection_IConnection {
                         switch ($opcode) {
                             case 0x8: // FRAME CLOSED
                                 $this->disconnect();
-                                throw new Connection_Exception("Connection_WebSocket: frame-closed");
+                                throw new Connection_Exception("Connection_WebSocket: received frame-closed");
                             case 0x9: // FRAME PING
                                 # debug:start
-                                Cli::Print_n("Connection_WebSocket: frame-ping $payload");
+                                Cli::Print_n("Connection_WebSocket: received frame-ping $payload");
                                 # debug:end
 
                                 // тут очень важный нюанс:
@@ -160,7 +158,7 @@ class Connection_WebSocket implements Connection_IConnection {
                                 break;
                             case 0xA: // FRAME PONG
                                 # debug:start
-                                Cli::Print_n("Connection_WebSocket: frame-pong $payload");
+                                Cli::Print_n("Connection_WebSocket: received frame-pong $payload");
                                 # debug:end
 
                                 // тут очень важный нюанс:
@@ -224,9 +222,14 @@ class Connection_WebSocket implements Connection_IConnection {
 
             // пинг-понг внизу после select'a
             // auto ping frame
+            $time = microtime(true);
             if ($time - $tsPing >= $pingInterval) {
                 $encodedPing = $this->_encodeWebSocketMessage('', 9); // @todo inline it inside compiler
                 fwrite($stream, $encodedPing);
+
+                # debug:start
+                Cli::Print_n("Connection_WebSocket: sent frame-pong");
+                # debug:end
 
                 $tsPing = $time;
                 // дедлайн до которого должен прийти pong
@@ -238,7 +241,7 @@ class Connection_WebSocket implements Connection_IConnection {
                 // и время уже больше этого дедлайна, то это означает что pong не пришет
                 // и мы идем на выход
                 $this->disconnect();
-                throw new Connection_Exception("Connection_WebSocket: no iframe-pong - exit");
+                throw new Connection_Exception("Connection_WebSocket: no frame-pong - exit");
             }
         }
 
