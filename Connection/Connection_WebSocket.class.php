@@ -228,7 +228,7 @@ class Connection_WebSocket implements Connection_IConnection {
                 fwrite($stream, $encodedPing);
 
                 # debug:start
-                Cli::Print_n("Connection_WebSocket: sent frame-pong");
+                Cli::Print_n("Connection_WebSocket: sent frame-ping");
                 # debug:end
 
                 $tsPing = $time;

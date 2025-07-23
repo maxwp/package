@@ -352,7 +352,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
 
         $this->_loop->updateHandlerTimeout($this, $ts + $this->_selectTimeout);
 
-        $this->_checkPingPong($ts);
+        $this->_checkPingPong(microtime(true));
     }
 
     private function _checkPingPong($ts) {
