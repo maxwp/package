@@ -269,9 +269,9 @@ class Connection_WebSocket implements Connection_IConnection {
         }
 
         // Устанавливаем буфер до начала SSL
-        $socket = socket_import_stream($this->_stream);
-        socket_set_option($socket, SOL_SOCKET, SO_RCVBUF, 4 * 1024 * 1024);
-        socket_set_option($socket, SOL_SOCKET, SO_SNDBUF, 4 * 1024 * 1024);
+        $socket = Connection_Socket::CreateFromStream($this->_stream);
+        $socket->setBufferSizeRead(10 * 1024 * 1024);
+        $socket->setBufferSizeWrite(2 * 1024 * 1024);
 
         // SSL поверх TCP
         if (!stream_socket_enable_crypto($this->_stream, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {

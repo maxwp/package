@@ -20,12 +20,11 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
         // регистрация handler'a в loop'e
         $this->_loop->registerHandler($this);
 
-        $this->_socket = socket_import_stream($this->stream);
-        socket_set_option($this->_socket, SOL_SOCKET, SO_REUSEADDR, 0); // повторный биндинг - нет
-        $this->setBufferSizeRead(50 * 1024 * 1024);
-        socket_set_nonblock($this->_socket); // делаем неблокирующим
-
-        // @todo add busy_poll mode
+        $this->socket = Connection_Socket::CreateFromStream($this->stream);
+        $this->_socketResource = $this->socket->socketResource;
+        $this->socket->setReuseAddr(0);
+        $this->socket->setBufferSizeRead(50 * 1024 * 1024);
+        $this->socket->setNonBlocking();
 
         // Отключаем все таймауты и буферизацию PHP
         stream_set_read_buffer($this->stream, 0);
@@ -45,7 +44,7 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
         $fromPort = 0;
 
         // to locals
-        $socket = $this->_socket;
+        $socket = $this->_socketResource;
 
         // первое сообщене всегда, независимо от drain
         // так нужно сделать, потому что в 90% случаев сообщение в порту всего одно
@@ -76,33 +75,8 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
         // nothing for UDP
     }
 
-    public function setSocketOption($type, $value) {
-        if (!socket_set_option($this->_socket, SOL_SOCKET, $type, $value)) {
-            throw new Connection_Exception("Socket option error type=$type");
-        }
-    }
-
-    public function setBufferSizeRead($size) {
-        $this->setSocketOption(SO_RCVBUF, $size);
-        $this->_checkBufferSize(SO_RCVBUF, $size);
-    }
-
-    public function setBufferSizeWrite($size) {
-        $this->setSocketOption(SO_SNDBUF, $size);
-        $this->_checkBufferSize(SO_SNDBUF, $size);
-    }
-
-    private function _checkBufferSize($side, $size) {
-        // При установке опции SO_RCVBUF/SO_SNDBUF в Linux значение, которое вы указываете, автоматически удваивается для учёта
-        // накладных расходов ядра (служебных структур, буферов для управления данными и т.п.)
-        // Это стандартное поведение, задокументированное в описании сокетов в Linux,
-        // и оно работает как для TCP, так и для UDP.
-        if (socket_get_option($this->_socket, SOL_SOCKET, $side) < $size * 2) {
-            throw new StreamLoop_Exception("UDP sockrt buffer $side size error");
-        }
-    }
-
-    protected $_socket;
+    public Connection_Socket $socket;
+    protected $_socketResource;
     protected StreamLoop_UDP_IReceiver $_receiver;
 
 }

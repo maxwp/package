@@ -64,10 +64,9 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         $this->_updateState(self::_STATE_CONNECTING, false, true, false);
 
         // Устанавливаем буфер до начала SSL
-        $socket = socket_import_stream($stream);
-        // @todo а может вынести в обертку сокета? @todo +HTTPS +UDP*
-        socket_set_option($socket, SOL_SOCKET, SO_RCVBUF, 4 * 1024 * 1024);
-        socket_set_option($socket, SOL_SOCKET, SO_SNDBUF, 4 * 1024 * 1024);
+        $socket = Connection_Socket::CreateFromStream($stream);
+        $socket->setBufferSizeRead(10 * 1024 * 1024);
+        $socket->setBufferSizeWrite(2 * 1024 * 1024);
 
         stream_set_blocking($stream, false);
 

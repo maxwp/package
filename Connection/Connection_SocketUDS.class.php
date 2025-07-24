@@ -10,27 +10,29 @@ class Connection_SocketUDS implements Connection_IConnection {
 
     public function __construct($socketFile) {
         $this->_socketFile = $socketFile;
+        $this->socket = Connection_Socket::CreateSocketUDS();
+        $this->_socketResource = $this->socket->getSocketResource();
     }
 
     public function connect() {
-        $this->_socket = socket_create(AF_UNIX, SOCK_DGRAM, 0);
+        // nothing for UDS
     }
 
     public function disconnect() {
-        if ($this->_socket) {
-            socket_close($this->_socket);
+        if ($this->_socketResource) {
+            socket_close($this->_socketResource);
         }
     }
 
     public function getLink() {
-        if (!$this->_socket) {
+        if (!$this->_socketResource) {
             $this->connect();
         }
-        return $this->_socket;
+        return $this->_socketResource;
     }
 
     public function write($message, $messageSize) {
-        return socket_sendto($this->_socket, $message, $messageSize, MSG_DONTWAIT, $this->_socketFile);
+        return socket_sendto($this->_socketResource, $message, $messageSize, MSG_DONTWAIT, $this->_socketFile);
     }
 
     /**
@@ -43,9 +45,9 @@ class Connection_SocketUDS implements Connection_IConnection {
             unlink($this->_socketFile);
         }
 
-        $result = socket_bind($this->_socket, $this->_socketFile);
+        $result = socket_bind($this->_socketResource, $this->_socketFile);
         if ($result === false) {
-            $message = socket_strerror(socket_last_error($this->_socket));
+            $message = socket_strerror(socket_last_error($this->_socketResource));
             $this->disconnect();
             throw new Connection_Exception($message.' sockfile='.$this->_socketFile);
         }
@@ -55,7 +57,7 @@ class Connection_SocketUDS implements Connection_IConnection {
         $fromPort = 0;
 
         while (1) {
-            $bytes = socket_recvfrom($this->_socket, $buffer, $length, 0, $fromAddress, $fromPort);
+            $bytes = socket_recvfrom($this->_socketResource, $buffer, $length, 0, $fromAddress, $fromPort);
 
             // меряем время сразу после получения
             $ts = microtime(true);
@@ -65,7 +67,7 @@ class Connection_SocketUDS implements Connection_IConnection {
             // и чтобы не делать внизу проверку на if ($buffer) с типизацией string $buffer to bool
             // я прямо тут проверяю не пустые ли байты, тем более что чаще всего $bytes это int
             if ($bytes <= 0) {
-                $message = socket_strerror(socket_last_error($this->_socket)); // message надо получить ДО disconnect, бо поменяется
+                $message = socket_strerror(socket_last_error($this->_socketResource)); // message надо получить ДО disconnect, бо поменяется
                 $this->disconnect();
                 throw new Connection_Exception($message);
             }
@@ -78,7 +80,9 @@ class Connection_SocketUDS implements Connection_IConnection {
         }
     }
 
-    private $_socket;
+    public readonly Connection_Socket $socket;
+
+    private $_socketResource;
 
     private $_socketFile;
 

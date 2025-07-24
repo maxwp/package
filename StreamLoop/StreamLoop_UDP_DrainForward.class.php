@@ -8,7 +8,7 @@ class StreamLoop_UDP_DrainForward extends StreamLoop_UDP {
         $fromPort = 0;
 
         // to locals
-        $socket = $this->_socket;
+        $socket = $this->_socketResource;
         $drainLimit = $this->_drainLimit; // как правило drain есть, поэтому я выношу всегда в locals
         $receiver = $this->_receiver; // как правило readyRead срабатывает если что-то есть
 
