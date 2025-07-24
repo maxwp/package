@@ -98,7 +98,7 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
         // Это стандартное поведение, задокументированное в описании сокетов в Linux,
         // и оно работает как для TCP, так и для UDP.
         if (socket_get_option($this->_socket, SOL_SOCKET, $side) < $size * 2) {
-            throw new Connection_Exception("$side size error");
+            throw new StreamLoop_Exception("UDP sockrt buffer $side size error");
         }
     }
 

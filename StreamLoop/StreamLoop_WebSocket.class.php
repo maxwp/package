@@ -65,6 +65,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
 
         // Устанавливаем буфер до начала SSL
         $socket = socket_import_stream($stream);
+        // @todo а может вынести в обертку сокета? @todo +HTTPS +UDP*
         socket_set_option($socket, SOL_SOCKET, SO_RCVBUF, 4 * 1024 * 1024);
         socket_set_option($socket, SOL_SOCKET, SO_SNDBUF, 4 * 1024 * 1024);
 
