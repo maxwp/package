@@ -983,6 +983,25 @@ strval($j); // 19.5
 
 ==============================================================
 
+cast int to string with concatenations
+
+// 14 ms - if $a $b strings
+$x = $a.$b;
+
+// 96 ms - if $a $b ints
+$x = $a.$b;
+
+// 155 ms - if $a $b strings
+$x = sprintf('%d%d', $a, $b);
+
+// 77 ms - if $a $b ints
+$x = sprintf('%d%d', $a, $b); << если у вас N int чисел, которые надо склеить как строку - сильно выгоднее sprintf
+
+// 32 ms - cast int to string
+$x = (string) $a;
+
+==============================================================
+
 поиск подстроки в строке:
 
 if (substr_count($s1, $s2)) { $x++; } // 14.28 ms // 9.35 jit
