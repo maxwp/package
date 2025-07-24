@@ -21,6 +21,7 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
         $this->_loop->registerHandler($this);
 
         $this->_socket = socket_import_stream($this->stream);
+        socket_set_option($this->_socket, SOL_SOCKET, SO_REUSEADDR, 0); // повторный биндинг - нет
         $this->setBufferSizeRead(50 * 1024 * 1024);
         socket_set_nonblock($this->_socket); // делаем неблокирующим
 
