@@ -22,7 +22,7 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
 
         $this->_socket = socket_import_stream($this->stream);
         socket_set_option($this->_socket, SOL_SOCKET, SO_REUSEADDR, 1); // повторный биндинг
-        socket_set_option($this->_socket, SOL_SOCKET, SO_RCVBUF, 2**20); // увеличиваем приёмный буфер ядра
+        $this->setBufferSizeRead(50 * 1024 * 1024);
         socket_set_nonblock($this->_socket); // делаем неблокирующим
 
         // @todo add busy_poll mode
@@ -74,6 +74,32 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
 
     public function readySelectTimeout($tsSelect) {
         // nothing for UDP
+    }
+
+    public function setSocketOption($type, $value) {
+        if (!socket_set_option($this->_socket, SOL_SOCKET, $type, $value)) {
+            throw new Connection_Exception("Socket option error type=$type");
+        }
+    }
+
+    public function setBufferSizeRead($size) {
+        $this->setSocketOption(SO_RCVBUF, $size);
+        $this->_checkBufferSize(SO_RCVBUF, $size);
+    }
+
+    public function setBufferSizeWrite($size) {
+        $this->setSocketOption(SO_SNDBUF, $size);
+        $this->_checkBufferSize(SO_SNDBUF, $size);
+    }
+
+    private function _checkBufferSize($side, $size) {
+        // При установке опции SO_RCVBUF/SO_SNDBUF в Linux значение, которое вы указываете, автоматически удваивается для учёта
+        // накладных расходов ядра (служебных структур, буферов для управления данными и т.п.)
+        // Это стандартное поведение, задокументированное в описании сокетов в Linux,
+        // и оно работает как для TCP, так и для UDP.
+        if (socket_get_option($this->_socket, SOL_SOCKET, $side) < $size * 2) {
+            throw new Connection_Exception("$side size error");
+        }
     }
 
     protected $_socket;
