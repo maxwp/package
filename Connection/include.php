@@ -25,7 +25,7 @@ ClassLoader::Get()->registerClass(__DIR__.'/Connection_Redis.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Connection_Memcached.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Connection_Socket_IReceiver.interface.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Connection_Socket_Abstract.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/Connection_Socket_Stream.class.php');
+ClassLoader::Get()->registerClass(__DIR__.'/Connection_SocketStream.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Connection_SocketUDP.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Connection_SocketUDS.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/Connection_WebSocket.class.php');
