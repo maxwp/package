@@ -84,6 +84,11 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
 
         $this->_updateState(self::_STATE_CONNECTING, false, true, false);
 
+        // Устанавливаем буфер до начала SSL
+        $socket = new Connection_SocketStream($stream);
+        $socket->setBufferSizeRead(10 * 1024 * 1024);
+        $socket->setBufferSizeWrite(2 * 1024 * 1024);
+
         stream_set_blocking($stream, false);
 
         // отключаем буферизацию php

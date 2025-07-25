@@ -20,11 +20,11 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
         // регистрация handler'a в loop'e
         $this->_loop->registerHandler($this);
 
-        $this->socket = Connection_Socket::CreateFromStream($this->stream);
-        $this->_socketResource = $this->socket->socketResource;
+        $this->socket = new Connection_SocketStream($this->stream);
         $this->socket->setReuseAddr(0);
         $this->socket->setBufferSizeRead(50 * 1024 * 1024);
         $this->socket->setNonBlocking();
+        $this->_socketResource = $this->socket;
 
         // Отключаем все таймауты и буферизацию PHP
         stream_set_read_buffer($this->stream, 0);
@@ -75,7 +75,7 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
         // nothing for UDP
     }
 
-    public Connection_Socket $socket;
+    public Connection_SocketStream $socket;
     protected $_socketResource;
     protected StreamLoop_UDP_IReceiver $_receiver;
 

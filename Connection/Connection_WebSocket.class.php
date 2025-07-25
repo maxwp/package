@@ -269,7 +269,7 @@ class Connection_WebSocket implements Connection_IConnection {
         }
 
         // Устанавливаем буфер до начала SSL
-        $socket = Connection_Socket::CreateFromStream($this->_stream);
+        $socket = new Connection_SocketStream($this->_stream);
         $socket->setBufferSizeRead(10 * 1024 * 1024);
         $socket->setBufferSizeWrite(2 * 1024 * 1024);
 

@@ -9,7 +9,23 @@
 /**
  * Обертка над socket resource
  */
-class Connection_Socket {
+abstract class Connection_Socket_Abstract implements Connection_IConnection {
+
+    public function __construct($socket) {
+        $this->_socket = $socket;
+    }
+
+    abstract public function connect();
+
+    public function disconnect() {
+        if ($this->_socket) {
+            socket_close($this->_socket);
+        }
+    }
+
+    public function getLink() {
+        return $this->_socket;
+    }
 
     // @todo
     // Использование опции IP_MTU_DISCOVER с режимом IP_PMTUDISC_WANT позволяет сокету попытаться определить
@@ -18,47 +34,16 @@ class Connection_Socket {
 
     // @todo busy poll, busy read support
 
-    // @todo а может лучше наследование SocketUDP over Socket?
-    // потому что у меня и так есть IConnection->getLink() ?
-
-    /**
-     * @param $stream
-     * @return self
-     */
-    public static function CreateFromStream($stream) {
-        return new self(socket_import_stream($stream));
-    }
-
-    /**
-     * @param $stream
-     * @return self
-     */
-    public static function CreateSocketUDP() {
-        return new self(socket_create(AF_INET, SOCK_DGRAM, SOL_UDP));
-    }
-
-    /**
-     * @param $stream
-     * @return self
-     */
-    public static function CreateSocketUDS() {
-        return new self(socket_create(AF_UNIX, SOCK_DGRAM, 0));
-    }
-
-    public static function CreateSocketTCP() {
-        return new self(socket_create(AF_INET, SOCK_STREAM, SOL_TCP));
-    }
-
     public function setNonBlocking() {
-        socket_set_nonblock($this->socketResource);
+        socket_set_nonblock($this->_socket);
     }
 
     public function setBlocking() {
-        socket_set_block($this->socketResource);
+        socket_set_block($this->_socket);
     }
 
     public function setSocketOption($type, $value) {
-        if (!socket_set_option($this->socketResource, SOL_SOCKET, $type, $value)) {
+        if (!socket_set_option($this->_socket, SOL_SOCKET, $type, $value)) {
             throw new Connection_Exception("Socket option error type=$type");
         }
     }
@@ -89,22 +74,15 @@ class Connection_Socket {
         // накладных расходов ядра (служебных структур, буферов для управления данными и т.п.)
         // Это стандартное поведение, задокументированное в описании сокетов в Linux,
         // и оно работает как для TCP, так и для UDP.
-        if (socket_get_option($this->socketResource, SOL_SOCKET, $side) < $size * 2) {
+        if (socket_get_option($this->_socket, SOL_SOCKET, $side) < $size * 2) {
             throw new Connection_Exception("$side size error");
         }
     }
 
-    public function __construct($socket) {
-        $this->socketResource = $socket;
+    protected function _getSocketError() {
+        return socket_strerror(socket_last_error($this->_socket));
     }
 
-    /**
-     * @return resource
-     */
-    public function getSocketResource() {
-        return $this->socketResource;
-    }
-
-    public $socketResource; // @todo private
+    protected $_socket;
 
 }

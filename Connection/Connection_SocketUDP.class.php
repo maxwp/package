@@ -6,29 +6,25 @@
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
-class Connection_SocketUDP implements Connection_IConnection {
+class Connection_SocketUDP extends Connection_Socket_Abstract {
 
     public function __construct() {
-        $this->socket = Connection_Socket::CreateSocketUDP();
-        $this->_socketResource = $this->socket->socketResource;
+        parent::__construct(socket_create(AF_INET, SOCK_DGRAM, SOL_UDP));
     }
 
     public function connect() {
         // nothing for UDP
     }
 
-    public function disconnect() {
-        if ($this->_socketResource) {
-            socket_close($this->_socketResource);
-        }
-    }
-
-    public function getLink() {
-        return $this->_socketResource;
-    }
-
     public function write($message, $messageSize, $host, $port) {
-        return socket_sendto($this->_socketResource, $message, $messageSize, MSG_DONTWAIT, $host, $port);
+        return socket_sendto(
+            $this->_socket,
+            $message,
+            $messageSize,
+            MSG_DONTWAIT,
+            $host,
+            $port
+        );
     }
 
     /**
@@ -36,10 +32,13 @@ class Connection_SocketUDP implements Connection_IConnection {
      * @param Connection_Socket_IReceiver $receiver
      * @param int $length
      */
-    public function read($port, Connection_Socket_IReceiver $receiver, $length = 1024, $drainReverse = false) {
-        $result = socket_bind($this->_socketResource, '0.0.0.0', $port);
+    public function read($port, Connection_Socket_IReceiver $receiver, $length = 1024) {
+        // to locals
+        $socket = $this->_socket;
+
+        $result = socket_bind($socket, '0.0.0.0', $port);
         if ($result === false) {
-            $message = socket_strerror(socket_last_error($this->_socketResource));
+            $message = socket_strerror(socket_last_error($this->_socket));
             $this->disconnect();
             throw new Connection_Exception($message.' port='.$port);
         }
@@ -49,9 +48,6 @@ class Connection_SocketUDP implements Connection_IConnection {
         $buffer = '';
         $fromAddress = '';
         $fromPort = 0;
-
-        // to locals
-        $socket = $this->_socketResource;
 
         while (1) {
             // читаем в блок режиме
@@ -67,25 +63,22 @@ class Connection_SocketUDP implements Connection_IConnection {
             // меряем время сразу после получения
             $ts = microtime(true);
 
-            // тут более правильно проверять на === false,
-            // но в реальности пустой дата-граммы быть не может
-            // и чтобы не делать внизу проверку на if ($buffer) с типизацией string $buffer to bool
-            // я прямо тут проверяю не пустые ли байты, тем более что чаще всего $bytes это int
-            if ($bytes <= 0) {
-                $message = socket_strerror(socket_last_error($socket)); // message надо получить ДО disconnect, бо поменяется
+            if ($bytes > 0) {
+                // я сюда не дойду если $buffer пустой
+                if ($receiver->onReceive($ts, $buffer, $fromAddress, $fromPort)) {
+                    // если есть какой-то результат - на выход
+                    break;
+                }
+            } else {
+                // тут более правильно проверять на === false,
+                // но в реальности пустой дата-граммы быть не может
+                // и чтобы не делать внизу проверку на if ($buffer) с типизацией string $buffer to bool
+                // я прямо тут проверяю не пустые ли байты, тем более что чаще всего $bytes это int
+                $message = $this->_getSocketError(); // message надо получить ДО disconnect, бо поменяется
                 $this->disconnect();
                 throw new Connection_Exception($message);
             }
-
-            // я сюда не дойду если $buffer пустой
-            if ($receiver->onReceive($ts, $buffer, $fromAddress, $fromPort)) {
-                // если есть какой-то результат - на выход
-                break;
-            }
         }
     }
-
-    public readonly Connection_Socket $socket;
-    private $_socketResource;
 
 }
