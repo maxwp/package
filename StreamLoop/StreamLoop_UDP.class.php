@@ -24,7 +24,7 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
         $this->socket->setReuseAddr(0);
         $this->socket->setBufferSizeRead(50 * 1024 * 1024);
         $this->socket->setNonBlocking();
-        $this->_socketResource = $this->socket;
+        $this->_socketResource = $this->socket->getLink();
 
         // Отключаем все таймауты и буферизацию PHP
         stream_set_read_buffer($this->stream, 0);
