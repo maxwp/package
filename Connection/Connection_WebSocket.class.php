@@ -49,6 +49,8 @@ class Connection_WebSocket implements Connection_IConnection {
                 for ($drainIndex = 1; $drainIndex <= 10; $drainIndex++) {
                     $data = fread($stream, $readFrameLength * $drainIndex);
 
+                    // @todo if ниже
+                    // @todo SL тоже
                     if ($data === false) {
                         // в неблокирующем режиме если данных нет - то будет string ''
                         // а если false - то это ошибка чтения
@@ -166,6 +168,7 @@ class Connection_WebSocket implements Connection_IConnection {
                                 // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                                 // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                                 try {
+
                                     $callback($tsSelect, microtime(true), false);
                                     $called = true;
                                 } catch (Exception $userException) {
@@ -208,6 +211,7 @@ class Connection_WebSocket implements Connection_IConnection {
 
             if (!$called) {
                 try {
+                    //var_dump((microtime(true) - $tsSelect) * 1_000_000);
                     $callback($tsSelect, microtime(true), false);
                 } catch (Exception $userException) {
                     $this->disconnect();
