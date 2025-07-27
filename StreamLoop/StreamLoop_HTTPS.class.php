@@ -186,8 +186,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
                             // @todo возможно своя структура response с таймерами:
                             // когда начал, когда закончил, что было в запросе,
                             // id потому что мне идентифицировать его как-то надо
-                            $cb = $this->_activeRequest['callback'];
-                            $cb(
+                            ($this->_activeRequest['callback'])(
                                 $this->_activeRequestTS,
                                 microtime(true),
                                 $this->_statusCode,
@@ -269,8 +268,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
                 $ts = microtime(true);
                 $tsRequest = $this->_activeRequestTS;
                 if ($ts - $tsRequest >= $timeout) {
-                    $cb = $this->_activeRequest['callback'];
-                    $cb($tsRequest, $ts, 408, 'Request Timeout', [], '');
+                    ($this->_activeRequest['callback'])($tsRequest, $ts, 408, 'Request Timeout', [], '');
 
                     $this->disconnect();
                     $this->connect();
@@ -283,8 +281,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         if (feof($this->stream)) {
             // @todo говно с double typing
             if ($this->_activeRequest && is_array($this->_activeRequest)) {
-                $cb = $this->_activeRequest['callback'];
-                $cb(
+                ($this->_activeRequest['callback'])(
                     $this->_activeRequestTS,
                     microtime(true),
                     0, // http code 0
@@ -331,8 +328,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
 
         $n = fwrite($this->stream, $request);
         if ($n === false) {
-            $cb = $activeRequest['callback'];
-            $cb(
+            ($activeRequest['callback'])(
                 $activeRequestTS,
                 microtime(true),
                 0, // http code 0

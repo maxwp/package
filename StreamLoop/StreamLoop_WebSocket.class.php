@@ -177,9 +177,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                             $payload = $unmaskedPayload;
                         }
 
-                        // to locals
-                        $callback = $this->_callbackMessage;
-
                         // Обработка опкодов
                         switch ($opcode) {
                             case 0x8: // FRAME CLOSED
@@ -197,7 +194,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                 // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                                 // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                                 try {
-                                    $callback($this, $tsSelect, microtime(true), false);
+                                    ($this->_callbackMessage)($this, $tsSelect, microtime(true), false);
                                     $called = true;
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
@@ -219,7 +216,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                 // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                                 // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                                 try {
-                                    $callback($this, $tsSelect, microtime(true), false);
+                                    ($this->_callbackMessage)($this, $tsSelect, microtime(true), false);
                                     $called = true;
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
@@ -232,7 +229,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                 break;
                             default: // FRAME PAYLOAD
                                 try {
-                                    $callback($this, $tsSelect, microtime(true), $payload);
+                                    ($this->_callbackMessage)($this, $tsSelect, microtime(true), $payload);
                                     $called = true;
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
@@ -255,7 +252,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                     // а вызвать что-то надо
                     if (!$called) {
                         try {
-                            $callback($this, $tsSelect, microtime(true), false);
+                            ($this->_callbackMessage)($this, $tsSelect, microtime(true), false);
                         } catch (Exception $userException) {
                             // тут вылетаем, но надо сделать disconnect
                             $this->disconnect();
