@@ -84,7 +84,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
     public function readyRead($tsSelect) {
         switch ($this->_state) {
             case self::_STATE_HANDSHAKE:
-                $this->_checkHandshake();
+                $this->_checkHandshake($tsSelect);
                 return;
             case self::_STATE_WEBSOCKET_READY:
                 $readFrameLength = $this->_readFrameLength;
@@ -95,7 +95,8 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
 
                 // dynamic drain: если еще что-то осталось - увеличиваем буфер и читаем еще раз
                 // это сильно экономит вызовы stream_select
-                for ($drainIndex = 1; $drainIndex <= 10; $drainIndex++) {
+                $drainLimit = $this->_drainLimit;
+                for ($drainIndex = 1; $drainIndex <= $drainLimit; $drainIndex++) {
                     $data = fread($stream, $readFrameLength * $drainIndex);
 
                     if ($data === false) {
@@ -106,7 +107,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                         throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
                     } elseif ($data === '') {
                         // Если fread вернул пустую строку, проверяем, достигнут ли EOF
-                        $this->_checkEOF();
+                        $this->_checkEOF($tsSelect);
                         // EOF: connection closed by remote host
 
                         break; // stop drain
@@ -180,7 +181,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                             case 0x8: // FRAME CLOSED
                                 $this->disconnect();
                                 $cb = $this->_callbackError;
-                                $cb(microtime(true), "StreamLoop_HandlerWSS: frame-closed");
+                                $cb($this, microtime(true), "StreamLoop_HandlerWSS: frame-closed");
                                 break;
                             case 0x9: // FRAME PING
                                 # debug:start
@@ -192,7 +193,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                 // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                                 // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                                 try {
-                                    $callback($tsSelect, microtime(true), false);
+                                    $callback($this, $tsSelect, microtime(true), false);
                                     $called = true;
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
@@ -214,7 +215,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                 // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                                 // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                                 try {
-                                    $callback($tsSelect, microtime(true), false);
+                                    $callback($this, $tsSelect, microtime(true), false);
                                     $called = true;
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
@@ -227,7 +228,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                 break;
                             default: // FRAME PAYLOAD
                                 try {
-                                    $callback($tsSelect, microtime(true), $payload);
+                                    $callback($this, $tsSelect, microtime(true), $payload);
                                     $called = true;
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
@@ -250,7 +251,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                     // а вызвать что-то надо
                     if (!$called) {
                         try {
-                            $callback($tsSelect, microtime(true), false);
+                            $callback($this, $tsSelect, microtime(true), false);
                         } catch (Exception $userException) {
                             // тут вылетаем, но надо сделать disconnect
                             $this->disconnect();
@@ -269,7 +270,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
 
                 return;
             case self::_STATE_WAITING_FOR_UPGRADE:
-                $this->_checkUpgrade();
+                $this->_checkUpgrade($tsSelect);
                 return;
         }
     }
@@ -291,13 +292,13 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                 stream_context_set_option($stream, 'ssl', 'allow_self_signed', true);
 
                 $this->_updateState(self::_STATE_HANDSHAKE, true, true, false);
-                $this->_checkHandshake();
+                $this->_checkHandshake($tsSelect);
                 return;
             case self::_STATE_HANDSHAKE:
-                $this->_checkHandshake();
+                $this->_checkHandshake($tsSelect);
                 return;
             case self::_STATE_WAITING_FOR_UPGRADE:
-                $this->_checkUpgrade();
+                $this->_checkUpgrade($tsSelect);
                 return;
             case self::_STATE_READY:
                 $key = base64_encode(random_bytes(16)); // Уникальный ключ для Handshake
@@ -310,20 +311,19 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                     . "\r\n";
                 fwrite($stream, $headers);
                 $this->_updateState(self::_STATE_WAITING_FOR_UPGRADE, true, false, false);
-                $this->_checkUpgrade();
+                $this->_checkUpgrade($tsSelect);
                 return;
         }
     }
 
     public function readyExcept($tsSelect) {
-        $this->_checkEOF();
-
         switch ($this->_state) {
             case self::_STATE_HANDSHAKE:
-                $this->_checkHandshake();
+                $this->_checkHandshake($tsSelect);
                 return;
             case self::_STATE_WAITING_FOR_UPGRADE:
-                $this->_checkUpgrade();
+                $this->_checkEOF($tsSelect);
+                $this->_checkUpgrade($tsSelect);
                 return;
         }
     }
@@ -343,7 +343,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         // frame select timeout
         try {
             $callback = $this->_callbackMessage;
-            $callback($tsSelect, $ts, '');
+            $callback($this, $tsSelect, $ts, false);
         } catch (Exception $userException) {
             // тут вылетаем, но надо сделать disconnect
             $this->disconnect();
@@ -380,10 +380,10 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         }
     }
 
-    private function _checkUpgrade() {
+    private function _checkUpgrade($tsSelect) {
         $line = fgets($this->stream, 4096);
         if ($line === false) {
-            $this->_checkEOF();
+            $this->_checkEOF($tsSelect);
         } else {
             $this->_buffer .= $line; // @todo locals
             // пустая строка — конец блока заголовков
@@ -413,17 +413,17 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         }
     }
 
-    private function _checkEOF() {
+    private function _checkEOF($tsSelect) {
         if (feof($this->stream)) {
             $this->disconnect();
 
             $cb = $this->_callbackError;
-            $cb(microtime(true), 'EOF');
+            $cb($this, $tsSelect, microtime(true), 'EOF');
         }
     }
 
-    private function _checkHandshake() {
-        $this->_checkEOF();
+    private function _checkHandshake($tsSelect) {
+        $this->_checkEOF($tsSelect);
 
         $return = stream_socket_enable_crypto(
             $this->stream,
@@ -506,6 +506,12 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         }
         return $result;
     }
+
+    public function setDrain(int $drain) {
+        $this->_drainLimit = $drain;
+    }
+
+    private $_drainLimit = 1;
 
     private $_host, $_port, $_path, $_ip, $_bindPort;
     private $_writeArray;

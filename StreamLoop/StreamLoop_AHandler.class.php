@@ -10,6 +10,13 @@ abstract class StreamLoop_AHandler {
         $this->_loop = $loop;
     }
 
+    /**
+     * @return StreamLoop
+     */
+    public function getLoop() {
+        return $this->_loop;
+    }
+
     public $stream;
     public $streamID;
     /**
