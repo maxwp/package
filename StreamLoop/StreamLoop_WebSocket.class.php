@@ -169,8 +169,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                         switch ($opcode) {
                             case 0x8: // FRAME CLOSED
                                 $this->disconnect();
-                                $cb = $this->_callbackError;
-                                $cb($this, microtime(true), "StreamLoop_HandlerWSS: frame-closed");
+                                ($this->_callbackError)($this, microtime(true), "StreamLoop_HandlerWSS: frame-closed");
                                 break;
                             case 0x9: // FRAME PING
                                 # debug:start
