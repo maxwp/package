@@ -332,48 +332,35 @@ class Connection_WebSocket implements Connection_IConnection {
      * @throws \Random\RandomException
      */
     private function _encodeWebSocketMessage($message, $opcode = 1) {
-        $frame = [];
-        $frame[0] = 128 | $opcode; // Финальный фрейм (FIN) и тип фрейма (текст или пинг)
-
         $length = strlen($message);
-        $mask = random_bytes(4); // Генерация 4-байтового маскирующего ключа
+        $mask = random_bytes(4);
 
+        // 1. FIN + opcode
+        $frame = chr(0x80 | $opcode);
+
+        // 2. Длина и, при необходимости, extended-length
         if ($length <= 125) {
-            $frame[1] = $length | 0b10000000; // Устанавливаем бит маскировки
-        } elseif ($length <= 65535) {
-            $frame[1] = 126 | 0b10000000; // Устанавливаем бит маскировки
-            $frame[2] = ($length >> 8) & 255;
-            $frame[3] = $length & 255;
+            $frame .= chr(0x80 | $length);
+        } elseif ($length <= 0xFFFF) {
+            $frame .= chr(0x80 | 126)
+                . chr(($length >> 8) & 0xFF)
+                . chr($length & 0xFF);
         } else {
-            $frame[1] = 127 | 0b10000000; // Устанавливаем бит маскировки
-            for ($i = 0; $i < 8; $i++) {
-                $frame[$i + 2] = ($length >> (8 * (7 - $i))) & 255;
+            $frame .= chr(0x80 | 127);
+            for ($i = 7; $i >= 0; $i--) {
+                $frame .= chr(($length >> ($i * 8)) & 0xFF);
             }
         }
 
-        // Добавляем маскирующий ключ
-        $maskLength = strlen($mask);
-        for ($i = 0; $i < $maskLength; $i++) {
-            $frame[] = ord($mask[$i]);
-        }
+        // 3. Маска
+        $frame .= $mask;
 
-        // Маскируем сообщение
-        $maskedMessage = '';
+        // 4. Сразу маскируем и доклеиваем payload вариант с циклом:
         for ($i = 0; $i < $length; $i++) {
-            $maskedMessage .= chr(ord($message[$i]) ^ ord($mask[$i % 4]));
+            $frame .= chr(ord($message[$i]) ^ ord($mask[$i & 3]));
         }
 
-        // Добавляем маскированное сообщение в фрейм
-        $smm = str_split($maskedMessage);
-        foreach ($smm as $char) {
-            $frame[] = ord($char);
-        }
-
-        $result = '';
-        foreach ($frame as $value) {
-            $result .= chr($value);
-        }
-        return $result;
+        return $frame;
     }
 
     public function setReadFrameLength($length) {
