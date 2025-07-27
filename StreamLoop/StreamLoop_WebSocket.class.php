@@ -248,21 +248,20 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                         break;
                     }
                     // Иначе loop идёт дальше, возможно есть новые данные
+                }
 
-                    // если так окажется, то я что-то прочитал, но сообщение невозможно распарсить
-                    // то я делаю пустое сообщение как-будто я пришел по timeout,
-                    // это особенность именно websocket layer, потому что там фрейм может прилететь не полный и я его не распаршу,
-                    // а вызвать что-то надо
-                    // @todo лажа - надо перенести за drain!
-                    // @todo и можно закосить после отказа от ws timeout
-                    if (!$called) {
-                        try {
-                            ($this->_callbackMessage)($this, $tsSelect, microtime(true), false);
-                        } catch (Exception $userException) {
-                            // тут вылетаем, но надо сделать disconnect
-                            $this->disconnect();
-                            throw $userException;
-                        }
+                // если так окажется, то я что-то прочитал, но сообщение невозможно распарсить
+                // то я делаю пустое сообщение как-будто я пришел по timeout,
+                // это особенность именно websocket layer, потому что там фрейм может прилететь не полный и я его не распаршу,
+                // а вызвать что-то надо
+                // @todo можно закосить после отказа от ws timeout
+                if (!$called) {
+                    try {
+                        ($this->_callbackMessage)($this, $tsSelect, microtime(true), false);
+                    } catch (Exception $userException) {
+                        // тут вылетаем, но надо сделать disconnect
+                        $this->disconnect();
+                        throw $userException;
                     }
                 }
 
@@ -499,6 +498,12 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
     // @todo no drain in HTTPS
     // @todo no drain in C_WS
     public function setReadFrame(int $length, int $drain) {
+        if ($length <= 1) {
+            throw new StreamLoop_Exception("Length must be a positive integer");
+        }
+        if ($drain < 0) {
+            throw new StreamLoop_Exception("Drain must be a positive integer");
+        }
         $this->_readFrameLength = $length;
         $this->_readFrameDrain = $drain;
     }
