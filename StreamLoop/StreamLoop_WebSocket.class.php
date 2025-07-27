@@ -113,6 +113,10 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                         break; // stop drain
                     }
 
+                    // @todo бажина в stop drain! его надо стопать если fread вернул меньше данных чем я хотел
+                    // @todo перенести if data === false ПОСЛЕ обработки?
+                    // @todo аналогичный косяк с C_WS
+
                     $buffer .= $data; // дописываемся в буфер
                     $offset = 0;
                     $bufferLength = strlen($buffer);
@@ -201,7 +205,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                     throw $userException;
                                 }
 
-                                $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA);
+                                $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA); // frame ping
                                 fwrite($stream, $encodedPong);
                                 break;
                             case 0xA:
@@ -359,7 +363,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         // websocket layer ping
         // auto ping frame
         if ($ts - $this->_tsPing >= $this->_pingInterval) {
-            $encodedPing = $this->_encodeWebSocketMessage('', 9);
+            $encodedPing = $this->_encodeWebSocketMessage('', 9); // ping
             fwrite($this->stream, $encodedPing);
 
             # debug:start
@@ -446,7 +450,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
     }
 
     public function write($data) {
-        $data = $this->_encodeWebSocketMessage($data);
+        $data = $this->_encodeWebSocketMessage($data); // write (usually once)
         fwrite($this->stream, $data);
     }
 
@@ -483,7 +487,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         }
 
         // Добавляем маскирующий ключ
-        $maskLength = strlen($mask);
+        $maskLength = strlen($mask); // @todo тут же всегда 4?
         for ($i = 0; $i < $maskLength; $i++) {
             $frame[] = ord($mask[$i]);
         }
@@ -495,6 +499,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         }
 
         // Добавляем маскированное сообщение в фрейм
+        // @todo можно встроить в цикл выше
         $smm = str_split($maskedMessage);
         foreach ($smm as $char) {
             $frame[] = ord($char);

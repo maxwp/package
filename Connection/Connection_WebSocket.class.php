@@ -198,6 +198,7 @@ class Connection_WebSocket implements Connection_IConnection {
                     // Удаляем обработанные данные из буфера
                     $buffer = substr($buffer, $offset);
 
+                    // @todo лишнее умножение
                     if (strlen($data) < $readFrameLength * $drainIndex) {
                         // stop drain
                         break;
