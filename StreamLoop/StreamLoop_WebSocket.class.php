@@ -102,20 +102,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                 for ($drainIndex = 1; $drainIndex <= $readFrameDrain; $drainIndex++) {
                     $data = fread($stream, $readFrameLength);
 
-                    /*if ($data === false) {
-                        // в неблокирующем режиме если данных нет - то будет string ''
-                        // а если false - то это ошибка чтения
-                        // например, PHP Warning: fread(): SSL: Connection reset by peer
-                        $errorString = error_get_last()['message'];
-                        throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
-                    } elseif ($data === '') {
-                        // Если fread вернул пустую строку, проверяем, достигнут ли EOF
-                        $this->_checkEOF($tsSelect);
-                        // EOF: connection closed by remote host
-
-                        break; // stop drain
-                    }*/
-
                     $buffer .= $data; // дописываемся в буфер
                     $offset = 0;
                     $bufferLength = strlen($buffer);
@@ -126,9 +112,9 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                             break;
                         }
 
-                        $secondByte    = ord($buffer[$offset + 1]);
-                        $lenFlag       = $secondByte & 0x7F;
-                        $isMasked      = (bool)($secondByte & 0x80);
+                        $secondByte = ord($buffer[$offset + 1]);
+                        $lenFlag = $secondByte & 0x7F;
+                        $isMasked = (bool) ($secondByte & 0x80);
 
                         switch ($lenFlag) {
                             case 126:
@@ -248,10 +234,28 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                     // Удаляем обработанные данные из буфера
                     $buffer = substr($buffer, $offset);
 
+                    // Если fread вернул меньше, чем запрошено — дальше не дренируем
+                    if ($data === false) {
+                        // в неблокирующем режиме если данных нет - то будет string ''
+                        // а если false - то это ошибка чтения
+                        // например, PHP Warning: fread(): SSL: Connection reset by peer
+                        $errorString = error_get_last()['message'];
+                        throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
+                    } elseif ($data === '') {
+                        // Если fread вернул пустую строку, проверяем, достигнут ли EOF
+                        $this->_checkEOF($tsSelect); // EOF: connection closed by remote host
+                        break;
+                    } elseif (strlen($data) < $readFrameLength) {
+                        break;
+                    }
+                    // Иначе loop идёт дальше, возможно есть новые данные
+
                     // если так окажется, то я что-то прочитал, но сообщение невозможно распарсить
                     // то я делаю пустое сообщение как-будто я пришел по timeout,
                     // это особенность именно websocket layer, потому что там фрейм может прилететь не полный и я его не распаршу,
                     // а вызвать что-то надо
+                    // @todo лажа - надо перенести за drain!
+                    // @todo и можно закосить после отказа от ws timeout
                     if (!$called) {
                         try {
                             ($this->_callbackMessage)($this, $tsSelect, microtime(true), false);
