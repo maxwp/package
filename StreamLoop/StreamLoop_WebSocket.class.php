@@ -88,18 +88,21 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                 return;
             case self::_STATE_WEBSOCKET_READY:
                 $readFrameLength = $this->_readFrameLength;
+                $readFrameDrain = $this->_readFrameDrain;
                 $stream = $this->stream;
                 $buffer = $this->_buffer;
 
                 $called = false;
 
-                // dynamic drain: если еще что-то осталось - увеличиваем буфер и читаем еще раз
-                // это сильно экономит вызовы stream_select
-                $drainLimit = $this->_drainLimit;
-                for ($drainIndex = 1; $drainIndex <= $drainLimit; $drainIndex++) {
-                    $data = fread($stream, $readFrameLength * $drainIndex);
+                // dynamic drain: если после вычитки большого пакета fread() он считался ровно впритык - то вызываем
+                // чтение еще раз и так до drainLimit.
+                // Надо стараться делать меньше fread (syscall overhead), но если все-таки данных много - то лучше читать
+                // еще раз, чтобы не ждать нового круга stream_select(). Но опять-таки, это сильно зависит от количество
+                // потоков внутри всего StreamLoop и насколько я могу затупить на одном handler'e.
+                for ($drainIndex = 1; $drainIndex <= $readFrameDrain; $drainIndex++) {
+                    $data = fread($stream, $readFrameLength);
 
-                    if ($data === false) {
+                    /*if ($data === false) {
                         // в неблокирующем режиме если данных нет - то будет string ''
                         // а если false - то это ошибка чтения
                         // например, PHP Warning: fread(): SSL: Connection reset by peer
@@ -111,11 +114,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                         // EOF: connection closed by remote host
 
                         break; // stop drain
-                    }
-
-                    // @todo бажина в stop drain! его надо стопать если fread вернул меньше данных чем я хотел
-                    // @todo перенести if data === false ПОСЛЕ обработки?
-                    // @todo аналогичный косяк с C_WS
+                    }*/
 
                     $buffer .= $data; // дописываемся в буфер
                     $offset = 0;
@@ -124,57 +123,60 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                     while ($offset < $bufferLength) {
                         // Минимальный заголовок — 2 байта
                         if ($bufferLength - $offset < 2) {
-                            break;  // Недостаточно данных для заголовка
+                            break;
                         }
 
-                        $firstByte = ord($buffer[$offset]);
-                        $secondByte = ord($buffer[$offset + 1]);
+                        $secondByte    = ord($buffer[$offset + 1]);
+                        $lenFlag       = $secondByte & 0x7F;
+                        $isMasked      = (bool)($secondByte & 0x80);
 
-                        $opcode = $firstByte & 0x0F;
-                        $isMasked = ($secondByte & 0b10000000) !== 0;
-                        $payloadLength = $secondByte & 0b01111111;
-                        $maskOffset = 2;
-
-                        // Если длина полезной нагрузки равна 126 или 127 — читаем дополнительные байты длины
-                        switch ($payloadLength) {
+                        switch ($lenFlag) {
                             case 126:
-                                if ($bufferLength - $offset < 4) {
-                                    break(2); // Недостаточно данных для заголовка с расширенной длиной
-                                }
-                                $payloadLength = unpack('n', substr($buffer, $offset + 2, 2))[1];
                                 $maskOffset = 4;
+                                if ($bufferLength - $offset < $maskOffset) {
+                                    break(2);
+                                }
                                 break;
                             case 127:
-                                if ($bufferLength - $offset < 10) {
-                                    break(2); // Недостаточно данных для заголовка с расширенной длиной
-                                }
-                                $payloadLength = unpack('J', substr($buffer, $offset + 2, 8))[1];
                                 $maskOffset = 10;
+                                if ($bufferLength - $offset < $maskOffset) {
+                                    break(2);
+                                }
+                                break;
+                            default:
+                                $maskOffset = 2;
                                 break;
                         }
 
-                        // Полная длина фрейма: заголовок, маска (если есть) и payload
+                        $head = substr($buffer, $offset, $maskOffset);
+                        $fmt  = $maskOffset === 2 ? 'Cfirst/Csecond' : ($maskOffset === 4 ? 'Cfirst/Csecond/nlen' : 'Cfirst/Csecond/Jlen');
+                        $parts = unpack($fmt, $head);
+                        $opcode = $parts['first'] & 0x0F;
+                        $payloadLength = $parts['len'] ?? ($parts['second'] & 0x7F);
                         $frameLength = $maskOffset + ($isMasked ? 4 : 0) + $payloadLength;
+
                         if ($bufferLength - $offset < $frameLength) {
-                            break; // Ждем, когда придут все данные
+                            break;
                         }
 
-                        // Если сообщение замаскировано — читаем маску
-                        $mask = '';
                         if ($isMasked) {
-                            $mask = substr($buffer, $offset + $maskOffset, 4);
+                            $maskKey = substr($buffer, $offset + $maskOffset, 4);
+                        } else {
+                            $maskKey = '';
                         }
 
-                        // Читаем полезную нагрузку
-                        $payload = substr($buffer, $offset + $maskOffset + ($isMasked ? 4 : 0), $payloadLength);
+                        $payload = substr(
+                            $buffer,
+                            $offset + $maskOffset + ($isMasked ? 4 : 0),
+                            $payloadLength
+                        );
 
-                        // Если сообщение замаскировано — дешифруем payload
                         if ($isMasked) {
-                            $unmaskedPayload = '';
-                            for ($i = 0; $i < $payloadLength; $i++) {
-                                $unmaskedPayload .= $payload[$i] ^ $mask[$i % 4];
+                            for ($j = 0; $j < $payloadLength; $j++) {
+                                $payload[$j] = chr(
+                                    ord($payload[$j]) ^ ord($maskKey[$j & 3])
+                                );
                             }
-                            $payload = $unmaskedPayload;
                         }
 
                         // Обработка опкодов
@@ -451,10 +453,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         fwrite($this->stream, $data);
     }
 
-    public function setReadFrameLength($length) {
-        $this->_readFrameLength = $length;
-    }
-
     /**
      * Функция для кодирования сообщений с маскировкой в WebSocket Frame
      *
@@ -495,11 +493,12 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         return $frame;
     }
 
-    public function setDrain(int $drain) {
-        $this->_drainLimit = $drain;
+    // @todo no drain in HTTPS
+    // @todo no drain in C_WS
+    public function setReadFrame(int $length, int $drain) {
+        $this->_readFrameLength = $length;
+        $this->_readFrameDrain = $drain;
     }
-
-    private $_drainLimit = 1;
 
     private $_host, $_port, $_path, $_ip, $_bindPort;
     private $_writeArray;
@@ -517,6 +516,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
     private $_pingInterval = 1;
     private $_pongDeadline = 3;
     private $_selectTimeout = 0.25; // @todo setup
-    private $_readFrameLength = 512;
+    private $_readFrameLength = 4096; // 4Kb by default
+    private $_readFrameDrain = 1;
 
 }
