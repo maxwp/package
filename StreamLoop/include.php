@@ -8,5 +8,4 @@ ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP_DrainForward.class.ph
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP_DrainBackward.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP_IReceiver.interface.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_WebSocket.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_WebSocketOld.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_Timer.class.php');
