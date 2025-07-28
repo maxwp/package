@@ -102,7 +102,9 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                 for ($drainIndex = 1; $drainIndex <= $readFrameDrain; $drainIndex++) {
                     $data = fread($stream, $readFrameLength);
 
-                    $buffer .= $data; // дописываемся в буфер
+                    // парсинг от read до callback payload занимает 4.23 us avg, 2 med
+
+                    $buffer .= $data; // дописываемся в буфер (даже если тут false, то дешевле так)
                     $offset = 0;
                     $bufferLength = strlen($buffer);
 
@@ -233,7 +235,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                     // Удаляем обработанные данные из буфера
                     $buffer = substr($buffer, $offset);
 
-                    // Если fread вернул меньше, чем запрошено — дальше не дренируем
                     if ($data === false) {
                         // в неблокирующем режиме если данных нет - то будет string ''
                         // а если false - то это ошибка чтения
@@ -245,9 +246,10 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                         $this->_checkEOF($tsSelect); // EOF: connection closed by remote host
                         break;
                     } elseif (strlen($data) < $readFrameLength) {
+                        // Если fread вернул меньше, чем запрошено — дальше не дренируем
                         break;
                     }
-                    // Иначе loop идёт дальше, возможно есть новые данные
+                    // Иначе loop идет дальше, возможно есть новые данные
                 }
 
                 // если так окажется, то я что-то прочитал, но сообщение невозможно распарсить
@@ -495,13 +497,11 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         return $frame;
     }
 
-    // @todo no drain in HTTPS
-    // @todo no drain in C_WS
     public function setReadFrame(int $length, int $drain) {
-        if ($length <= 1) {
+        if ($length <= 0) {
             throw new StreamLoop_Exception("Length must be a positive integer");
         }
-        if ($drain < 0) {
+        if ($drain <= 0) {
             throw new StreamLoop_Exception("Drain must be a positive integer");
         }
         $this->_readFrameLength = $length;

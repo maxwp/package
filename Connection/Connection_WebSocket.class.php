@@ -27,7 +27,6 @@ class Connection_WebSocket implements Connection_IConnection {
         $streamSelectTimeoutUS = $this->_streamSelectTimeoutUS;
         $pingInterval = $this->_pingInterval;
         $pongDeadline = $this->_pongDeadline;
-        $readFrameLength = $this->_readFrameLength;
         $buffer = '';
 
         stream_set_blocking($stream, false);
@@ -43,30 +42,15 @@ class Connection_WebSocket implements Connection_IConnection {
             $tsSelect = microtime(true);
 
             $called = false;
+
+            $readFrameLength = $this->_readFrameLength;
+            $readFrameDrain = $this->_readFrameDrain;
+
             if ($num_changed_streams > 0) {
                 // dynamic drain: если еще что-то осталось - увеличиваем буфер и читаем еще раз
                 // это сильно экономит вызовы stream_select
-                for ($drainIndex = 1; $drainIndex <= 10; $drainIndex++) {
-                    $data = fread($stream, $readFrameLength * $drainIndex);
-
-                    // @todo if ниже
-                    // @todo SL тоже
-                    if ($data === false) {
-                        // в неблокирующем режиме если данных нет - то будет string ''
-                        // а если false - то это ошибка чтения
-                        // например, PHP Warning: fread(): SSL: Connection reset by peer
-                        $errorString = error_get_last()['message'];
-                        throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
-                    } elseif ($data === '') {
-                        // Если fread вернул пустую строку, проверяем, достигнут ли EOF
-                        if (feof($stream)) {
-                            $this->disconnect();
-                            throw new Exception('EOF: connection closed by remote host');
-                        } else {
-                            // stop drain and do not parse
-                            break;
-                        }
-                    }
+                for ($drainIndex = 1; $drainIndex <= $readFrameDrain; $drainIndex++) {
+                    $data = fread($stream, $readFrameLength);
 
                     $buffer .= $data; // дописывание в буфер
 
@@ -76,57 +60,60 @@ class Connection_WebSocket implements Connection_IConnection {
                     while ($offset < $bufferLength) {
                         // Минимальный заголовок — 2 байта
                         if ($bufferLength - $offset < 2) {
-                            break;  // Недостаточно данных для заголовка
+                            break;
                         }
 
-                        $firstByte = ord($buffer[$offset]);
                         $secondByte = ord($buffer[$offset + 1]);
+                        $lenFlag = $secondByte & 0x7F;
+                        $isMasked = (bool) ($secondByte & 0x80);
 
-                        $opcode = $firstByte & 0x0F;
-                        $isMasked = ($secondByte & 0b10000000) !== 0;
-                        $payloadLength = $secondByte & 0b01111111;
-                        $maskOffset = 2;
-
-                        // Если длина полезной нагрузки равна 126 или 127 — читаем дополнительные байты длины
-                        switch ($payloadLength) {
+                        switch ($lenFlag) {
                             case 126:
-                                if ($bufferLength - $offset < 4) {
-                                    break(2); // Недостаточно данных для заголовка с расширенной длиной
-                                }
-                                $payloadLength = unpack('n', substr($buffer, $offset + 2, 2))[1];
                                 $maskOffset = 4;
+                                if ($bufferLength - $offset < $maskOffset) {
+                                    break(2);
+                                }
                                 break;
                             case 127:
-                                if ($bufferLength - $offset < 10) {
-                                    break(2); // Недостаточно данных для заголовка с расширенной длиной
-                                }
-                                $payloadLength = unpack('J', substr($buffer, $offset + 2, 8))[1];
                                 $maskOffset = 10;
+                                if ($bufferLength - $offset < $maskOffset) {
+                                    break(2);
+                                }
+                                break;
+                            default:
+                                $maskOffset = 2;
                                 break;
                         }
 
-                        // Полная длина фрейма: заголовок, маска (если есть) и payload
+                        $head = substr($buffer, $offset, $maskOffset);
+                        $fmt  = $maskOffset === 2 ? 'Cfirst/Csecond' : ($maskOffset === 4 ? 'Cfirst/Csecond/nlen' : 'Cfirst/Csecond/Jlen');
+                        $parts = unpack($fmt, $head);
+                        $opcode = $parts['first'] & 0x0F;
+                        $payloadLength = $parts['len'] ?? ($parts['second'] & 0x7F);
                         $frameLength = $maskOffset + ($isMasked ? 4 : 0) + $payloadLength;
+
                         if ($bufferLength - $offset < $frameLength) {
-                            break; // Ждем, когда придут все данные
+                            break;
                         }
 
-                        // Если сообщение замаскировано — читаем маску
-                        $mask = '';
                         if ($isMasked) {
-                            $mask = substr($buffer, $offset + $maskOffset, 4);
+                            $maskKey = substr($buffer, $offset + $maskOffset, 4);
+                        } else {
+                            $maskKey = '';
                         }
 
-                        // Читаем полезную нагрузку
-                        $payload = substr($buffer, $offset + $maskOffset + ($isMasked ? 4 : 0), $payloadLength);
+                        $payload = substr(
+                            $buffer,
+                            $offset + $maskOffset + ($isMasked ? 4 : 0),
+                            $payloadLength
+                        );
 
-                        // Если сообщение замаскировано — дешифруем payload
                         if ($isMasked) {
-                            $unmaskedPayload = '';
-                            for ($i = 0; $i < $payloadLength; $i++) {
-                                $unmaskedPayload .= $payload[$i] ^ $mask[$i % 4];
+                            for ($j = 0; $j < $payloadLength; $j++) {
+                                $payload[$j] = chr(
+                                    ord($payload[$j]) ^ ord($maskKey[$j & 3])
+                                );
                             }
-                            $payload = $unmaskedPayload;
                         }
 
                         // супер важный момент: время надо получать после того, как я прочитал данные и разобрал их.
@@ -198,11 +185,26 @@ class Connection_WebSocket implements Connection_IConnection {
                     // Удаляем обработанные данные из буфера
                     $buffer = substr($buffer, $offset);
 
-                    // @todo лишнее умножение
-                    if (strlen($data) < $readFrameLength * $drainIndex) {
-                        // stop drain
+                    if ($data === false) {
+                        // в неблокирующем режиме если данных нет - то будет string ''
+                        // а если false - то это ошибка чтения
+                        // например, PHP Warning: fread(): SSL: Connection reset by peer
+                        $errorString = error_get_last()['message'];
+                        throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
+                    } elseif ($data === '') {
+                        // Если fread вернул пустую строку, проверяем, достигнут ли EOF
+                        if (feof($stream)) {
+                            $this->disconnect();
+                            throw new Exception('EOF: connection closed by remote host');
+                        } else {
+                            // stop drain and do not parse
+                            break;
+                        }
+                    } elseif (strlen($data) < $readFrameLength) {
+                        // Если fread вернул меньше, чем запрошено — дальше не дренируем
                         break;
                     }
+                    // Иначе loop идет дальше, возможно есть новые данные
                 }
             } elseif ($num_changed_streams === false) {
                 // согласно документации false может прилететь из-за system interrupt call
@@ -363,8 +365,16 @@ class Connection_WebSocket implements Connection_IConnection {
         return $frame;
     }
 
-    public function setReadFrameLength($length) {
+    public function setReadFrame(int $length, int $drain) {
+        if ($length <= 0) {
+            throw new StreamLoop_Exception("Length must be a positive integer");
+        }
+        if ($drain <= 0) {
+            throw new StreamLoop_Exception("Drain must be a positive integer");
+        }
+
         $this->_readFrameLength = $length;
+        $this->_readFrameDrain = $drain;
     }
 
     private $_host, $_ip;
@@ -374,6 +384,7 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_streamSelectTimeoutUS = 500000; // 500 ms by default
     private $_pingInterval = 1;
     private $_pongDeadline = 3;
-    private $_readFrameLength = 512;
+    private $_readFrameLength = 4096;
+    private $_readFrameDrain = 1;
 
 }
