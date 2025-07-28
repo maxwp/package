@@ -176,7 +176,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
 
                     // dynamic drain read
                     for ($drainIndex = 1; $drainIndex <= 10; $drainIndex++) {
-                        $chunk = fread($stream, 1024 * $drainIndex);
+                        $chunk = fread($stream, 4096);
 
                         // дописываемся всегда: так быстрее, потому что как правило $chunk это string или empty string.
                         // И даже если он false - то дальше сработао проверка
@@ -195,6 +195,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
                                 $buffer
                             );
 
+                            // очистка буфера, потому что считали тело до конца
                             $buffer = '';
 
                             $this->_updateState(self::_STATE_READY, false, false, false);
