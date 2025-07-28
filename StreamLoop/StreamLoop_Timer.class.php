@@ -6,15 +6,14 @@ class StreamLoop_Timer extends StreamLoop_AHandler {
 
         $loop->unregisterHandler($this);
 
-        $timeout = (float) $timeout;
-        $this->_timeout = $timeout;
+        $this->setTimeout($timeout);
 
         $this->streamID = -1 * rand(1, 999999); // случайный отрицательный id
         $this->stream = null;
 
         $loop->registerHandler($this);
 
-        $this->_loop->updateHandlerTimeout($this, microtime(true) + $timeout);
+        $this->_loop->updateHandlerTimeout($this, microtime(true) + $this->_timeout);
     }
 
     public function readyRead($tsSelect) {
@@ -39,7 +38,15 @@ class StreamLoop_Timer extends StreamLoop_AHandler {
         $this->_callback = $callback;
     }
 
-    private $_timeout;
+    public function setTimeout($timeout) {
+        $this->_timeout = (float) $timeout;
+    }
+
+    public function getTimeout() {
+        return $this->_timeout;
+    }
+
+    private $_timeout = 0.0;
 
     private $_callback;
 
