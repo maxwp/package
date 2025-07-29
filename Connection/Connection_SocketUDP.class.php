@@ -14,7 +14,16 @@ class Connection_SocketUDP extends Connection_Socket_Abstract {
 
     public function connect() {
         // nothing for UDP
+        //socket_connect($this->_socket, '4.4.4.4', 800);
     }
+
+    /*public function write2($message, $messageSize) {
+        return socket_write(
+            $this->_socket,
+            $message,
+            $messageSize,
+        );
+    }*/
 
     public function write($message, $messageSize, $host, $port) {
         return socket_sendto(
