@@ -144,6 +144,11 @@ class Connection_WebSocket implements Connection_IConnection {
 
                                 $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA); // @todo inline it
                                 fwrite($stream, $encodedPong);
+
+                                # debug:start
+                                Cli::Print_n("Connection_WebSocket: send frame-pong $payload");
+                                # debug:end
+
                                 break;
                             case 0xA: // FRAME PONG
                                 # debug:start
@@ -155,7 +160,6 @@ class Connection_WebSocket implements Connection_IConnection {
                                 // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
                                 // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
                                 try {
-
                                     $callback($tsSelect, microtime(true), false);
                                     $called = true;
                                 } catch (Exception $userException) {
