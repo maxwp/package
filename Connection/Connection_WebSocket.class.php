@@ -19,15 +19,15 @@ class Connection_WebSocket implements Connection_IConnection {
     }
 
     public function loop(callable $callback) {
-        $tsPing = 0;
-        $tsPong = 0;
-
         // вытягивание в locals
         $stream = $this->_stream;
         $streamSelectTimeoutUS = $this->_streamSelectTimeoutUS;
         $pingInterval = $this->_pingInterval;
         $pongDeadline = $this->_pongDeadline;
         $buffer = '';
+
+        $tsPing = time() + $pingInterval;
+        $tsPong = $tsPing + $pongDeadline;
 
         stream_set_blocking($stream, false);
 
@@ -167,8 +167,8 @@ class Connection_WebSocket implements Connection_IConnection {
                                     throw $userException;
                                 }
 
-                                // запоминаем когда пришел pong
-                                $tsPong = 0;
+                                // подвигаем pong
+                                $tsPong = $tsPing + $pongDeadline;
                                 break;
                             default: // FRAME with payload
                                 try {
@@ -218,7 +218,6 @@ class Connection_WebSocket implements Connection_IConnection {
 
             if (!$called) {
                 try {
-                    //var_dump((microtime(true) - $tsSelect) * 1_000_000);
                     $callback($tsSelect, microtime(true), false);
                 } catch (Exception $userException) {
                     $this->disconnect();
@@ -233,8 +232,7 @@ class Connection_WebSocket implements Connection_IConnection {
 
             // пинг-понг внизу после select'a
             // auto ping frame
-            $time = microtime(true);
-            if ($time - $tsPing >= $pingInterval) {
+            if ($tsSelect > $tsPing) {
                 $encodedPing = $this->_encodeWebSocketMessage('', 9); // @todo inline it inside compiler
                 fwrite($stream, $encodedPing);
 
@@ -242,12 +240,11 @@ class Connection_WebSocket implements Connection_IConnection {
                 Cli::Print_n("Connection_WebSocket: sent frame-ping");
                 # debug:end
 
-                $tsPing = $time;
-                // дедлайн до которого должен прийти pong
-                $tsPong = $time + $pongDeadline;
+                // когда следующий ping?
+                $tsPing = $tsSelect + $pingInterval;
             }
 
-            if ($tsPong > 0 && $time > $tsPong) {
+            if ($tsSelect > $tsPong) {
                 // если задан дедлайн pong,
                 // и время уже больше этого дедлайна, то это означает что pong не пришет
                 // и мы идем на выход
@@ -386,7 +383,7 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_path;
     private $_stream;
     private $_streamSelectTimeoutUS = 500000; // 500 ms by default
-    private $_pingInterval = 1;
+    private $_pingInterval = 5;
     private $_pongDeadline = 3;
     private $_readFrameLength = 4096;
     private $_readFrameDrain = 1;

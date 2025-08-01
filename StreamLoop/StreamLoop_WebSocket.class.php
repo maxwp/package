@@ -365,7 +365,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
     private function _checkPingPong($ts) {
         // websocket layer ping
         // auto ping frame
-        if ($ts - $this->_tsPing >= $this->_pingInterval) {
+        if ($ts > $this->_tsPing) {
             $encodedPing = $this->_encodeWebSocketMessage('', 9); // ping
             fwrite($this->stream, $encodedPing);
 
@@ -373,7 +373,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
             Cli::Print_n("StreamLoop_HandlerWSS: sent frame-ping");
             # debug:end
 
-            $this->_tsPing = $ts;
+            $this->_tsPing = $ts + $this->_pingInterval;
             // дедлайн до которого должен прийти pong
             $this->_tsPong = $ts + $this->_pongDeadline;
         }
