@@ -382,7 +382,7 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_port;
     private $_path;
     private $_stream;
-    private $_streamSelectTimeoutUS = 500000; // 500 ms by default
+    private $_streamSelectTimeoutUS = 500000; // 500 ms by default @todo
     private $_pingInterval = 5;
     private $_pongDeadline = 3;
     private $_readFrameLength = 4096;

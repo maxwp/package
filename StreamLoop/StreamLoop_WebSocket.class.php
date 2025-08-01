@@ -213,8 +213,8 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                     throw $userException;
                                 }
 
-                                // запоминаем когда пришел pong
-                                $this->_tsPong = 0;
+                                // подвигаем метку pong
+                                $this->_tsPong = $this->_tsPing + $this->_pongDeadline;
                                 break;
                             default: // FRAME PAYLOAD
                                 try {
@@ -374,11 +374,9 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
             # debug:end
 
             $this->_tsPing = $ts + $this->_pingInterval;
-            // дедлайн до которого должен прийти pong
-            $this->_tsPong = $ts + $this->_pongDeadline;
         }
 
-        if ($this->_tsPong > 0 && $ts > $this->_tsPong) {
+        if ($ts > $this->_tsPong) {
             // если задан дедлайн pong,
             // и время уже больше этого дедлайна, то это означает что pong не пришет
             // и мы идем на выход
@@ -414,8 +412,8 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                 );
                 $this->_buffer = '';
 
-                $this->_tsPing = 0;
-                $this->_tsPong = 0;
+                $this->_tsPing = $tsSelect + $this->_pingInterval;
+                $this->_tsPong = $this->_tsPong + $this->_pongDeadline;
             }
         }
     }
@@ -521,9 +519,9 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
     private const _STATE_WEBSOCKET_READY = 5;
     private $_tsPing = 0;
     private $_tsPong = 0;
-    private $_pingInterval = 1;
+    private $_pingInterval = 5;
     private $_pongDeadline = 3;
-    private $_selectTimeout = 0.25; // @todo setup
+    private $_selectTimeout = 0.5;
     private $_readFrameLength = 4096; // 4Kb by default
     private $_readFrameDrain = 1;
 
