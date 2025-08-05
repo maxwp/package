@@ -7,11 +7,12 @@
  */
 class Connection_WebSocket implements Connection_IConnection {
 
-    public function __construct($host, $port, $path, $ip = false) {
+    public function __construct($host, $port, $path, $ip = false, $headerArray = []) {
         $this->_host = $host;
         $this->_ip = $ip;
         $this->_port = $port;
         $this->_path = $path;
+        $this->_headerArray = $headerArray; // @todo возможно общий TCP connection
     }
 
     public function setLoopTimeout($us) {
@@ -289,6 +290,11 @@ class Connection_WebSocket implements Connection_IConnection {
         stream_set_read_buffer($this->_stream, 0);
         stream_set_write_buffer($this->_stream, 0);
 
+        $customHeaderString = '';
+        foreach ($this->_headerArray as $key => $value) {
+            $customHeaderString .= $key . ': ' . $value . "\r\n";
+        }
+
         $key = base64_encode(random_bytes(16)); // Уникальный ключ для Handshake
         $headers = "GET {$this->_path} HTTP/1.1\r\n"
             . "Host: {$this->_host}\r\n"
@@ -296,6 +302,7 @@ class Connection_WebSocket implements Connection_IConnection {
             . "Connection: Upgrade\r\n"
             . "Sec-WebSocket-Key: $key\r\n"
             . "Sec-WebSocket-Version: 13\r\n"
+            . $customHeaderString
             . "\r\n";
         fwrite($this->_stream, $headers);
 
@@ -381,6 +388,7 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_host, $_ip;
     private $_port;
     private $_path;
+    private $_headerArray = [];
     private $_stream;
     private $_streamSelectTimeoutUS = 500000; // 500 ms by default @todo
     private $_pingInterval = 5;

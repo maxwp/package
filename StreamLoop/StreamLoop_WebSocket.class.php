@@ -1,13 +1,14 @@
 <?php
 class StreamLoop_WebSocket extends StreamLoop_AHandler {
 
-    public function __construct(StreamLoop $loop, $host, $port, $path, $writeArray, $ip = false, $bindPort = false) {
+    public function __construct(StreamLoop $loop, $host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindPort = false) {
         parent::__construct($loop);
 
         $this->_host = $host;
         $this->_port = $port;
         $this->_path = $path;
         $this->_writeArray = $writeArray;
+        $this->_headerArray = $headerArray;
         $this->_ip = $ip ? $ip : $this->_host;
         $this->_bindPort = (int) $bindPort;
 
@@ -309,12 +310,19 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                 return;
             case self::_STATE_READY:
                 $key = base64_encode(random_bytes(16)); // Уникальный ключ для Handshake
+
+                $customHeaderString = '';
+                foreach ($this->_headerArray as $key => $value) {
+                    $customHeaderString .= $key . ': ' . $value . "\r\n";
+                }
+
                 $headers = "GET {$this->_path} HTTP/1.1\r\n"
                     . "Host: {$this->_host}\r\n"
                     . "Upgrade: websocket\r\n"
                     . "Connection: Upgrade\r\n"
                     . "Sec-WebSocket-Key: $key\r\n"
                     . "Sec-WebSocket-Version: 13\r\n"
+                    . $customHeaderString
                     . "\r\n";
                 fwrite($stream, $headers);
                 $this->_updateState(self::_STATE_WAITING_FOR_UPGRADE, true, false, false);
@@ -508,6 +516,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
 
     private $_host, $_port, $_path, $_ip, $_bindPort;
     private $_writeArray;
+    private $_headerArray = [];
     private $_callbackMessage, $_callbackError;
     private $_buffer = '';
     private $_state = 0;
