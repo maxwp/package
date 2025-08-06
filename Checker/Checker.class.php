@@ -349,6 +349,22 @@ class Checker {
     }
 
     /**
+     * Check port
+     *
+     * @param $port
+     * @return bool
+     */
+    public static function CheckPort($port) {
+        if (!is_integer($port)) {
+            return false;
+        }
+        if ($port < 0 || $port > 65535) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Проверить картинку на допустимость формата.
      * Нужно указывать полный пусть к картине или полный URL
      *

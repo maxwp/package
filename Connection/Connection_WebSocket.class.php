@@ -7,12 +7,31 @@
  */
 class Connection_WebSocket implements Connection_IConnection {
 
-    public function __construct($host, $port, $path, $ip = false, $headerArray = []) {
-        $this->_host = $host;
-        $this->_ip = $ip;
+    public function __construct($host, $port, $path, $ip = false, $headerArray = [], $bindIP = false, $bindPort = false) {
+        $this->_host = $host; // @todo checker
+        $this->_ip = $ip; // @todo checker // @todo можно сделать как-то checker супер универсально?
         $this->_port = $port;
         $this->_path = $path;
         $this->_headerArray = $headerArray; // @todo возможно общий TCP connection
+
+        if ($bindIP) {
+            if (!Checker::CheckIP($bindIP)) {
+                throw new Connection_Exception("Invalid Bind IP $bindIP");
+            }
+        } else {
+            $bindIP = '0.0.0.0'; // any ip
+        }
+
+        if ($bindPort) {
+            if (!Checker::CheckPort($bindPort)) {
+                throw new Connection_Exception("Invalid Port $bindPort");
+            }
+        } else {
+            $bindPort = 0; // any port
+        }
+
+        $this->_bindIP = $bindIP;
+        $this->_bindPort = $bindPort;
     }
 
     public function setLoopTimeout($us) {
@@ -262,6 +281,7 @@ class Connection_WebSocket implements Connection_IConnection {
         $context = stream_context_create([
             'socket' => [
                 'tcp_nodelay' => true,  // no Nagle algorithm
+                'bindto'     => "{$this->_bindIP}:{$this->_bindPort}",
             ],
             'ssl' => array(
                 'peer_name' => $this->_host,
@@ -395,5 +415,7 @@ class Connection_WebSocket implements Connection_IConnection {
     private $_pongDeadline = 3;
     private $_readFrameLength = 4096;
     private $_readFrameDrain = 1;
+    private $_bindIP;
+    private $_bindPort;
 
 }
