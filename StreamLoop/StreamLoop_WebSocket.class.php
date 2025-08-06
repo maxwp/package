@@ -1,7 +1,7 @@
 <?php
 class StreamLoop_WebSocket extends StreamLoop_AHandler {
 
-    public function __construct(StreamLoop $loop, $host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindPort = false) {
+    public function __construct(StreamLoop $loop, $host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindIP = false, $bindPort = false) {
         parent::__construct($loop);
 
         $this->_host = $host;
@@ -10,7 +10,25 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         $this->_writeArray = $writeArray;
         $this->_headerArray = $headerArray;
         $this->_ip = $ip ? $ip : $this->_host;
-        $this->_bindPort = (int) $bindPort;
+
+        if ($bindIP) {
+            if (!Checker::CheckIP($bindIP)) {
+                throw new StreamLoop_Exception("Invalid Bind IP $bindIP");
+            }
+        } else {
+            $bindIP = '0.0.0.0'; // any ip
+        }
+
+        if ($bindPort) {
+            if (!Checker::CheckPort($bindPort)) {
+                throw new StreamLoop_Exception("Invalid Port $bindPort");
+            }
+        } else {
+            $bindPort = 0; // any port
+        }
+
+        $this->_bindIP = $bindIP;
+        $this->_bindPort = $bindPort;
 
         // @todo как слепить в кучу websocket over https?
         // @todo сначала надо придумать как сделать StateMachine, чтобы я мог помещать команду с событиями onXXX,
@@ -41,7 +59,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         $context = stream_context_create([
             'socket' => [
                 'tcp_nodelay' => true,  // no Nagle algorithm
-                'bindto' => "0.0.0.0:{$this->_bindPort}",
+                'bindto' => "{$this->_bindIP}:{$this->_bindPort}",
             ],
         ]);
 
@@ -514,7 +532,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         $this->_readFrameDrain = $drain;
     }
 
-    private $_host, $_port, $_path, $_ip, $_bindPort;
+    private $_host, $_port, $_path, $_ip, $_bindIP, $_bindPort;
     private $_writeArray;
     private $_headerArray = [];
     private $_callbackMessage, $_callbackError;

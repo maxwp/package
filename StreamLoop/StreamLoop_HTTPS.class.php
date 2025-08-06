@@ -1,13 +1,31 @@
 <?php
 class StreamLoop_HTTPS extends StreamLoop_AHandler {
 
-    public function __construct(StreamLoop $loop, $host, $port, $ip = false, $bindPort = false) {
+    public function __construct(StreamLoop $loop, $host, $port, $ip = false, $bindIP = false, $bindPort = false) {
         parent::__construct($loop);
 
         $this->_host = $host;
         $this->_port = $port;
         $this->setIP($ip);
-        $this->_bindPort = (int) $bindPort;
+
+        if ($bindIP) {
+            if (!Checker::CheckIP($bindIP)) {
+                throw new StreamLoop_Exception("Invalid Bind IP $bindIP");
+            }
+        } else {
+            $bindIP = '0.0.0.0'; // any ip
+        }
+
+        if ($bindPort) {
+            if (!Checker::CheckPort($bindPort)) {
+                throw new StreamLoop_Exception("Invalid Port $bindPort");
+            }
+        } else {
+            $bindPort = 0; // any port
+        }
+
+        $this->_bindIP = $bindIP;
+        $this->_bindPort = $bindPort;
 
         $this->requestQue = new SplQueue();
 
@@ -61,7 +79,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         $context = stream_context_create([
             'socket' => [
                 'tcp_nodelay' => true,  // no Nagle algorithm
-                'bindto' => "0.0.0.0:{$this->_bindPort}",
+                'bindto' => "{$this->_bindIP}:{$this->_bindPort}",
             ],
         ]);
 
@@ -519,7 +537,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         $this->_loop->updateHandlerTimeout($this, 0);
     }
 
-    private $_host, $_port, $_ip, $_bindPort;
+    private $_host, $_port, $_ip, $_bindIP, $_bindPort;
 
     private $_buffer = '';
     private $_headerArray = [];
