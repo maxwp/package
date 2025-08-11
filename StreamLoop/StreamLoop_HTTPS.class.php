@@ -106,6 +106,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         $this->_socket = new Connection_SocketStream($stream);
         $this->_socket->setBufferSizeRead(10 * 1024 * 1024);
         $this->_socket->setBufferSizeWrite(2 * 1024 * 1024);
+        $this->_socket->setKeepAlive();
 
         stream_set_blocking($stream, false);
 

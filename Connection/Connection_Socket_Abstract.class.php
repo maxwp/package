@@ -73,6 +73,10 @@ abstract class Connection_Socket_Abstract implements Connection_IConnection {
         socket_set_option($this->_socket, SOL_TCP, 12, $value); // TCP_QUICKACK as 12 defined in php 8.3+ only
     }
 
+    public function setKeepAlive($value = 1) {
+        socket_set_option($this->_socket, SOL_SOCKET, SO_KEEPALIVE, $value);
+    }
+
     private function _checkBufferSize($side, $size) {
         // При установке опции SO_RCVBUF/SO_SNDBUF в Linux значение, которое вы указываете, автоматически удваивается для учёта
         // накладных расходов ядра (служебных структур, буферов для управления данными и т.п.)

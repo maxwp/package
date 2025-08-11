@@ -301,6 +301,7 @@ class Connection_WebSocket implements Connection_IConnection {
         $socket = new Connection_SocketStream($this->_stream);
         $socket->setBufferSizeRead(10 * 1024 * 1024);
         $socket->setBufferSizeWrite(2 * 1024 * 1024);
+        $socket->setKeepAlive();
 
         // SSL поверх TCP
         if (!stream_socket_enable_crypto($this->_stream, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
