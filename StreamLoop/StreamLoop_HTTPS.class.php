@@ -103,9 +103,9 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         $this->_updateState(self::_STATE_CONNECTING, false, true, false);
 
         // Устанавливаем буфер до начала SSL
-        $socket = new Connection_SocketStream($stream);
-        $socket->setBufferSizeRead(10 * 1024 * 1024);
-        $socket->setBufferSizeWrite(2 * 1024 * 1024);
+        $this->_socket = new Connection_SocketStream($stream);
+        $this->_socket->setBufferSizeRead(10 * 1024 * 1024);
+        $this->_socket->setBufferSizeWrite(2 * 1024 * 1024);
 
         stream_set_blocking($stream, false);
 
@@ -345,6 +345,8 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         $request .= "\r\n";
         $request .= $body; // даже если body пустота - ну и ладно, это бытсрее if (body) ...
 
+        $this->_socket->setQuickAsk(1);
+
         $n = fwrite($this->stream, $request);
         if ($n === false) {
             ($activeRequest['callback'])(
@@ -539,6 +541,10 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
 
     private $_host, $_port, $_ip, $_bindIP, $_bindPort;
 
+    /**
+     * @var Connection_SocketStream
+     */
+    private $_socket;
     private $_buffer = '';
     private $_headerArray = [];
     private $_statusCode = 0;
