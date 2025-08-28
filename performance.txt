@@ -1318,6 +1318,17 @@ hrtime(true); // 41.7 ms
 
 ==============================================================
 
+unpack при разных типах данных требует указывать имена ключей в массиве.
+При этом чем короче ключи - тем быстрее разбор.
+
+// 166 ms
+unpack("Ca/eb/Vc/ed/Ve/Vf/eg/eh/ei/el/em/en", $message);
+
+// 312 ms
+unpack("atype/dts_push/Npair_id/dts_event/Nsequence/Nsuffix/dask/dask_size/dask_breakout/dbid/dbid_size/dbid_breakout", $message);
+
+==============================================================
+
 Сравнение производительности hash-функций
 Тестировалось вызовом hash('murmur3a', microtime(true)+rand())
 Результаты на 100_000 вызовов в секундах
