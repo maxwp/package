@@ -1,5 +1,11 @@
 <?php
-class StreamLoop_WebSocket extends StreamLoop_AHandler {
+class StreamLoop_WebSocket2 extends StreamLoop_AHandler {
+
+    // @todo ключевая проблема что без без timeout я не могу делать frame layer ping-ping, app layer ping pong
+    // или могу?
+    // если я по таймеру буду вызывать app layer ping-pong - то смогу подмешать и iframe ping
+    // но если вдруг нет app layer ping-pong и пара мертвая - то я никак не вызову.
+    // @todo = поэтому можно максимум отказаться от вызовов пустых callback и перевести их на timer - это все равно для snapshot
 
     public function __construct(StreamLoop $loop, $host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindIP = false, $bindPort = false) {
         parent::__construct($loop);
@@ -98,7 +104,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
     public function disconnect() {
         fclose($this->stream);
         $this->_buffer = '';
-        $this->_loop->updateHandlerTimeout($this, 0);
     }
 
     public function readyRead($tsSelect) {
@@ -111,8 +116,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                 $readFrameDrain = $this->_readFrameDrain;
                 $stream = $this->stream;
                 $buffer = $this->_buffer;
-
-                $called = false;
 
                 // dynamic drain: если после вычитки большого пакета fread() он считался ровно впритык - то вызываем
                 // чтение еще раз и так до drainLimit.
@@ -198,19 +201,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                 Cli::Print_n(__CLASS__.": frame-ping $payload");
                                 # debug:end
 
-                                // тут очень важный нюанс:
-                                // stream_select может выйти по таймауту, а может по ping.
-                                // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
-                                // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
-                                try {
-                                    ($this->_callbackMessage)($this, $tsSelect, microtime(true), false);
-                                    $called = true;
-                                } catch (Exception $userException) {
-                                    // тут вылетаем, но надо сделать disconnect
-                                    $this->disconnect();
-                                    throw $userException;
-                                }
-
                                 $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA); // frame ping
                                 fwrite($stream, $encodedPong);
                                 break;
@@ -220,26 +210,12 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                 Cli::Print_n(__CLASS__.": frame-pong $payload");
                                 # debug:end
 
-                                // тут очень важный нюанс:
-                                // stream_select может выйти по таймауту, а может по pong.
-                                // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
-                                // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
-                                try {
-                                    ($this->_callbackMessage)($this, $tsSelect, microtime(true), false);
-                                    $called = true;
-                                } catch (Exception $userException) {
-                                    // тут вылетаем, но надо сделать disconnect
-                                    $this->disconnect();
-                                    throw $userException;
-                                }
-
                                 // подвигаем метку pong
                                 $this->_tsPong = $this->_tsPing + $this->_pongDeadline;
                                 break;
                             default: // FRAME PAYLOAD
                                 try {
                                     ($this->_callbackMessage)($this, $tsSelect, microtime(true), $payload);
-                                    $called = true;
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
                                     $this->disconnect();
@@ -272,28 +248,11 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                     // Иначе loop идет дальше, возможно есть новые данные
                 }
 
-                // если так окажется, то я что-то прочитал, но сообщение невозможно распарсить
-                // то я делаю пустое сообщение как-будто я пришел по timeout,
-                // это особенность именно websocket layer, потому что там фрейм может прилететь не полный и я его не распаршу,
-                // а вызвать что-то надо
-                // @todo можно закосить после отказа от ws timeout
-                if (!$called) {
-                    try {
-                        ($this->_callbackMessage)($this, $tsSelect, microtime(true), false);
-                    } catch (Exception $userException) {
-                        // тут вылетаем, но надо сделать disconnect
-                        $this->disconnect();
-                        throw $userException;
-                    }
-                }
-
                 // сохраняем буфер или что от него осталось
                 $this->_buffer = $buffer;
 
                 // ping-pong в конце
-                $ts = microtime(true);
-                $this->_loop->updateHandlerTimeout($this, $ts + $this->_selectTimeout);
-                $this->_checkPingPong($ts);
+                $this->_checkPingPong(microtime(true));
 
                 return;
             case self::_STATE_WAITING_FOR_UPGRADE:
@@ -363,30 +322,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
     }
 
     public function readySelectTimeout($tsSelect) {
-        // для WSS фиксированно задан период 0.25 сек когда он должен слать что-то что он жив,
-        // это и есть _FRAME_SELECT_TIMEOUT
-        // он срабатывает на stream_select
-        // если ничего не пришло - пушим это сообщение
 
-        if ($this->_state != self::_STATE_WEBSOCKET_READY) {
-            return;
-        }
-
-        $ts = microtime(true);
-
-        // frame select timeout
-        try {
-            $callback = $this->_callbackMessage;
-            $callback($this, $tsSelect, $ts, false);
-        } catch (Exception $userException) {
-            // тут вылетаем, но надо сделать disconnect
-            $this->disconnect();
-            throw $userException;
-        }
-
-        $this->_loop->updateHandlerTimeout($this, $ts + $this->_selectTimeout);
-
-        $this->_checkPingPong(microtime(true));
     }
 
     private function _checkPingPong($ts) {
@@ -549,7 +485,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
     private $_tsPong = 0;
     private $_pingInterval = 5;
     private $_pongDeadline = 3;
-    private $_selectTimeout = 0.5;
     private $_readFrameLength = 4096; // 4Kb by default
     private $_readFrameDrain = 1;
 
