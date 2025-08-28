@@ -157,10 +157,10 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                         }
 
                         $head = substr($buffer, $offset, $maskOffset);
-                        $fmt  = $maskOffset === 2 ? 'Cfirst/Csecond' : ($maskOffset === 4 ? 'Cfirst/Csecond/nlen' : 'Cfirst/Csecond/Jlen');
+                        $fmt  = $maskOffset === 2 ? 'Ca/Cb' : ($maskOffset === 4 ? 'Ca/Cb/nc' : 'Ca/Cb/Jc');
                         $parts = unpack($fmt, $head);
-                        $opcode = $parts['first'] & 0x0F;
-                        $payloadLength = $parts['len'] ?? ($parts['second'] & 0x7F);
+                        $opcode = $parts['a'] & 0x0F;
+                        $payloadLength = $parts['c'] ?? ($parts['b'] & 0x7F);
                         $frameLength = $maskOffset + ($isMasked ? 4 : 0) + $payloadLength;
 
                         if ($bufferLength - $offset < $frameLength) {
@@ -191,11 +191,11 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                         switch ($opcode) {
                             case 0x8: // FRAME CLOSED
                                 $this->disconnect();
-                                ($this->_callbackError)($this, microtime(true), "StreamLoop_HandlerWSS: frame-closed");
+                                ($this->_callbackError)($this, microtime(true), __CLASS__.": frame-closed");
                                 break;
                             case 0x9: // FRAME PING
                                 # debug:start
-                                Cli::Print_n("StreamLoop_HandlerWSS: frame-ping $payload");
+                                Cli::Print_n(__CLASS__.": frame-ping $payload");
                                 # debug:end
 
                                 // тут очень важный нюанс:
@@ -217,7 +217,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                             case 0xA:
                                 // FRAME PONG
                                 # debug:start
-                                Cli::Print_n("StreamLoop_HandlerWSS: frame-pong $payload");
+                                Cli::Print_n(__CLASS__.": frame-pong $payload");
                                 # debug:end
 
                                 // тут очень важный нюанс:
@@ -397,7 +397,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
             fwrite($this->stream, $encodedPing);
 
             # debug:start
-            Cli::Print_n("StreamLoop_HandlerWSS: sent frame-ping");
+            Cli::Print_n(__CLASS__.": sent frame-ping");
             # debug:end
 
             $this->_tsPing = $ts + $this->_pingInterval;
@@ -408,7 +408,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
             // и время уже больше этого дедлайна, то это означает что pong не пришет
             // и мы идем на выход
             $this->disconnect();
-            throw new Connection_Exception("StreamLoop_HandlerWSS: no frame-pong - exit");
+            throw new Connection_Exception(__CLASS__.": no frame-pong - exit");
         }
     }
 

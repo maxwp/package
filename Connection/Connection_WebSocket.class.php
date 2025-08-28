@@ -106,10 +106,10 @@ class Connection_WebSocket implements Connection_IConnection {
                         }
 
                         $head = substr($buffer, $offset, $maskOffset);
-                        $fmt  = $maskOffset === 2 ? 'Cfirst/Csecond' : ($maskOffset === 4 ? 'Cfirst/Csecond/nlen' : 'Cfirst/Csecond/Jlen');
+                        $fmt  = $maskOffset === 2 ? 'Ca/Cb' : ($maskOffset === 4 ? 'Ca/Cb/nc' : 'Ca/Cb/Jc');
                         $parts = unpack($fmt, $head);
-                        $opcode = $parts['first'] & 0x0F;
-                        $payloadLength = $parts['len'] ?? ($parts['second'] & 0x7F);
+                        $opcode = $parts['a'] & 0x0F;
+                        $payloadLength = $parts['c'] ?? ($parts['b'] & 0x7F);
                         $frameLength = $maskOffset + ($isMasked ? 4 : 0) + $payloadLength;
 
                         if ($bufferLength - $offset < $frameLength) {
@@ -144,10 +144,10 @@ class Connection_WebSocket implements Connection_IConnection {
                         switch ($opcode) {
                             case 0x8: // FRAME CLOSED
                                 $this->disconnect();
-                                throw new Connection_Exception("Connection_WebSocket: received frame-closed");
+                                throw new Connection_Exception(__CLASS__.": received frame-closed");
                             case 0x9: // FRAME PING
                                 # debug:start
-                                Cli::Print_n("Connection_WebSocket: received frame-ping $payload");
+                                Cli::Print_n(__CLASS__.": received frame-ping $payload");
                                 # debug:end
 
                                 // тут очень важный нюанс:
@@ -166,13 +166,13 @@ class Connection_WebSocket implements Connection_IConnection {
                                 fwrite($stream, $encodedPong);
 
                                 # debug:start
-                                Cli::Print_n("Connection_WebSocket: send frame-pong $payload");
+                                Cli::Print_n(__CLASS__.": send frame-pong $payload");
                                 # debug:end
 
                                 break;
                             case 0xA: // FRAME PONG
                                 # debug:start
-                                Cli::Print_n("Connection_WebSocket: received frame-pong $payload");
+                                Cli::Print_n(__CLASS__.": received frame-pong $payload");
                                 # debug:end
 
                                 // тут очень важный нюанс:
@@ -233,7 +233,7 @@ class Connection_WebSocket implements Connection_IConnection {
             } elseif ($num_changed_streams === false) {
                 // согласно документации false может прилететь из-за system interrupt call
                 $this->disconnect();
-                throw new Connection_Exception("Connection_WebSocket: stream_select error");
+                throw new Connection_Exception(__CLASS__.": stream_select error");
             }
 
             if (!$called) {
@@ -247,7 +247,7 @@ class Connection_WebSocket implements Connection_IConnection {
 
             if ($except) {
                 $this->disconnect();
-                throw new Connection_Exception("Connection_WebSocket: stream_select except");
+                throw new Connection_Exception(__CLASS__.": stream_select except");
             }
 
             // пинг-понг внизу после select'a
@@ -257,7 +257,7 @@ class Connection_WebSocket implements Connection_IConnection {
                 fwrite($stream, $encodedPing);
 
                 # debug:start
-                Cli::Print_n("Connection_WebSocket: sent frame-ping");
+                Cli::Print_n(__CLASS__.": sent frame-ping");
                 # debug:end
 
                 // когда следующий ping?
@@ -269,7 +269,7 @@ class Connection_WebSocket implements Connection_IConnection {
                 // и время уже больше этого дедлайна, то это означает что pong не пришет
                 // и мы идем на выход
                 $this->disconnect();
-                throw new Connection_Exception("Connection_WebSocket: no frame-pong - exit");
+                throw new Connection_Exception(__CLASS__.": no frame-pong - exit");
             }
         }
 
@@ -343,7 +343,7 @@ class Connection_WebSocket implements Connection_IConnection {
     }
 
     /**
-     * @return Connection_WebSocket
+     * @return resource
      * @throws Connection_Exception
      */
     public function getLink() {
