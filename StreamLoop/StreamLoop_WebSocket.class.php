@@ -198,19 +198,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                 Cli::Print_n(__CLASS__.": frame-ping $payload");
                                 # debug:end
 
-                                // тут очень важный нюанс:
-                                // stream_select может выйти по таймауту, а может по ping.
-                                // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
-                                // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
-                                try {
-                                    ($this->_callbackMessage)($this, $tsSelect, microtime(true), false);
-                                    $called = true;
-                                } catch (Exception $userException) {
-                                    // тут вылетаем, но надо сделать disconnect
-                                    $this->disconnect();
-                                    throw $userException;
-                                }
-
                                 $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA); // frame ping
                                 fwrite($stream, $encodedPong);
                                 break;
@@ -219,19 +206,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                 # debug:start
                                 Cli::Print_n(__CLASS__.": frame-pong $payload");
                                 # debug:end
-
-                                // тут очень важный нюанс:
-                                // stream_select может выйти по таймауту, а может по pong.
-                                // в случае pong таймаут будет продлен, поэтому нужно все равно вызывать callback,
-                                // так как он ждет четкий loop по тайм-ауту 0.5..1.0 sec.
-                                try {
-                                    ($this->_callbackMessage)($this, $tsSelect, microtime(true), false);
-                                    $called = true;
-                                } catch (Exception $userException) {
-                                    // тут вылетаем, но надо сделать disconnect
-                                    $this->disconnect();
-                                    throw $userException;
-                                }
 
                                 // подвигаем метку pong
                                 $this->_tsPong = $this->_tsPing + $this->_pongDeadline;
