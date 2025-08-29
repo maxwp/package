@@ -1,4 +1,12 @@
 <?php
+/**
+ * Важное отличие StreamLoop_WebSocket от Connection_WebSocket:
+ * SL_WS вызывает selectTimeout только ради websocket-layer frame-ping-pong, он не вызывает его
+ * ради пустых callback.
+ * Если нужны пустые callback - то надо добавлять timer object внутрь StreamLoop.
+ * Такой подход делает меньше вызовов selectTimeout и позволяет держать сильно больше WebSocket-handler-ов внутри одного StreamLoop,
+ * но timer не будет синхронизирован с last event от websocket. Хотя он и в C_WS может быть не синхронизирован из-за app-layer & iframe-layer ping-pong.
+ */
 class StreamLoop_WebSocket extends StreamLoop_AHandler {
 
     public function __construct(StreamLoop $loop, $host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindIP = false, $bindPort = false) {
@@ -69,7 +77,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
             $errstr,
             0, // timeout = 0, чтобы мгновенно вернулось
             STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT,
-            $context, // @todo возмоэно надо будет таки перенести контекст из Connection_WebSocket
+            $context, // @todo возможно надо будет таки перенести контекст из Connection_WebSocket
         );
         if (!$stream) {
             throw new StreamLoop_Exception("TCP connect failed immediately: $errstr ($errno)");
@@ -111,8 +119,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                 $readFrameDrain = $this->_readFrameDrain;
                 $stream = $this->stream;
                 $buffer = $this->_buffer;
-
-                $called = false;
 
                 // dynamic drain: если после вычитки большого пакета fread() он считался ровно впритык - то вызываем
                 // чтение еще раз и так до drainLimit.
@@ -191,11 +197,11 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                         switch ($opcode) {
                             case 0x8: // FRAME CLOSED
                                 $this->disconnect();
-                                ($this->_callbackError)($this, microtime(true), __CLASS__.": frame-closed");
+                                ($this->_callbackError)($this, $tsSelect, microtime(true), __CLASS__.": frame-closed");
                                 break;
                             case 0x9: // FRAME PING
                                 # debug:start
-                                Cli::Print_n(__CLASS__.": frame-ping $payload");
+                                Cli::Print_n(__CLASS__.": received frame-ping $payload");
                                 # debug:end
 
                                 $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA); // frame ping
@@ -204,7 +210,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                             case 0xA:
                                 // FRAME PONG
                                 # debug:start
-                                Cli::Print_n(__CLASS__.": frame-pong $payload");
+                                Cli::Print_n(__CLASS__.": received frame-pong $payload");
                                 # debug:end
 
                                 // подвигаем метку pong
@@ -213,7 +219,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                             default: // FRAME PAYLOAD
                                 try {
                                     ($this->_callbackMessage)($this, $tsSelect, microtime(true), $payload);
-                                    $called = true;
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
                                     $this->disconnect();
@@ -246,27 +251,12 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                     // Иначе loop идет дальше, возможно есть новые данные
                 }
 
-                // если так окажется, то я что-то прочитал, но сообщение невозможно распарсить
-                // то я делаю пустое сообщение как-будто я пришел по timeout,
-                // это особенность именно websocket layer, потому что там фрейм может прилететь не полный и я его не распаршу,
-                // а вызвать что-то надо
-                // @todo можно закосить после отказа от ws timeout
-                if (!$called) {
-                    try {
-                        ($this->_callbackMessage)($this, $tsSelect, microtime(true), false);
-                    } catch (Exception $userException) {
-                        // тут вылетаем, но надо сделать disconnect
-                        $this->disconnect();
-                        throw $userException;
-                    }
-                }
-
                 // сохраняем буфер или что от него осталось
                 $this->_buffer = $buffer;
 
                 // ping-pong в конце
                 $ts = microtime(true);
-                $this->_loop->updateHandlerTimeout($this, $ts + $this->_selectTimeout);
+                $this->_loop->updateHandlerTimeout($this, $ts + $this->_pingInterval);
                 $this->_checkPingPong($ts);
 
                 return;
@@ -347,20 +337,8 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         }
 
         $ts = microtime(true);
-
-        // frame select timeout
-        try {
-            $callback = $this->_callbackMessage;
-            $callback($this, $tsSelect, $ts, false);
-        } catch (Exception $userException) {
-            // тут вылетаем, но надо сделать disconnect
-            $this->disconnect();
-            throw $userException;
-        }
-
-        $this->_loop->updateHandlerTimeout($this, $ts + $this->_selectTimeout);
-
-        $this->_checkPingPong(microtime(true));
+        $this->_loop->updateHandlerTimeout($this, $ts + $this->_pingInterval);
+        $this->_checkPingPong($ts);
     }
 
     private function _checkPingPong($ts) {
@@ -423,8 +401,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         if (feof($this->stream)) {
             $this->disconnect();
 
-            $cb = $this->_callbackError;
-            $cb($this, $tsSelect, microtime(true), 'EOF');
+            ($this->_callbackError)($this, $tsSelect, microtime(true), 'EOF');
         }
     }
 
@@ -523,7 +500,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
     private $_tsPong = 0;
     private $_pingInterval = 5;
     private $_pongDeadline = 3;
-    private $_selectTimeout = 0.5;
     private $_readFrameLength = 4096; // 4Kb by default
     private $_readFrameDrain = 1;
 
