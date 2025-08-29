@@ -61,8 +61,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         // to locals
         $loop = $this->_loop;
 
-        $loop->unregisterHandler($this);
-
         // супер важно: надо создавать контекст без ssl-опций!
         $context = stream_context_create([
             'socket' => [
@@ -104,9 +102,10 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
     }
 
     public function disconnect() {
+        $this->_loop->unregisterHandler($this);
+
         fclose($this->stream);
         $this->_buffer = '';
-        $this->_loop->updateHandlerTimeout($this, 0);
     }
 
     public function readyRead($tsSelect) {

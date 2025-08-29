@@ -1,18 +1,17 @@
 <?php
 class StreamLoop_Timer extends StreamLoop_AHandler {
 
-    public function __construct(StreamLoop $loop, $timeout) {
+    public function __construct(StreamLoop $loop, $timerID, $timeout) {
         parent::__construct($loop);
 
         $loop->unregisterHandler($this);
 
         $this->setTimeout($timeout);
 
-        $this->streamID = -1 * rand(1, 999999); // случайный отрицательный id
+        $this->streamID = -1 * (int) $timerID; // id нужен отрицательный чтобы не пересекся с настоящими stream
         $this->stream = null;
 
-        $loop->registerHandler($this);
-
+        $this->_loop->registerHandler($this);
         $this->_loop->updateHandlerTimeout($this, microtime(true) + $this->_timeout);
     }
 

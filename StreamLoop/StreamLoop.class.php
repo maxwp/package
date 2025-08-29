@@ -26,7 +26,7 @@ class StreamLoop {
             // вот тут определить сколько us до ближайшего timeout'a
             if ($timeoutToArray) {
                 $timeoutS = 0;
-                $timeoutUS = (min($timeoutToArray) - $tsNow) * 1_000_000;
+                $timeoutUS = (min($timeoutToArray) - $tsNow) * 1_000_000; // @todo bin heap
                 if ($timeoutUS <= 0) {
                     $timeoutUS = 0;
                 }
@@ -37,7 +37,7 @@ class StreamLoop {
             }
 
             // так как в stream_select надо всегда передавать rwe, а если у нас нет стримов - то эмуляция через usleep()
-            if (!$r && !$w && !$e) {
+            if (!$r && !$w && !$e && $timeoutUS !== null) {
                 usleep($timeoutUS);
                 $result = 0; // int
             } else {
@@ -107,16 +107,23 @@ class StreamLoop {
      * @return void
      */
     public function registerHandler(StreamLoop_AHandler $handler) {
+        // проверка чтобы я не натупил и не вызвал дублей
+        if (isset($this->_handlerArray[$handler->streamID])) {
+            throw new StreamLoop_Exception('stream_handler already registered');
+        }
+
         $this->_handlerArray[$handler->streamID] = $handler;
     }
 
     public function unregisterHandler(StreamLoop_AHandler $handler) {
+        // важно: этот метод надо вызывать ДО fclose, пока есть streamID
         $streamID = $handler->streamID;
         if ($streamID) {
             unset($this->_handlerArray[$streamID]);
             unset($this->_selectReadArray[$streamID]);
             unset($this->_selectWriteArray[$streamID]);
             unset($this->_selectExceptArray[$streamID]);
+            unset($this->_selectTimeoutToArray[$streamID]);
         }
     }
 

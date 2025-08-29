@@ -67,8 +67,6 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
     }
 
     public function connect() {
-        $this->_loop->unregisterHandler($this);
-
         $this->_reset();
 
         $this->_activeRequest = true; // @todo от это жопа
@@ -116,6 +114,8 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
     }
 
     public function disconnect() {
+        $this->_loop->unregisterHandler($this);
+
         $this->_reset();
         fclose($this->stream);
     }
