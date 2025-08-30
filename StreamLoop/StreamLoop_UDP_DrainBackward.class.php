@@ -25,7 +25,7 @@ class StreamLoop_UDP_DrainBackward extends StreamLoop_UDP {
         );
 
         if ($bytes > 0) {
-            $receiver->onReceive(microtime(true), $buffer, $fromAddress, $fromPort);
+            $receiver->onReceive($this, $tsSelect, microtime(true), $buffer, $fromAddress, $fromPort);
         } else {
             // редкая ситуация select сказал что данные есть, но ничего не прочиталось
             return;
@@ -76,7 +76,7 @@ class StreamLoop_UDP_DrainBackward extends StreamLoop_UDP {
 
         // вдуваем сообщения в обратном порядке
         for ($j = $found - 1; $j >= 0; $j--) {
-            $receiver->onReceive($ts, $bufferArray[$j], $fromAddressArray[$j], $fromPortArray[$j]);
+            $receiver->onReceive($this, $tsSelect, $ts, $bufferArray[$j], $fromAddressArray[$j], $fromPortArray[$j]);
         }
     }
 

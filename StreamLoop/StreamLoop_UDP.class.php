@@ -60,7 +60,7 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
         );
 
         if ($bytes > 0) {
-            $this->_receiver->onReceive(microtime(true), $buffer, $fromAddress, $fromPort);
+            $this->_receiver->onReceive($this, $tsSelect, microtime(true), $buffer, $fromAddress, $fromPort);
         }
     }
 

@@ -23,7 +23,7 @@ class StreamLoop_UDP_DrainForward extends StreamLoop_UDP {
             );
 
             if ($bytes > 0) {
-                $receiver->onReceive(microtime(true), $buffer, $fromAddress, $fromPort);
+                $receiver->onReceive($this, $tsSelect, microtime(true), $buffer, $fromAddress, $fromPort);
             } else {
                 // stop draon
                 return;

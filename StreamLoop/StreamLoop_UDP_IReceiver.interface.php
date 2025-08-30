@@ -1,6 +1,6 @@
 <?php
 interface StreamLoop_UDP_IReceiver {
 
-    public function onReceive($ts, $message, $fromAddress, $fromPort); // @todo add this
+    public function onReceive(StreamLoop_UDP $udp, $tsSelect, $ts, $message, $fromAddress, $fromPort);
 
 }
