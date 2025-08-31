@@ -59,10 +59,17 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
             $fromPort
         );
 
+        // редко бывают ситуации когда bytes === 0 - данных нет, но это валидно
         if ($bytes > 0) {
             $this->_receiver->onReceive($this, $tsSelect, microtime(true), $buffer, $fromAddress, $fromPort);
+        } else {
+            $err = socket_last_error($socket);
+
+            // в Linux EAGAIN == EWOULDBLOCK (11), достаточно одного сравнения
+            if ($err != SOCKET_EAGAIN /* || $err === SOCKET_EWOULDBLOCK */) {
+                $this->_receiver->onError($this, $tsSelect, $err);
+            }
         }
-        // @todo else onError
     }
 
     public function readyWrite($tsSelect) {

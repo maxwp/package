@@ -60,6 +60,9 @@ class StreamLoop_UDP_DrainBackward extends StreamLoop_UDP {
             } else {
                 // тут более правильно проверять на === false,
                 // но в реальности пустой дата-граммы быть не может
+
+                // внимание! я не делаю тут проверки на ошибки, потому что эта штука занимает 0..1,1 us
+
                 // end of drain
                 break;
             }
