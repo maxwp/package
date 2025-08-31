@@ -25,7 +25,7 @@ class StreamLoop_UDP_DrainBackward extends StreamLoop_UDP {
         );
 
         if ($bytes > 0) {
-            $receiver->onReceive($this, $tsSelect, microtime(true), $buffer, $fromAddress, $fromPort);
+            $receiver->onReceive($this, $tsSelect, $buffer, $fromAddress, $fromPort);
         } else {
             // редкая ситуация select сказал что данные есть, но ничего не прочиталось
             return;
@@ -73,13 +73,9 @@ class StreamLoop_UDP_DrainBackward extends StreamLoop_UDP {
             return;
         }
 
-        // 1. я вычисляю один ts на все сообщения, потому что из-за drain мне важно момент когда я начал обрабатвать (callback), а не когда я их достал
-        // 2. ну и это экономия на microtime-call
-        $ts = microtime(true);
-
         // вдуваем сообщения в обратном порядке
         for ($j = $found - 1; $j >= 0; $j--) {
-            $receiver->onReceive($this, $tsSelect, $ts, $bufferArray[$j], $fromAddressArray[$j], $fromPortArray[$j]);
+            $receiver->onReceive($this, $tsSelect, $bufferArray[$j], $fromAddressArray[$j], $fromPortArray[$j]);
         }
     }
 

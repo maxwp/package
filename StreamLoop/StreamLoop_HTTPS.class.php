@@ -120,8 +120,6 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         fclose($this->stream);
     }
 
-    // @todo встроить tsSelect во все callback
-
     public function readyRead($tsSelect) {
         switch ($this->_state) {
             case self::_STATE_HANDSHAKE:
@@ -286,13 +284,12 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         if ($this->_activeRequest && isset($this->_activeRequest['timeout'])) { // @todo жопа
             $timeout = $this->_activeRequest['timeout'];
             if ($timeout > 0) {
-                $ts = microtime(true);
                 $tsRequest = $this->_activeRequestTS;
-                if ($ts - $tsRequest >= $timeout) {
+                if ($tsSelect - $tsRequest >= $timeout) {
                     $this->_activeRequest['callback']->onError(
                         $this,
+                        $tsSelect,
                         $tsRequest,
-                        $ts,
                         408,
                         'Request Timeout',
                     );
@@ -310,8 +307,8 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
             if ($this->_activeRequest && is_array($this->_activeRequest)) {
                 $this->_activeRequest['callback']->onError(
                     $this,
-                    $this->_activeRequestTS,
                     microtime(true),
+                    $this->_activeRequestTS,
                     0, // http code 0
                     'Connection closed by server', // ясное сообщение
                 );
@@ -358,8 +355,8 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         if ($n === false) {
             $activeRequest['callback']->onError(
                 $this,
+                microtime(true), // tsSelect
                 $activeRequestTS,
-                microtime(true),
                 0, // http code 0
                 'Connection closed by server', // ясное сообщение
             );

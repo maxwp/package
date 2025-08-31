@@ -193,7 +193,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                         switch ($opcode) {
                             case 0x8: // FRAME CLOSED
                                 $this->disconnect();
-                                $this->_callback->onError($this, $tsSelect, microtime(true), __CLASS__.": frame-closed");
+                                $this->_callback->onError($this, $tsSelect, __CLASS__.": frame-closed");
                                 break;
                             case 0x9: // FRAME PING
                                 # debug:start
@@ -214,7 +214,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                 break;
                             default: // FRAME PAYLOAD
                                 try {
-                                    $this->_callback->onReceive($this, $tsSelect, microtime(true), $payload);
+                                    $this->_callback->onReceive($this, $tsSelect, $payload);
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
                                     $this->disconnect();
@@ -397,7 +397,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         if (feof($this->stream)) {
             $this->disconnect();
 
-            $this->_callback->onError($this, $tsSelect, microtime(true), 'EOF');
+            $this->_callback->onError($this, $tsSelect, 'EOF');
         }
     }
 
