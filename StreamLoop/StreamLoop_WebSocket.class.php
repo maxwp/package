@@ -47,12 +47,9 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         $this->connect();
     }
 
-    public function onMessage(StreamLoop_WebSocket_IReceiver $callback) {
-        $this->_callbackMessage = $callback;
-    }
-
-    public function onError(StreamLoop_WebSocket_IReceiver $callback) {
-        $this->_callbackError = $callback;
+    public function onCallback(StreamLoop_WebSocket_ICallback $callback) {
+        $this->_callback = $callback;
+        // @todo возможно onCallback вызов встроить в конструктор
     }
 
     public function connect() {
@@ -196,7 +193,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                         switch ($opcode) {
                             case 0x8: // FRAME CLOSED
                                 $this->disconnect();
-                                $this->_callbackError->onReceive($this, $tsSelect, microtime(true), __CLASS__.": frame-closed");
+                                $this->_callback->onError($this, $tsSelect, microtime(true), __CLASS__.": frame-closed");
                                 break;
                             case 0x9: // FRAME PING
                                 # debug:start
@@ -217,7 +214,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                 break;
                             default: // FRAME PAYLOAD
                                 try {
-                                    $this->_callbackMessage->onReceive($this, $tsSelect, microtime(true), $payload);
+                                    $this->_callback->onReceive($this, $tsSelect, microtime(true), $payload);
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
                                     $this->disconnect();
@@ -400,7 +397,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         if (feof($this->stream)) {
             $this->disconnect();
 
-            $this->_callbackError->onReceive($this, $tsSelect, microtime(true), 'EOF');
+            $this->_callback->onError($this, $tsSelect, microtime(true), 'EOF');
         }
     }
 
@@ -486,8 +483,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
     private $_host, $_port, $_path, $_ip, $_bindIP, $_bindPort;
     private $_writeArray;
     private $_headerArray = [];
-    private StreamLoop_WebSocket_IReceiver $_callbackMessage;
-    private StreamLoop_WebSocket_IReceiver $_callbackError;
+    private StreamLoop_WebSocket_ICallback $_callback;
     private $_buffer = '';
     private $_state = 0;
 

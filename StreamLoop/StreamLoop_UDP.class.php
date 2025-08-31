@@ -1,7 +1,7 @@
 <?php
 class StreamLoop_UDP extends StreamLoop_AHandler {
 
-    public function __construct(StreamLoop $loop, $host, $port, StreamLoop_UDP_IReceiver $receiver) {
+    public function __construct(StreamLoop $loop, $host, $port, StreamLoop_UDP_ICallback $receiver) {
         parent::__construct($loop);
 
         $this->stream = stream_socket_server(
@@ -62,6 +62,7 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
         if ($bytes > 0) {
             $this->_receiver->onReceive($this, $tsSelect, microtime(true), $buffer, $fromAddress, $fromPort);
         }
+        // @todo else onError
     }
 
     public function readyWrite($tsSelect) {
@@ -78,6 +79,6 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
 
     public Connection_SocketStream $socket;
     protected $_socketResource;
-    protected StreamLoop_UDP_IReceiver $_receiver;
+    protected StreamLoop_UDP_ICallback $_receiver;
 
 }

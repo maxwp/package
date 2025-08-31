@@ -39,7 +39,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         // надо попробовать
     }
 
-    public function request($method, $path, $body, $headerArray, $callback, $timeout = 0) {
+    public function request($method, $path, $body, $headerArray, StreamLoop_HTTPS_ICallback $callback, $timeout = 0) {
         if ($timeout) {
             $timeout = (float) $timeout;
         } else {
@@ -205,7 +205,8 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
                             // @todo возможно своя структура response с таймерами:
                             // когда начал, когда закончил, что было в запросе,
                             // id потому что мне идентифицировать его как-то надо
-                            ($this->_activeRequest['callback'])(
+                            $this->_activeRequest['callback']->onResponse(
+                                $this,
                                 $this->_activeRequestTS,
                                 microtime(true),
                                 $this->_statusCode,
@@ -288,7 +289,13 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
                 $ts = microtime(true);
                 $tsRequest = $this->_activeRequestTS;
                 if ($ts - $tsRequest >= $timeout) {
-                    ($this->_activeRequest['callback'])($tsRequest, $ts, 408, 'Request Timeout', [], '');
+                    $this->_activeRequest['callback']->onError(
+                        $this,
+                        $tsRequest,
+                        $ts,
+                        408,
+                        'Request Timeout',
+                    );
 
                     $this->disconnect();
                     $this->connect();
@@ -301,13 +308,12 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         if (feof($this->stream)) {
             // @todo говно с double typing
             if ($this->_activeRequest && is_array($this->_activeRequest)) {
-                ($this->_activeRequest['callback'])(
+                $this->_activeRequest['callback']->onError(
+                    $this,
                     $this->_activeRequestTS,
                     microtime(true),
                     0, // http code 0
                     'Connection closed by server', // ясное сообщение
-                    [], // заголовков нет
-                    '' // тела нет
                 );
             }
 
@@ -350,13 +356,12 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
 
         $n = fwrite($this->stream, $request);
         if ($n === false) {
-            ($activeRequest['callback'])(
+            $activeRequest['callback']->onError(
+                $this,
                 $activeRequestTS,
                 microtime(true),
                 0, // http code 0
                 'Connection closed by server', // ясное сообщение
-                [], // заголовков нет
-                '' // тела нет
             );
 
             $this->disconnect();
@@ -553,7 +558,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
 
     private $_activeRequest;
     private $_activeRequestTS = 0;
-    public readonly SplQueue $requestQue; // @todo дека медленее массива?
+    public readonly SplQueue $requestQue; // @todo переделать на понятный array of StreamLoop_HTTP_IRequest
 
     private $_state;
     private const _STATE_CONNECTING = 1;
