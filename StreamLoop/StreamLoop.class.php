@@ -10,13 +10,6 @@ class StreamLoop {
 
         // event loop
         while (1) {
-            // тут я не могу вынести в locals, потому что цикл могут остановить с наружи
-            if (!$this->_loopRunning) {
-                break;
-            }
-
-            $tsNow = microtime(true);
-
             // копирование массивов, в них уже задано что нужно для stream_select
             $r = $this->_selectReadArray;
             $w = $this->_selectWriteArray;
@@ -24,9 +17,10 @@ class StreamLoop {
             $timeoutToArray = $this->_selectTimeoutToArray;
 
             // вот тут определить сколько us до ближайшего timeout'a
+            // @todo всю логику можно сразу закопать на этап updateHandlerTimeout()
             if ($timeoutToArray) {
                 $timeoutS = 0;
-                $timeoutUS = (min($timeoutToArray) - $tsNow) * 1_000_000; // @todo bin heap
+                $timeoutUS = (min($timeoutToArray) - microtime(true)) * 1_000_000; // @todo to heap
                 if ($timeoutUS <= 0) {
                     $timeoutUS = 0;
                 }
@@ -92,6 +86,11 @@ class StreamLoop {
                     }
                 }
             }
+
+            // тут я не могу вынести в locals, потому что цикл могут остановить с наружи
+            if (!$this->_loopRunning) {
+                break;
+            }
         }
     }
 
@@ -136,8 +135,6 @@ class StreamLoop {
         $stream = $handler->stream;
         $streamID = $handler->streamID;
 
-        // @todo менять только если что-то поменялось у меня?
-
         if ($flagRead) {
             $this->_selectReadArray[$streamID] = $stream;
         } else {
@@ -174,6 +171,6 @@ class StreamLoop {
     private array $_selectReadArray = [];
     private array $_selectWriteArray = [];
     private array $_selectExceptArray = [];
-    private $_selectTimeoutToArray = []; // @todo на кучу heap?
+    private $_selectTimeoutToArray = [];
 
 }
