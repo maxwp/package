@@ -252,7 +252,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
 
                 // ping-pong в конце
                 $ts = microtime(true);
-                $this->_loop->updateHandlerTimeout($this, $ts + $this->_pingInterval);
+                $this->_loop->updateHandlerTimeoutTo($this, $ts + $this->_pingInterval);
                 $this->_checkPingPong($ts);
 
                 return;
@@ -333,7 +333,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         }
 
         $ts = microtime(true);
-        $this->_loop->updateHandlerTimeout($this, $ts + $this->_pingInterval);
+        $this->_loop->updateHandlerTimeoutTo($this, $ts + $this->_pingInterval);
         $this->_checkPingPong($ts);
     }
 

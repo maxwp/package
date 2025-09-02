@@ -16,7 +16,7 @@ class StreamLoop {
             $e = $this->_selectExceptArray;
 
             // вот тут определить сколько us до ближайшего timeout'a
-            $timeoutMin = $this->_selectTimeoutMin;
+            $timeoutMin = $this->_selectTimeoutToMin;
             if ($timeoutMin) {
                 $timeoutS = 0;
                 $timeoutUS = ($timeoutMin - microtime(true)) * 1_000_000;
@@ -153,15 +153,15 @@ class StreamLoop {
         }
     }
 
-    public function updateHandlerTimeout(StreamLoop_AHandler $handler, $timeout) {
-        if ($timeout > 0) {
-            $this->_selectTimeoutToArray[$handler->streamID] = $timeout;
+    public function updateHandlerTimeoutTo(StreamLoop_AHandler $handler, $timeoutTo) {
+        if ($timeoutTo > 0) {
+            $this->_selectTimeoutToArray[$handler->streamID] = $timeoutTo;
         } else {
             unset($this->_selectTimeoutToArray[$handler->streamID]);
         }
 
-        // сразу вычисляем min
-        $this->_selectTimeoutMin = min($this->_selectTimeoutToArray);
+        // вычисляем min
+        $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
     }
 
     private $_loopRunning;
@@ -174,6 +174,6 @@ class StreamLoop {
     private array $_selectWriteArray = [];
     private array $_selectExceptArray = [];
     private array $_selectTimeoutToArray = [];
-    private $_selectTimeoutMin = 0.0;
+    private $_selectTimeoutToMin = 0.0;
 
 }

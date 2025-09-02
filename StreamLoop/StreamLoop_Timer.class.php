@@ -15,7 +15,7 @@ class StreamLoop_Timer extends StreamLoop_AHandler {
         $this->onCallback($callback);
 
         $this->_loop->registerHandler($this);
-        $this->_loop->updateHandlerTimeout($this, microtime(true) + $this->_timeout);
+        $this->_loop->updateHandlerTimeoutTo($this, microtime(true) + $this->_timeout);
     }
 
     public function readyRead($tsSelect) {
@@ -32,7 +32,7 @@ class StreamLoop_Timer extends StreamLoop_AHandler {
 
     public function readySelectTimeout($tsSelect) {
         $this->_callback->onTimer($this, $tsSelect);
-        $this->_loop->updateHandlerTimeout($this, $tsSelect + $this->_timeout);
+        $this->_loop->updateHandlerTimeoutTo($this, $tsSelect + $this->_timeout);
     }
 
     public function onCallback(StreamLoop_Timer_ICallback $callback) {

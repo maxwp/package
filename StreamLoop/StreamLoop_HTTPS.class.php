@@ -367,7 +367,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         }
 
         // timeout есть всегда
-        $this->_loop->updateHandlerTimeout($this, $activeRequestTS + $activeRequest['timeout']);
+        $this->_loop->updateHandlerTimeoutTo($this, $activeRequestTS + $activeRequest['timeout']);
 
         $this->_updateState(
             self::_STATE_WAIT_FOR_RESPONSE_HEADERS,
@@ -539,7 +539,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         $this->_headerArray = [];
         $this->_activeRequestTS = 0;
         $this->_activeRequest = false;
-        $this->_loop->updateHandlerTimeout($this, 0);
+        $this->_loop->updateHandlerTimeoutTo($this, 0);
     }
 
     private $_host, $_port, $_ip, $_bindIP, $_bindPort;
