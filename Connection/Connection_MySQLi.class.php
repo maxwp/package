@@ -70,11 +70,11 @@ implements Connection_IDatabaseAdapter {
         // issue #63722 - умный старт транзакций:
         // нет смысла открывать транзакцию пока нет запросов
         if ($this->_transactionRequested) {
-            // затем запускаем транзакцию
-            $this->query('START TRANSACTION');
-
             // сбрасываем флаг
             $this->_transactionRequested = false;
+
+            // затем запускаем транзакцию
+            $this->query('START TRANSACTION');
         }
 
         $result = $this->_link->query($queryString);
