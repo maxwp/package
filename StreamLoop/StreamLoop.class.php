@@ -161,7 +161,11 @@ class StreamLoop {
         }
 
         // вычисляем min
-        $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
+        if ($this->_selectTimeoutToArray) {
+            $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
+        } else {
+            $this->_selectTimeoutToMin = 0.0;
+        }
     }
 
     private $_loopRunning;
