@@ -41,7 +41,11 @@ class EE_RequestCLI implements EE_IRequest {
 
             $arg = preg_replace('/^--/', '', $arg);
 
-            if (preg_match("/^(.+?)=(.+?)$/ius", $arg, $r)) {
+            if (preg_match("/^(.+?)=\[(.+?)\]$/ius", $arg, $r)) {
+                if ($r[1] == $key) {
+                    $returnArray = array_merge($returnArray, explode(',', $r[2]));
+                }
+            } elseif (preg_match("/^(.+?)=(.+?)$/ius", $arg, $r)) {
                 if ($r[1] == $key) {
                     $returnArray[] = $r[2];
                 }
