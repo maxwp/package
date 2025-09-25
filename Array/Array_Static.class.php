@@ -25,6 +25,10 @@ class Array_Static {
     }
 
     public static function Count($a) {
+        // костыль если вдруг передам сюда null
+        if (!$a) {
+            return 0;
+        }
         return count($a);
     }
 
