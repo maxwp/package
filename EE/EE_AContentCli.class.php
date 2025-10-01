@@ -31,6 +31,12 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
         Cli::Print_break($symbol, $length, $separator);
     }
 
+    public function print_title($title) {
+        Cli::Print_break('=', 80, '');
+        Cli::Print($title);
+        Cli::Print_break('=', 80);
+    }
+
     public function print_t($s = '') {
         Cli::Print_t($s);
     }
