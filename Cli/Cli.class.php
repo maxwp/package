@@ -24,6 +24,20 @@ class Cli {
         echo "\n";
     }
 
+    public static function Print_title($title) {
+        $width = 80;
+
+        Cli::Print_break('=', $width, '');
+
+        $len = strlen($title);
+        // количество пробелов слева и справа
+        $left = floor(($width - $len) / 2);
+        $right = $width - $len - $left;
+        Cli::Print(sprintf("%' {$left}s%s%' {$right}s", "", $title, ""));
+
+        Cli::Print_break('=', $width);
+    }
+
     public static function Print_t($s = '') {
         echo "$s\t";
     }
