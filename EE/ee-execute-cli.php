@@ -25,7 +25,7 @@ print "pid      = ".getmypid()."\n";
 print "code     = ".$exitCode."\n";
 print "start    = ".date('Y-m-d H:i:s', $tsStart)." ($tsStart)\n";
 print "finish   = ".date('Y-m-d H:i:s', $tsFinish)." ($tsFinish)\n";
-print "duration = ".($tsFinish - $tsStart)." sec.\n";
+print "duration = ".round($tsFinish - $tsStart)." sec.\n";
 print "mem peak = ".round(memory_get_peak_usage(true) / 1024 / 1024, 2)." mb.\n";
 print "\n";
 
