@@ -25,6 +25,7 @@ class Cli {
     }
 
     public static function Print_title($title, $width = 120) {
+        Cli::Print_n();
         Cli::Print_break('=', $width, '');
 
         // $title может быть строкой, а может быть массивом строк.
