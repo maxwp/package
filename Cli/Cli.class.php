@@ -17,25 +17,32 @@ class Cli {
         echo "$s\n";
     }
 
-    public static function Print_break($symbol = '-', $length = 80, $separator = "\n") {
+    public static function Print_break($symbol = '-', $length = 120, $separator = "\n") {
         echo $separator;
         echo str_repeat($symbol, $length);
         echo $separator;
         echo "\n";
     }
 
-    public static function Print_title($title) {
-        $width = 80;
-
+    public static function Print_title($title, $width = 120) {
         Cli::Print_break('=', $width, '');
 
-        $len = strlen($title);
-        // количество пробелов слева и справа
-        $left = floor(($width - $len) / 2);
-        $right = $width - $len - $left;
-        Cli::Print(sprintf("%' {$left}s%s%' {$right}s", "", $title, ""));
+        // $title может быть строкой, а может быть массивом строк.
+        // вычисляем для каждой строки длинну и принтим ее
+        if (!is_array($title)) {
+            $title = [$title];
+        }
 
-        Cli::Print_break('=', $width);
+        foreach ($title as $t) {
+            $len = strlen($t);
+            // количество пробелов слева и справа
+            $left = floor(($width - $len) / 2);
+            $right = $width - $len - $left;
+            Cli::Print(sprintf("%' {$left}s%s%' {$right}s\n", "", $t, ""));
+        }
+
+        Cli::Print_break('=', $width, '');
+        Cli::Print_n();
     }
 
     public static function Print_t($s = '') {
