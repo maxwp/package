@@ -68,6 +68,9 @@ class Array_Object extends ArrayObject {
             return 0;
         }
 
+        // быстрее в 5 раз, но есть косяки с типизацией строк
+        //return array_sum($this->getArrayCopy());
+
         $sum = 0;
         foreach ($this as $x) {
             $sum += $x;
