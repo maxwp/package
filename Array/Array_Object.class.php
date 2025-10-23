@@ -156,8 +156,13 @@ class Array_Object extends ArrayObject {
      */
     public function filterOutliers(float $threshold) {
         $array = $this->getArrayCopy();
-        $mean = array_sum($array) / count($array);
-        $variance = array_sum(array_map(fn($x) => pow($x - $mean, 2), $array)) / count($array);
+        $cnt = count($array);
+        if (!$cnt) {
+            return [];
+        }
+
+        $mean = array_sum($array) / $cnt;
+        $variance = array_sum(array_map(fn($x) => pow($x - $mean, 2), $array)) / $cnt;
         $std_dev = sqrt($variance);
 
         return array_filter($array, fn($x) => abs($x - $mean) < $threshold * $std_dev);
