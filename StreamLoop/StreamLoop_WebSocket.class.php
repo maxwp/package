@@ -202,6 +202,11 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
 
                                 $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA); // frame ping
                                 fwrite($stream, $encodedPong);
+
+                                # debug:start
+                                Cli::Print_n(__CLASS__.": sent frame-pong $payload");
+                                # debug:end
+
                                 break;
                             case 0xA:
                                 // FRAME PONG
