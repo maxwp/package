@@ -25,7 +25,7 @@ class StreamLoop_UDP_DrainBackward extends StreamLoop_UDP {
         );
 
         if ($bytes > 0) {
-            $receiver->onReceive($this, $tsSelect, $buffer, $fromAddress, $fromPort);
+            $receiver->onReceive($this, $tsSelect, $buffer, $bytes, $fromAddress, $fromPort);
         } else {
             // редкая ситуация select сказал что данные есть, но ничего не прочиталось
             return;
@@ -38,6 +38,7 @@ class StreamLoop_UDP_DrainBackward extends StreamLoop_UDP {
 
         $found = 0;
         $bufferArray = [];
+        $bytesArray = [];
         $fromAddressArray = [];
         $fromPortArray = [];
 
@@ -54,6 +55,7 @@ class StreamLoop_UDP_DrainBackward extends StreamLoop_UDP {
             if ($bytes > 0) { // пустые дата-граммы мне не нужны
                 // три параллельных массива быстрее чем один вложенный
                 $bufferArray[] = $buffer;
+                $bytesArray[] = $bytes;
                 $fromAddressArray[] = $fromAddress;
                 $fromPortArray[] = $fromPort;
                 $found ++;
@@ -75,7 +77,7 @@ class StreamLoop_UDP_DrainBackward extends StreamLoop_UDP {
 
         // вдуваем сообщения в обратном порядке
         for ($j = $found - 1; $j >= 0; $j--) {
-            $receiver->onReceive($this, $tsSelect, $bufferArray[$j], $fromAddressArray[$j], $fromPortArray[$j]);
+            $receiver->onReceive($this, $tsSelect, $bufferArray[$j], $bytesArray[$j], $fromAddressArray[$j], $fromPortArray[$j]);
         }
     }
 

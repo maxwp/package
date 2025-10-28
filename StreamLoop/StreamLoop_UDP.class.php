@@ -61,7 +61,7 @@ class StreamLoop_UDP extends StreamLoop_AHandler {
 
         // редко бывают ситуации когда bytes === 0 - данных нет, но это валидно
         if ($bytes > 0) {
-            $this->_receiver->onReceive($this, $tsSelect, $buffer, $fromAddress, $fromPort);
+            $this->_receiver->onReceive($this, $tsSelect, $buffer, $bytes, $fromAddress, $fromPort);
         } else {
             $err = socket_last_error($socket);
 
