@@ -255,9 +255,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                 $this->_buffer = $buffer;
 
                 // ping-pong в конце
-                $ts = microtime(true);
-                $this->_loop->updateHandlerTimeoutTo($this, $ts + $this->_pingInterval);
-                $this->_checkPingPong($ts);
+                $this->_checkPingPong($tsSelect);
 
                 return;
             case self::_STATE_WAITING_FOR_UPGRADE:
@@ -327,18 +325,9 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
     }
 
     public function readySelectTimeout($tsSelect) {
-        // для WSS фиксированно задан период 0.25 сек когда он должен слать что-то что он жив,
-        // это и есть _FRAME_SELECT_TIMEOUT
-        // он срабатывает на stream_select
-        // если ничего не пришло - пушим это сообщение
-
-        if ($this->_state != self::_STATE_WEBSOCKET_READY) {
-            return;
+        if ($this->_state == self::_STATE_WEBSOCKET_READY) {
+            $this->_checkPingPong($tsSelect);
         }
-
-        $ts = microtime(true);
-        $this->_loop->updateHandlerTimeoutTo($this, $ts + $this->_pingInterval);
-        $this->_checkPingPong($ts);
     }
 
     private function _checkPingPong($ts) {
@@ -352,7 +341,9 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
             Cli::Print_n(__CLASS__.": sent frame-ping");
             # debug:end
 
-            $this->_tsPing = $ts + $this->_pingInterval;
+            $this->_tsPing = $ts + $this->_pingInterval + rand(0, 5); // rand interval: чтобы не попадать на одинаковое ping time
+            $this->_loop->updateHandlerTimeoutTo($this, $this->_tsPing);
+            // @todo сразу устанавливать pong? а то логика кривая
         }
 
         if ($ts > $this->_tsPong) {
@@ -489,10 +480,8 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
     private $_host, $_port, $_path, $_ip, $_bindIP, $_bindPort;
     private $_writeArray;
     private $_headerArray = [];
-    private StreamLoop_WebSocket_ICallback $_callback;
     private $_buffer = '';
     private $_state = 0;
-
     private const _STATE_CONNECTING = 1;
     private const _STATE_HANDSHAKE = 2;
     private const _STATE_READY = 3;
