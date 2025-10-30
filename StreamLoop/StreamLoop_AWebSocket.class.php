@@ -254,7 +254,8 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                 // сохраняем буфер или что от него осталось
                 $this->_buffer = $buffer;
 
-                // ping-pong в конце
+                // ping-pong в конце каждого read,
+                // потому что при большой нагрузке selectTimeout не будет вызван
                 $this->_checkPingPong($tsSelect);
 
                 return;
@@ -326,6 +327,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
 
     public function readySelectTimeout($tsSelect) {
         if ($this->_state == self::_STATE_WEBSOCKET_READY) {
+            // если прилетел readySelectTimeout() - то это только из-за того что пора делать ping-pong
             $this->_checkPingPong($tsSelect);
         }
     }
