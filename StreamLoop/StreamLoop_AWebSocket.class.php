@@ -213,8 +213,8 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                                 Cli::Print_n(__CLASS__.": received frame-pong $payload");
                                 # debug:end
 
-                                // подвигаем метку pong
-                                $this->_tsPong = $this->_tsPing + $this->_pongDeadline;
+                                // обнуляем pong
+                                $this->_tsPong = 0;
                                 break;
                             default: // FRAME PAYLOAD
                                 try {
@@ -239,7 +239,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                         // а если false - то это ошибка чтения
                         // например, PHP Warning: fread(): SSL: Connection reset by peer
                         $errorString = error_get_last()['message'];
-                        throw new Connection_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
+                        throw new StreamLoop_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
                     } elseif ($data === '') {
                         // Если fread вернул пустую строку, проверяем, достигнут ли EOF
                         $this->_checkEOF($tsSelect); // EOF: connection closed by remote host
@@ -335,25 +335,37 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
     private function _checkPingPong($ts) {
         // websocket layer ping
         // auto ping frame
-        if ($ts > $this->_tsPing) {
-            $encodedPing = $this->_encodeWebSocketMessage('', 9); // ping
-            fwrite($this->stream, $encodedPing);
+
+        /**
+         * tsPing отвечает за "когда в следующий раз пробовать пинговать"
+         * tsPong отвечает за "до какого времени необходимо чтобы прилетел pong и обнулил tsPong".
+         * tsPong == 0 означает что можно запускать следующий ping
+         */
+
+        // если pong пришел и настало время пинга - все ок
+        if ($this->_tsPong == 0 && $ts > $this->_tsPing) {
+            fwrite($this->stream, $this->_encodeWebSocketMessage('', 9));
 
             # debug:start
             Cli::Print_n(__CLASS__.": sent frame-ping");
             # debug:end
 
+            // ответ pong должен прилететь до этого момента
+            $this->_tsPong = $ts + $this->_pongDeadline;
+
+            // следующий ping через interval
             $this->_tsPing = $ts + $this->_pingInterval + rand(0, 5); // rand interval: чтобы не попадать на одинаковое ping time
+
             $this->_loop->updateHandlerTimeoutTo($this, $this->_tsPing);
-            // @todo сразу устанавливать pong? а то логика кривая
         }
 
-        if ($ts > $this->_tsPong) {
+        // если я перешагнул на tsPong - ахтунг
+        if ($this->_tsPong > 0 && $ts > $this->_tsPong) {
             // если задан дедлайн pong,
             // и время уже больше этого дедлайна, то это означает что pong не пришет
             // и мы идем на выход
             $this->disconnect();
-            throw new Connection_Exception(__CLASS__.": no frame-pong - exit");
+            throw new StreamLoop_Exception(__CLASS__.": no frame-pong - exit");
         }
     }
 
@@ -385,7 +397,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                 $this->_buffer = '';
 
                 $this->_tsPing = $tsSelect + $this->_pingInterval;
-                $this->_tsPong = $this->_tsPing + $this->_pongDeadline;
+                $this->_tsPong = 0;
 
                 $this->_onReady($tsSelect);
             }
