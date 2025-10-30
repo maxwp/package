@@ -1,10 +1,9 @@
 <?php
-/**
- * @deprecated use ATimer
- */
-class StreamLoop_Timer extends StreamLoop_AHandler {
+abstract class StreamLoop_ATimer extends StreamLoop_AHandler {
 
-    public function __construct(StreamLoop $loop, $timerID, $timeout, StreamLoop_Timer_ICallback $callback) {
+    abstract protected function _onTimer($tsSelect);
+
+    public function __construct(StreamLoop $loop, $timerID, $timeout) {
         parent::__construct($loop);
 
         $loop->unregisterHandler($this);
@@ -12,10 +11,8 @@ class StreamLoop_Timer extends StreamLoop_AHandler {
         $this->setTimeout($timeout);
 
         // @todo check id
-        $this->streamID = -1 * (int) $timerID; // id нужен отрицательный чтобы не пересекся с настоящими stream //
+        $this->streamID = -1 * (int) $timerID; // id нужен отрицательный чтобы не пересекся с настоящими stream
         $this->stream = null;
-
-        $this->onCallback($callback);
 
         $this->_loop->registerHandler($this);
         $this->_loop->updateHandlerTimeoutTo($this, microtime(true) + $this->_timeout);
@@ -34,12 +31,8 @@ class StreamLoop_Timer extends StreamLoop_AHandler {
     }
 
     public function readySelectTimeout($tsSelect) {
-        $this->_callback->onTimer($this, $tsSelect);
+        $this->_onTimer($tsSelect);
         $this->_loop->updateHandlerTimeoutTo($this, $tsSelect + $this->_timeout);
-    }
-
-    public function onCallback(StreamLoop_Timer_ICallback $callback) {
-        $this->_callback = $callback;
     }
 
     public function setTimeout($timeout) {
@@ -51,7 +44,5 @@ class StreamLoop_Timer extends StreamLoop_AHandler {
     }
 
     private $_timeout = 0.0;
-
-    private StreamLoop_Timer_ICallback $_callback;
 
 }

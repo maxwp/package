@@ -3,13 +3,15 @@
  * Важное отличие StreamLoop_WebSocket от Connection_WebSocket:
  * SL_WS вызывает selectTimeout только ради websocket-layer frame-ping-pong, он не вызывает его
  * ради пустых callback.
- * Если нужны пустые callback - то надо добавлять timer object внутрь StreamLoop.
+ * Если нужны пустые callback - то надо добавлять timer внутрь StreamLoop.
  * Такой подход делает меньше вызовов selectTimeout и позволяет держать сильно больше WebSocket-handler-ов внутри одного StreamLoop,
  * но timer не будет синхронизирован с last event от websocket. Хотя он и в C_WS может быть не синхронизирован из-за app-layer & iframe-layer ping-pong.
- *
- * @deprecated use AWebSocket
  */
-class StreamLoop_WebSocket extends StreamLoop_AHandler {
+abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
+
+    abstract protected function _onReceive($tsSelect, $payload);
+    abstract protected function _onError($tsSelect, $payload);
+    abstract protected function _onReady($tsSelect);
 
     public function __construct(StreamLoop $loop, $host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindIP = false, $bindPort = false) {
         parent::__construct($loop);
@@ -47,11 +49,6 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         // возможно можно переписать как-то на таймеры, чтобы не ограничивать специально socket_select.
 
         $this->connect();
-    }
-
-    public function onCallback(StreamLoop_WebSocket_ICallback $callback) {
-        $this->_callback = $callback;
-        // @todo возможно onCallback вызов встроить в конструктор
     }
 
     public function connect() {
@@ -195,7 +192,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                         switch ($opcode) {
                             case 0x8: // FRAME CLOSED
                                 $this->disconnect();
-                                $this->_callback->onError($this, $tsSelect, __CLASS__.": frame-closed");
+                                $this->_onError($tsSelect, __CLASS__.": frame-closed");
                                 break;
                             case 0x9: // FRAME PING
                                 # debug:start
@@ -221,7 +218,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
                                 break;
                             default: // FRAME PAYLOAD
                                 try {
-                                    $this->_callback->onReceive($this, $tsSelect, $payload);
+                                    $this->_onReceive($tsSelect, $payload);
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
                                     $this->disconnect();
@@ -396,6 +393,8 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
 
                 $this->_tsPing = $tsSelect + $this->_pingInterval;
                 $this->_tsPong = $this->_tsPing + $this->_pongDeadline;
+
+                $this->_onReady($tsSelect);
             }
         }
     }
@@ -404,7 +403,7 @@ class StreamLoop_WebSocket extends StreamLoop_AHandler {
         if (feof($this->stream)) {
             $this->disconnect();
 
-            $this->_callback->onError($this, $tsSelect, 'EOF');
+            $this->_onError($tsSelect, 'EOF');
         }
     }
 
