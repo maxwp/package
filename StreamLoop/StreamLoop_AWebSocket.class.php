@@ -9,8 +9,9 @@
  */
 abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
 
+    abstract protected function _onInit();
     abstract protected function _onReceive($tsSelect, $payload);
-    abstract protected function _onError($tsSelect, $payload);
+    abstract protected function _onError($tsSelect, $payload); // @todo возможно добавить код ошибки
     abstract protected function _onReady($tsSelect);
 
     public function __construct(StreamLoop $loop, $host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindIP = false, $bindPort = false) {
@@ -82,7 +83,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
 
         $loop->registerHandler($this);
 
-        $this->_updateState(self::_STATE_CONNECTING, false, true, false);
+        $this->_updateState(self::STATE_CONNECTING, false, true, false);
 
         // Устанавливаем буфер до начала SSL
         $socket = new Connection_SocketStream($stream);
@@ -95,21 +96,31 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
         // отключаем буферизацию php
         stream_set_read_buffer($stream, 0);
         stream_set_write_buffer($stream, 0);
+
+        // устанавливаем лимит на timeout connection
+        $this->_timeoutTill = time() + $this->_timeoutLimit;
+        $this->_loop->updateHandlerTimeoutTo($this, $this->_timeoutTill);
+
+        $this->_onInit();
     }
 
     public function disconnect() {
+        // дисконнект закрывает снимает регистрацию handler'a и закрывает stream.
+        // это приводит к тому, что SL временно забывает про handler и не ебет его
         $this->_loop->unregisterHandler($this);
 
         fclose($this->stream);
         $this->_buffer = '';
+        $this->_timeoutTill = 0;
+        $this->_state = self::STATE_STOPPED;
     }
 
     public function readyRead($tsSelect) {
         switch ($this->_state) {
-            case self::_STATE_HANDSHAKE:
+            case self::STATE_HANDSHAKE:
                 $this->_checkHandshake($tsSelect);
                 return;
-            case self::_STATE_WEBSOCKET_READY:
+            case self::STATE_WEBSOCKET_READY:
                 $readFrameLength = $this->_readFrameLength;
                 $readFrameDrain = $this->_readFrameDrain;
                 $stream = $this->stream;
@@ -193,14 +204,13 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                             case 0x8: // FRAME CLOSED
                                 $this->disconnect();
                                 $this->_onError($tsSelect, __CLASS__.": frame-closed");
-                                break;
+                                return;
                             case 0x9: // FRAME PING
                                 # debug:start
                                 Cli::Print_n(__CLASS__.": received frame-ping $payload");
                                 # debug:end
 
-                                $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA); // frame ping
-                                fwrite($stream, $encodedPong);
+                                fwrite($stream, $this->_encodeWebSocketMessage($payload, 0xA));
 
                                 # debug:start
                                 Cli::Print_n(__CLASS__.": sent frame-pong $payload");
@@ -222,7 +232,8 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
                                     $this->disconnect();
-                                    throw $userException;
+                                    $this->_onError($tsSelect, $userException->getMessage());
+                                    return;
                                 }
                                 break;
                         }
@@ -238,8 +249,10 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                         // в неблокирующем режиме если данных нет - то будет string ''
                         // а если false - то это ошибка чтения
                         // например, PHP Warning: fread(): SSL: Connection reset by peer
+                        $this->disconnect();
                         $errorString = error_get_last()['message'];
-                        throw new StreamLoop_Exception("$errorString - failed to read from {$this->_host}:{$this->_port}");
+                        $this->_onError($tsSelect, "$errorString - failed to read from {$this->_host}:{$this->_port}");
+                        return;
                     } elseif ($data === '') {
                         // Если fread вернул пустую строку, проверяем, достигнут ли EOF
                         $this->_checkEOF($tsSelect); // EOF: connection closed by remote host
@@ -259,7 +272,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                 $this->_checkPingPong($tsSelect);
 
                 return;
-            case self::_STATE_WAITING_FOR_UPGRADE:
+            case self::STATE_WAITING_FOR_UPGRADE:
                 $this->_checkUpgrade($tsSelect);
                 return;
         }
@@ -270,7 +283,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
         $stream = $this->stream;
 
         switch ($this->_state) {
-            case self::_STATE_CONNECTING:
+            case self::STATE_CONNECTING:
                 // коннект установился, я готов к записи
                 stream_context_set_option($stream, array(
                     'ssl' => [
@@ -281,16 +294,16 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                 stream_context_set_option($stream, 'ssl', 'peer_name', $this->_host);
                 stream_context_set_option($stream, 'ssl', 'allow_self_signed', true);
 
-                $this->_updateState(self::_STATE_HANDSHAKE, true, true, false);
+                $this->_updateState(self::STATE_HANDSHAKE, true, true, false);
                 $this->_checkHandshake($tsSelect);
                 return;
-            case self::_STATE_HANDSHAKE:
+            case self::STATE_HANDSHAKE:
                 $this->_checkHandshake($tsSelect);
                 return;
-            case self::_STATE_WAITING_FOR_UPGRADE:
+            case self::STATE_WAITING_FOR_UPGRADE:
                 $this->_checkUpgrade($tsSelect);
                 return;
-            case self::_STATE_READY:
+            case self::STATE_READY:
                 $key = base64_encode(random_bytes(16)); // Уникальный ключ для Handshake
 
                 $customHeaderString = '';
@@ -307,7 +320,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                     . $customHeaderString
                     . "\r\n";
                 fwrite($stream, $headers);
-                $this->_updateState(self::_STATE_WAITING_FOR_UPGRADE, true, false, false);
+                $this->_updateState(self::STATE_WAITING_FOR_UPGRADE, true, false, false);
                 $this->_checkUpgrade($tsSelect);
                 return;
         }
@@ -315,10 +328,10 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
 
     public function readyExcept($tsSelect) {
         switch ($this->_state) {
-            case self::_STATE_HANDSHAKE:
+            case self::STATE_HANDSHAKE:
                 $this->_checkHandshake($tsSelect);
                 return;
-            case self::_STATE_WAITING_FOR_UPGRADE:
+            case self::STATE_WAITING_FOR_UPGRADE:
                 $this->_checkEOF($tsSelect);
                 $this->_checkUpgrade($tsSelect);
                 return;
@@ -326,9 +339,13 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
     }
 
     public function readySelectTimeout($tsSelect) {
-        if ($this->_state == self::_STATE_WEBSOCKET_READY) {
+        if ($this->_state == self::STATE_WEBSOCKET_READY) {
             // если прилетел readySelectTimeout() - то это только из-за того что пора делать ping-pong
             $this->_checkPingPong($tsSelect);
+        } elseif ($tsSelect > $this->_timeoutTill) {
+            $this->disconnect();
+            $this->_onError($tsSelect, 'timeout');
+            return;
         }
     }
 
@@ -351,11 +368,11 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
             # debug:end
 
             // ответ pong должен прилететь до этого момента
+            // @todo можно сделать что pong должен прилететь до следующего ping'a
             $this->_tsPong = $ts + $this->_pongDeadline;
 
             // следующий ping через interval
             $this->_tsPing = $ts + $this->_pingInterval + rand(0, 5); // rand interval: чтобы не попадать на одинаковое ping time
-
             $this->_loop->updateHandlerTimeoutTo($this, $this->_tsPing);
         }
 
@@ -365,7 +382,8 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
             // и время уже больше этого дедлайна, то это означает что pong не пришет
             // и мы идем на выход
             $this->disconnect();
-            throw new StreamLoop_Exception(__CLASS__.": no frame-pong - exit");
+            $this->_onError($ts, __CLASS__.": no frame-pong - exit");
+            return;
         }
     }
 
@@ -378,7 +396,9 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
             // пустая строка — конец блока заголовков
             if ($line == "\r\n" || $line == "\n") {
                 if (!str_contains($this->_buffer, '101 Switching Protocols')) {
-                    throw new StreamLoop_Exception("Handshake error: ".$this->_buffer);
+                    $this->disconnect();
+                    $this->_onError($tsSelect, "Handshake failed: ".$this->_buffer);
+                    return;
                 }
 
                 // вот тут опционально ебашим writeArray если он передан
@@ -389,12 +409,13 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                 }
 
                 $this->_updateState(
-                    self::_STATE_WEBSOCKET_READY,
+                    self::STATE_WEBSOCKET_READY,
                     true,
                     false,
                     false,
                 );
                 $this->_buffer = '';
+                $this->_timeoutTill = 0; // я успешно подключился поэтому timeout обнуляем
 
                 $this->_tsPing = $tsSelect + $this->_pingInterval;
                 $this->_tsPong = 0;
@@ -407,8 +428,8 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
     private function _checkEOF($tsSelect) {
         if (feof($this->stream)) {
             $this->disconnect();
-
             $this->_onError($tsSelect, 'EOF');
+            return;
         }
     }
 
@@ -423,9 +444,11 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
 
         // тут нужны ===, потому что если вернется int 0 - то надо пробовать еще раз
         if ($return === true) {
-            $this->_updateState(self::_STATE_READY, false, true, false);
+            $this->_updateState(self::STATE_READY, false, true, false);
         } elseif ($return === false) {
-            throw new StreamLoop_Exception("Failed to setup SSL");
+            $this->disconnect();
+            $this->_onError($tsSelect, 'SSL failed');
+            return;
         }
     }
 
@@ -447,6 +470,8 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
      * @param $opcode
      * @return string
      * @throws \Random\RandomException
+     *
+     * @todo вынести в отдельный wsEncoder/wsDecoder, а то намешал коней в SL_ & C_
      */
     private function _encodeWebSocketMessage($message, $opcode = 1) {
         $length = strlen($message);
@@ -491,16 +516,23 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
         $this->_readFrameDrain = $drain;
     }
 
+    public function getState() {
+        return $this->_state;
+    }
+
     private $_host, $_port, $_path, $_ip, $_bindIP, $_bindPort;
     private $_writeArray;
     private $_headerArray = [];
     private $_buffer = '';
     private $_state = 0;
-    private const _STATE_CONNECTING = 1;
-    private const _STATE_HANDSHAKE = 2;
-    private const _STATE_READY = 3;
-    private const _STATE_WAITING_FOR_UPGRADE = 4;
-    private const _STATE_WEBSOCKET_READY = 5;
+    private $_timeoutTill; // float
+    private $_timeoutLimit = 10; // сколько секунд timeout подключения
+    public const STATE_STOPPED = 0;
+    public const STATE_CONNECTING = 1;
+    public const STATE_HANDSHAKE = 2;
+    public const STATE_READY = 3;
+    public const STATE_WAITING_FOR_UPGRADE = 4;
+    public const STATE_WEBSOCKET_READY = 5;
     private $_tsPing = 0;
     private $_tsPong = 0;
     private $_pingInterval = 5;
