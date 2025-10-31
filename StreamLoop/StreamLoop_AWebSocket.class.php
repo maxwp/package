@@ -52,6 +52,10 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
         $this->connect();
     }
 
+    public function updateIP($ip) {
+        $this->_ip = $ip;
+    }
+
     public function connect() {
         $this->_buffer = '';
 
@@ -517,6 +521,10 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
 
     public function getState() {
         return $this->_state;
+    }
+
+    public function isState($state) {
+        return $this->_state == $state;
     }
 
     private $_host, $_port, $_path, $_ip, $_bindIP, $_bindPort;

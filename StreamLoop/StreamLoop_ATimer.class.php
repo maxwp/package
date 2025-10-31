@@ -43,6 +43,6 @@ abstract class StreamLoop_ATimer extends StreamLoop_AHandler {
         return $this->_timeout;
     }
 
-    private $_timeout = 0.0;
+    protected $_timeout = 0.0;
 
 }
