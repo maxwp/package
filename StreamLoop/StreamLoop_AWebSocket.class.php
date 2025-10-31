@@ -459,8 +459,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
     }
 
     public function write($data) {
-        $data = $this->_encodeWebSocketMessage($data); // write (usually once)
-        fwrite($this->stream, $data);
+        fwrite($this->stream, $this->_encodeWebSocketMessage($data));
     }
 
     /**

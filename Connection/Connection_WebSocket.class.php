@@ -150,8 +150,7 @@ class Connection_WebSocket implements Connection_IConnection {
                                 Cli::Print_n(__CLASS__.": received frame-ping $payload");
                                 # debug:end
 
-                                $encodedPong = $this->_encodeWebSocketMessage($payload, 0xA); // @todo inline it
-                                fwrite($stream, $encodedPong);
+                                fwrite($stream, $this->_encodeWebSocketMessage($payload, 0xA));
 
                                 # debug:start
                                 Cli::Print_n(__CLASS__.": send frame-pong $payload");
@@ -229,8 +228,7 @@ class Connection_WebSocket implements Connection_IConnection {
             // пинг-понг внизу после select'a
             // auto ping frame
             if ($tsSelect > $tsPing) {
-                $encodedPing = $this->_encodeWebSocketMessage('', 9); // @todo inline it inside compiler
-                fwrite($stream, $encodedPing);
+                fwrite($stream, $this->_encodeWebSocketMessage('', 9));
 
                 # debug:start
                 Cli::Print_n(__CLASS__.": sent frame-ping");
@@ -310,8 +308,7 @@ class Connection_WebSocket implements Connection_IConnection {
     }
 
     public function write($data) {
-        $data = $this->_encodeWebSocketMessage($data);
-        fwrite($this->_stream, $data);
+        fwrite($this->_stream, $this->_encodeWebSocketMessage($data));
     }
 
     public function disconnect() {
