@@ -79,6 +79,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
             $context, // @todo возможно надо будет таки перенести контекст из Connection_WebSocket
         );
         if (!$stream) {
+            // @todo шо делать с такой ошибкой?
             throw new StreamLoop_Exception("TCP connect failed immediately: $errstr ($errno)");
         }
 
