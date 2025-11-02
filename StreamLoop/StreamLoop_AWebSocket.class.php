@@ -207,7 +207,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                         // Обработка опкодов
                         switch ($opcode) {
                             case 0x8: // FRAME CLOSED
-                                $this->_throwError($tsSelect, self::ERROR_FRAME_CLOSED);
+                                $this->throwError($tsSelect, self::ERROR_FRAME_CLOSED);
                                 return;
                             case 0x9: // FRAME PING
                                 # debug:start
@@ -235,7 +235,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                                     $this->_onReceive($tsSelect, $payload);
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
-                                    $this->_throwError($tsSelect, self::ERROR_USER);
+                                    $this->throwError($tsSelect, self::ERROR_USER);
                                     return;
                                 }
                                 break;
@@ -253,7 +253,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                         // а если false - то это ошибка чтения
                         // например, PHP Warning: fread(): SSL: Connection reset by peer
                         //$errorString = error_get_last()['message'];
-                        $this->_throwError($tsSelect, self::ERROR_RESET_BY_PEER);
+                        $this->throwError($tsSelect, self::ERROR_RESET_BY_PEER);
                         return;
                     } elseif ($data === '') {
                         // Если fread вернул пустую строку, проверяем, достигнут ли EOF
@@ -325,7 +325,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
             // если прилетел readySelectTimeout() - то это только из-за того что пора делать ping-pong
             $this->_checkPingPong($tsSelect);
         } elseif ($tsSelect > $this->_timeoutTill) {
-            $this->_throwError($tsSelect, self::ERROR_TIMEOUT);
+            $this->throwError($tsSelect, self::ERROR_TIMEOUT);
             return;
         }
     }
@@ -362,7 +362,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
             // если задан дедлайн pong,
             // и время уже больше этого дедлайна, то это означает что pong не пришет
             // и мы идем на выход
-            $this->_throwError($ts, self::ERROR_NO_PONG);
+            $this->throwError($ts, self::ERROR_NO_PONG);
             return;
         }
     }
@@ -376,7 +376,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
             // пустая строка — конец блока заголовков
             if ($line == "\r\n" || $line == "\n") {
                 if (!str_contains($this->_buffer, '101 Switching Protocols')) {
-                    $this->_throwError($tsSelect, self::ERROR_HANDSHAKE);
+                    $this->throwError($tsSelect, self::ERROR_HANDSHAKE);
                     return;
                 }
 
@@ -406,7 +406,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
 
     private function _checkEOF($tsSelect) {
         if (feof($this->stream)) {
-            $this->_throwError($tsSelect, self::ERROR_EOF);
+            $this->throwError($tsSelect, self::ERROR_EOF);
             return;
         }
     }
@@ -418,7 +418,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
      * @param $message
      * @return void
      */
-    protected function _throwError($tsSelect, $errorMessage) {
+    public function throwError($tsSelect, $errorMessage) {
         $this->disconnect();
         $this->_onError($tsSelect, $errorMessage);
     }
@@ -455,7 +455,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
             $this->_checkUpgrade($tsSelect);
 
         } elseif ($return === false) {
-            $this->_throwError($tsSelect, self::ERROR_SSL);
+            $this->throwError($tsSelect, self::ERROR_SSL);
             return;
         }
     }
