@@ -29,4 +29,8 @@ class StreamLoop_WebSocket extends StreamLoop_AWebSocket {
 
     private StreamLoop_WebSocket_ICallback $_callback;
 
+    protected function _onInit() {
+        // TODO: Implement _onInit() method.
+    }
+
 }
