@@ -52,6 +52,7 @@ class StreamLoop {
             if ($w) {
                 foreach ($w as $stream) {
                     $id = (int) $stream;
+                    // @todo тут есть интересный косяк: write может вызвать disconnect и я потеряю handler
                     $this->_handlerArray[$id]->readyWrite($tsSelect);
                     $calledArray[$id] = true;
                 }
@@ -61,6 +62,7 @@ class StreamLoop {
             if ($e) {
                 foreach ($e as $stream) {
                     $id = (int) $stream;
+                    // @todo тут есть интересный косяк: write может вызвать disconnect и я потеряю handler
                     $this->_handlerArray[$id]->readyExcept($tsSelect);
                     $calledArray[$id] = true;
                 }
@@ -86,7 +88,8 @@ class StreamLoop {
                 }
             }
 
-            // тут я не могу вынести в locals, потому что цикл могут остановить с наружи
+            // тут я не могу вынести в locals, потому что цикл могут остановить снаружи
+            // @todo нахер надо
             if (!$this->_loopRunning) {
                 break;
             }

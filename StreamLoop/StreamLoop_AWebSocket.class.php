@@ -294,10 +294,10 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                     'ssl' => [
                         'verify_peer'       => false,
                         'verify_peer_name'  => false,
+                        'peer_name'  => $this->_host, // так надо делать если я перебираю IPшники хоста
+                        'allow_self_signed'  => true,
                     ],
                 ));
-                stream_context_set_option($stream, 'ssl', 'peer_name', $this->_host);
-                stream_context_set_option($stream, 'ssl', 'allow_self_signed', true);
 
                 $this->_updateState(self::STATE_HANDSHAKING, true, true, false);
                 $this->_checkHandshake($tsSelect);
