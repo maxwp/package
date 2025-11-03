@@ -6,8 +6,6 @@ class StreamLoop {
             throw new StreamLoop_Exception('No handler array');
         }
 
-        $this->_loopRunning = true;
-
         // event loop
         while (1) {
             // копирование массивов, в них уже задано что нужно для stream_select
@@ -87,17 +85,7 @@ class StreamLoop {
                     }
                 }
             }
-
-            // тут я не могу вынести в locals, потому что цикл могут остановить снаружи
-            // @todo нахер надо
-            if (!$this->_loopRunning) {
-                break;
-            }
         }
-    }
-
-    public function stop() {
-        $this->_loopRunning = false;
     }
 
     /**
@@ -171,7 +159,6 @@ class StreamLoop {
         }
     }
 
-    private $_loopRunning;
     /**
      * @var array<StreamLoop_AHandler>
      */
