@@ -257,7 +257,10 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                         return;
                     } elseif ($data === '') {
                         // Если fread вернул пустую строку, проверяем, достигнут ли EOF
-                        $this->_checkEOF($tsSelect); // EOF: connection closed by remote host
+                        if ($this->_checkEOF($tsSelect)) {
+                            // EOF: connection closed by remote host
+                            return; // на выход, чтобы дальше ничего не проверять, ошибка уже выкинута
+                        }
                         break;
                     } elseif (strlen($data) < $readFrameLength) {
                         // Если fread вернул меньше, чем запрошено — дальше не дренируем
@@ -314,7 +317,9 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                 $this->_checkHandshake($tsSelect);
                 return;
             case self::STATE_UPGRADING:
-                $this->_checkEOF($tsSelect);
+                if ($this->_checkEOF($tsSelect)) {
+                    return; // на выход
+                }
                 $this->_checkUpgrade($tsSelect);
                 return;
         }
@@ -407,7 +412,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
     private function _checkEOF($tsSelect) {
         if (feof($this->stream)) {
             $this->throwError($tsSelect, self::ERROR_EOF);
-            return;
+            return true;
         }
     }
 
@@ -424,7 +429,9 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
     }
 
     private function _checkHandshake($tsSelect) {
-        $this->_checkEOF($tsSelect);
+        if ($this->_checkEOF($tsSelect)) {
+            return; // на выход потому что ошибка уже выкинута
+        }
 
         $return = stream_socket_enable_crypto(
             $this->stream,
