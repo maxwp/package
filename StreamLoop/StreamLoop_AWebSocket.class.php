@@ -22,7 +22,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
         $this->_path = $path;
         $this->_writeArray = $writeArray;
         $this->_headerArray = $headerArray;
-        $this->_ip = $ip ? $ip : $this->_host;
+        $this->updateIP($ip);
 
         if ($bindIP) {
             if (!Checker::CheckIP($bindIP)) {
@@ -53,7 +53,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
     }
 
     public function updateIP($ip) {
-        $this->_ip = $ip;
+        $this->_ip = $ip ? $ip : $this->_host;
     }
 
     public function connect() {
