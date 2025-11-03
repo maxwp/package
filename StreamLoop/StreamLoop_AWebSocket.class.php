@@ -49,11 +49,15 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
         // @todo тут странноватая реализация WebSocket, потому что мне нужно стабильно каждые 250ms получать callback message, даже пустую.
         // возможно можно переписать как-то на таймеры, чтобы не ограничивать специально socket_select.
 
-        //$this->connect();
+        // сразу подключаться не надо, потому что loop еще не запущен и я не готов ловить состояния read/write/except
     }
 
     public function updateIP($ip) {
         $this->_ip = $ip ? $ip : $this->_host;
+    }
+
+    public function updateBindIP($ip) {
+        $this->_bindIP = $ip;
     }
 
     public function connect() {
@@ -88,7 +92,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
 
         $loop->registerHandler($this);
 
-        $this->_updateState(self::STATE_CONNECTING, false, true, false);
+        $this->_updateState(self::STATE_CONNECTING, false, true, true);
 
         // Устанавливаем буфер до начала SSL
         $socket = new Connection_SocketStream($stream);
@@ -310,6 +314,9 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
 
     public function readyExcept($tsSelect) {
         switch ($this->_state) {
+            case self::STATE_CONNECTING:
+                $this->_checkEOF($tsSelect);
+                return;
             case self::STATE_HANDSHAKING:
                 $this->_checkHandshake($tsSelect);
                 return;
