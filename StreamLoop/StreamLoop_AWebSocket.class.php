@@ -232,6 +232,10 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                                     // тут вылетаем, но надо сделать disconnect
                                     $this->throwError($tsSelect, self::ERROR_USER);
                                     return;
+                                } catch (Throwable $te) {
+                                    // более жесткая ошибка
+                                    $this->throwError($tsSelect, self::ERROR_USER);
+                                    return;
                                 }
                                 break;
                         }
