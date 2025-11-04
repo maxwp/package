@@ -44,20 +44,14 @@ class StreamLoop {
 
             $calledArray = [];
 
-            // @todo нахер типизацию, streamID ж передается и так в key
-            // @todo и это приведет к тому что streamID скорее всего вообще не надо будет нигде хранить и выдавать
-            //       вместо этого просто getResource() и в момент регистрации его я сам сделаю id через типизацию
-
-            foreach ($r as $stream) {
-                $id = (int) $stream;
+            foreach ($r as $id => $stream) {
                 $this->_handlerArray[$id]->readyRead($tsSelect);
                 $calledArray[$id] = true;
             }
 
             // наличие if тут оправдано, потому что чаще массив пустой
             if ($w) {
-                foreach ($w as $stream) {
-                    $id = (int) $stream;
+                foreach ($w as $id => $stream) {
                     // @todo тут есть интересный косяк: write может вызвать disconnect и я потеряю handler
                     $this->_handlerArray[$id]->readyWrite($tsSelect);
                     $calledArray[$id] = true;
@@ -66,8 +60,7 @@ class StreamLoop {
 
             // наличие if тут оправдано, потому что чаще массив пустой
             if ($e) {
-                foreach ($e as $stream) {
-                    $id = (int) $stream;
+                foreach ($e as $id => $stream) {
                     // @todo тут есть интересный косяк: write может вызвать disconnect и я потеряю handler
                     $this->_handlerArray[$id]->readyExcept($tsSelect);
                     $calledArray[$id] = true;
@@ -152,6 +145,7 @@ class StreamLoop {
         }
     }
 
+    // @todo сюда достаточно передавать streamID
     public function updateHandlerTimeoutTo(StreamLoop_AHandler $handler, $timeoutTo) {
         if ($timeoutTo > 0) {
             $this->_selectTimeoutToArray[$handler->streamID] = $timeoutTo;

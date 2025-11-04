@@ -393,6 +393,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
 
                 $this->_tsPing = $tsSelect + $this->_pingInterval;
                 $this->_tsPong = 0;
+                // @todo тут надо ставить interval в 0?
 
                 $this->_onReady($tsSelect);
             }
