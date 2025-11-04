@@ -85,7 +85,7 @@ class Connection_WebSocket implements Connection_IConnection {
 
                         $secondByte = ord($buffer[$offset + 1]);
                         $lenFlag = $secondByte & 0x7F;
-                        $isMasked = (bool) ($secondByte & 0x80);
+                        $isMasked = ($secondByte & 0x80);
 
                         switch ($lenFlag) {
                             case 126:
