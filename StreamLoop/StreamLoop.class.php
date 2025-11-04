@@ -44,6 +44,10 @@ class StreamLoop {
 
             $calledArray = [];
 
+            // @todo нахер типизацию, streamID ж передается и так в key
+            // @todo и это приведет к тому что streamID скорее всего вообще не надо будет нигде хранить и выдавать
+            //       вместо этого просто getResource() и в момент регистрации его я сам сделаю id через типизацию
+
             foreach ($r as $stream) {
                 $id = (int) $stream;
                 $this->_handlerArray[$id]->readyRead($tsSelect);

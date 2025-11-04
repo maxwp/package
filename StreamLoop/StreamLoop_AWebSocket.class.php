@@ -387,12 +387,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                     }
                 }
 
-                $this->_updateState(
-                    self::STATE_READY,
-                    true,
-                    false,
-                    false,
-                );
+                $this->_updateState(self::STATE_READY, true, false, false);
                 $this->_buffer = '';
                 $this->_timeoutTill = 0; // я успешно подключился поэтому timeout обнуляем
 
