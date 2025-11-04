@@ -16,21 +16,11 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
 
     // @todo возможно вернуть EE Events чтобы красиво бросать события, бо якась хуйня повторяется везде
 
-    public function __construct(StreamLoop $loop, $host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindIP = false, $bindPort = false) {
-        parent::__construct($loop);
-
-        // @todo нахер все из конструктора
-        // и отрефакторить все остальное
-        $this->updateConnection($host, $port, $path, $writeArray, $ip, $headerArray, $bindIP, $bindPort);
-
-        // @todo как слепить в кучу websocket over https?
-        // @todo сначала надо придумать как сделать StateMachine, чтобы я мог помещать команду с событиями onXXX,
-        // и затем handshake и switching protocol снанут этими командами
-        // @todo тут странноватая реализация WebSocket, потому что мне нужно стабильно каждые 250ms получать callback message, даже пустую.
-        // возможно можно переписать как-то на таймеры, чтобы не ограничивать специально socket_select.
-
-        // сразу подключаться не надо, потому что loop еще не запущен и я не готов ловить состояния read/write/except
-    }
+    // @todo как слепить в кучу websocket over https?
+    // @todo сначала надо придумать как сделать StateMachine, чтобы я мог помещать команду с событиями onXXX,
+    // и затем handshake и switching protocol снанут этими командами
+    // @todo тут странноватая реализация WebSocket, потому что мне нужно стабильно каждые 250ms получать callback message, даже пустую.
+    // возможно можно переписать как-то на таймеры, чтобы не ограничивать специально socket_select.
 
     public function updateConnection($host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindIP = false, $bindPort = false) {
         // @todo возможно структура connection'a?

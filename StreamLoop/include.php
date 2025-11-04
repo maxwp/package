@@ -9,8 +9,4 @@ ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP_DrainForward.class.ph
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP_DrainBackward.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP_ICallback.interface.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_AWebSocket.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_WebSocket.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_WebSocket_ICallback.interface.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_ATimer.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_Timer.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_Timer_ICallback.interface.php');
