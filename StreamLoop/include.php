@@ -4,6 +4,7 @@ ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_Exception.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_AHandler.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_HTTPS.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_HTTPS_ICallback.interface.php');
+ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_AUDP.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP_DrainForward.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP_DrainBackward.class.php');
