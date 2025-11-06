@@ -19,12 +19,12 @@ class StreamLoop {
                 $timeoutS = 0;
                 $timeoutUS = ($timeoutMin - microtime(true)) * 1_000_000;
                 if ($timeoutUS <= 0) {
-                    $timeoutUS = 0;
+                    $timeoutUS = 0; // если 0 - то это просто разовая проверка флагов rwe, значит какой-то таймаут уже близко
                 }
             } else {
                 // timeout может быть null - если нет timeout array вообще - то все сокеты (стримы) будут ждать вечно
-                $timeoutUS = null;
                 $timeoutS = null;
+                $timeoutUS = null;
             }
 
             // так как в stream_select надо всегда передавать rwe, а если у нас нет стримов - то эмуляция через usleep()
@@ -34,10 +34,6 @@ class StreamLoop {
             } else {
                 $result = stream_select($r, $w, $e, $timeoutS, $timeoutUS);
             }
-
-            // @todo появилась идея делать один вызов ready(r,w,e,t) и передавать туда флаги,
-            // надо посчитать сокретит ли это типичные трассы вызовов и уменьшит ли тупые foreach
-            // но баг с потерей handler'a точно будет исправлен на корню, а типизаций теоретически станет меньше
 
             // меряем время select'a
             $tsSelect = microtime(true);
@@ -52,7 +48,6 @@ class StreamLoop {
             // наличие if тут оправдано, потому что чаще массив пустой
             if ($w) {
                 foreach ($w as $id => $stream) {
-                    // @todo тут есть интересный косяк: write может вызвать disconnect и я потеряю handler
                     $this->_handlerArray[$id]->readyWrite($tsSelect);
                     $calledArray[$id] = true;
                 }
@@ -61,19 +56,13 @@ class StreamLoop {
             // наличие if тут оправдано, потому что чаще массив пустой
             if ($e) {
                 foreach ($e as $id => $stream) {
-                    // @todo тут есть интересный косяк: write может вызвать disconnect и я потеряю handler
                     $this->_handlerArray[$id]->readyExcept($tsSelect);
                     $calledArray[$id] = true;
                 }
             }
 
-            if (!$calledArray) {
-                if ($result === false) {
-                    throw new StreamLoop_Exception('stream_select failed');
-                }
-            }
-
             // заново узнаем время, потому что вызовы readyXXX могли занять время
+            // @todo если убрать то станет вместо 180 ms станет 140 ms, то есть -20%
             $tsEnd = microtime(true);
 
             // если для handler не вызывался сейчас ни один ready*
@@ -85,6 +74,11 @@ class StreamLoop {
                         $this->_handlerArray[$streamID]->readySelectTimeout($tsSelect);
                     }
                 }
+            }
+
+            // эта проверка должна быть в самом конце
+            if ($result === false) {
+                throw new StreamLoop_Exception('stream_select failed');
             }
         }
     }
@@ -154,10 +148,11 @@ class StreamLoop {
         }
 
         // вычисляем min
+        // @todo тут можно трошки подкрутить чтобы не вызывать min()
         if ($this->_selectTimeoutToArray) {
             $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
         } else {
-            $this->_selectTimeoutToMin = 0.0;
+            $this->_selectTimeoutToMin = 0; // int-сравнение будет быстрее
         }
     }
 
