@@ -193,6 +193,7 @@ class DateTime_Formatter {
             $dateTo = DateTime_Object::Create($dateFrom)->addDay(+$r[1])->__toString();
         }
 
+        // @todo use consts from separate class (see Differ)
         if ($dateFrom == 'today') {
             $dateFrom = date('Y-m-d');
             $dateTo = DateTime_Object::Create($dateFrom)->addDay(+1)->__toString();
