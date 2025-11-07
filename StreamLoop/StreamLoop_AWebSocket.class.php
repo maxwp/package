@@ -168,12 +168,12 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                                 break;
                         }
 
+                        $fmt  = $maskOffset === 2 ? 'Ca/Cb' : ($maskOffset === 4 ? 'Ca/Cb/nc' : 'Ca/Cb/Jc'); // @todo сразу встроить выще в switch
                         $head = substr($buffer, $offset, $maskOffset);
-                        $fmt  = $maskOffset === 2 ? 'Ca/Cb' : ($maskOffset === 4 ? 'Ca/Cb/nc' : 'Ca/Cb/Jc');
-                        $parts = unpack($fmt, $head);
+                        $parts = unpack($fmt, $head); // @todo inline head
                         $opcode = $parts['a'] & 0x0F;
-                        $payloadLength = $parts['c'] ?? ($parts['b'] & 0x7F);
-                        $frameLength = $maskOffset + ($isMasked ? 4 : 0) + $payloadLength;
+                        $payloadLength = $parts['c'] ?? ($parts['b'] & 0x7F); // @todo inline to switch, no fmt needed
+                        $frameLength = $maskOffset + ($isMasked ? 4 : 0) + $payloadLength; // @todo isMasked отдельным if then += 4
 
                         if ($bufferLength - $offset < $frameLength) {
                             break;
@@ -227,7 +227,7 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
                                 break;
                             default: // FRAME PAYLOAD
                                 try {
-                                    $this->_onReceive($tsSelect, $payload);
+                                    $this->_onReceive($tsSelect, $payload); // @todo пересылаем opcode сюда, так прийдется ради opcode1, opcode2...
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
                                     $this->throwError($tsSelect, self::ERROR_USER);
@@ -246,6 +246,10 @@ abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
 
                     // Удаляем обработанные данные из буфера
                     $buffer = substr($buffer, $offset);
+
+                    // @todo тут сразу if strlen >= $readFrameLength - continue,
+                    // потому что данные есть,
+                    // и только потом в конце выгодно проверят всякие исключения/eof/false
 
                     if ($data === false) {
                         // в неблокирующем режиме если данных нет - то будет string ''
