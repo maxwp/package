@@ -11,6 +11,14 @@
  */
 class DateTime_Differ {
 
+    public const INTERVAL_YEAR = 'y';
+    public const INTERVAL_MONTH = 'm';
+    public const INTERVAL_WEEK = 'w';
+    public const INTERVAL_DAY = 'd';
+    public const INTERVAL_HOUR = 'h';
+    public const INTERVAL_MINUTE = 'n';
+    public const INTERVAL_SECOND = 's';
+
     public static function DiffDate($interval, $date1, $date2) {
         if (!($date1 instanceof DateTime_Object)) {
             $date1 = DateTime_Object::FromString($date1);
@@ -19,41 +27,34 @@ class DateTime_Differ {
             $date2 = DateTime_Object::FromString($date2);
         }
 
-        $timedifference = $date1->getTimestamp() - $date2->getTimestamp();
+        $difference = $date1->getTimestamp() - $date2->getTimestamp();
+
         switch ($interval) {
-            case 'y':
+            case self::INTERVAL_YEAR:
                 $arr1 = getdate($date1->getTimestamp());
                 $arr2 = getdate($date2->getTimestamp());
                 $retval = ($arr1['year'] - $arr2['year']);
                 if ($arr1['yday'] < $arr2['yday']) {
                     $retval -= 1;
                 }
-                break;
-            case 'm':
+                return $retval;
+            case self::INTERVAL_MONTH:
                 $arr1 = getdate($date1->getTimestamp());
                 $arr2 = getdate($date2->getTimestamp());
-                $retval = ($arr1['year']*12+$arr1['mon'] - $arr2['year']*12-$arr2['mon']);
-                break;
-            case 'w':
-                $retval = floor($timedifference/604800);
-                break;
-            case 'd':
-                $retval = floor($timedifference/86400);
-                break;
-            case 'h':
-                $retval = floor($timedifference/3600);
-                break;
-            case 'n':
-                $retval = floor($timedifference/60);
-                break;
-            case 's':
-                $retval = $timedifference;
-                break;
+                return ($arr1['year']*12+$arr1['mon'] - $arr2['year']*12-$arr2['mon']);
+            case self::INTERVAL_WEEK:
+                return (int)($difference/604800);
+            case self::INTERVAL_DAY:
+                return (int)($difference/86400);
+            case self::INTERVAL_HOUR:
+                return (int)($difference/3600);
+            case self::INTERVAL_MINUTE:
+                return (int)($difference/60);
+            case self::INTERVAL_SECOND:
+                return $difference;
+            default:
+                throw new Exception("Unknown interval: ".$interval);
         }
-        if (!$retval) {
-            $retval = 0;
-        }
-        return $retval;
     }
 
     /**
@@ -64,7 +65,7 @@ class DateTime_Differ {
      * @return int
      */
     public static function DiffDay($date1, $date2) {
-        return self::DiffDate('d', $date1, $date2);
+        return self::DiffDate(self::INTERVAL_DAY, $date1, $date2);
     }
 
     /**
@@ -76,7 +77,7 @@ class DateTime_Differ {
      */
     public static function DiffMonth($date1, $date2, $returnInt = true) {
         if ($returnInt) {
-            return self::DiffDate('m', $date1, $date2);
+            return self::DiffDate(self::INTERVAL_MONTH, $date1, $date2);
         } else {
             $from = $date1;
             $to = $date2;
@@ -132,7 +133,7 @@ class DateTime_Differ {
      * @return int
      */
     public static function DiffMinute($date1, $date2) {
-        return self::DiffDate('n', $date1, $date2);
+        return self::DiffDate(self::INTERVAL_MINUTE, $date1, $date2);
     }
 
     /**
@@ -143,7 +144,7 @@ class DateTime_Differ {
      * @return int
      */
     public static function DiffSecond($date1, $date2) {
-        return self::DiffDate('s', $date1, $date2);
+        return self::DiffDate(self::INTERVAL_SECOND, $date1, $date2);
     }
 
     /**
@@ -154,7 +155,7 @@ class DateTime_Differ {
      * @return int
      */
     public static function DiffHour($date1, $date2) {
-        return self::DiffDate('h', $date1, $date2);
+        return self::DiffDate(self::INTERVAL_HOUR, $date1, $date2);
     }
 
     /**
@@ -165,7 +166,7 @@ class DateTime_Differ {
      * @return int
      */
     public static function DiffYear($date1, $date2) {
-        return self::DiffDate('y', $date1, $date2);
+        return self::DiffDate(self::INTERVAL_YEAR, $date1, $date2);
     }
 
 }

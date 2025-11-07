@@ -11,10 +11,6 @@
  */
 class EE_Typing {
 
-    // @todo ultra fast typing via pack()
-
-    // @todo type mixed by default
-
     /**
      * Привести строку к необходимому типу
      *
@@ -24,19 +20,19 @@ class EE_Typing {
      * @return mixed
      */
     public static function TypeString($value, $typing) {
-        switch (strtolower($typing)) {
+        $typing = strtolower($typing);
+        switch ($typing) {
             case self::TYPE_STRING:
                 return (string) $value;
             case self::TYPE_INT:
                 return (int) $value;
             case self::TYPE_BOOL:
-                switch ($value) {
-                    case 'true':
-                        return true;
-                    case 'false':
-                        return false;
-                    default:
-                        return (bool) $value;
+                if ($value == 'true') {
+                    return true;
+                } elseif ($value == 'false') {
+                    return false;
+                } else {
+                    return (bool) $value;
                 }
             case self::TYPE_ARRAY:
                 if (!$value) {
@@ -78,7 +74,7 @@ class EE_Typing {
     public const TYPE_STRING = 'string';
     public const TYPE_INT = 'int';
     public const TYPE_BOOL = 'bool';
-    public const TYPE_FLOAT = 'float'; // @todo rename to double
+    public const TYPE_FLOAT = 'float';
     public const TYPE_DATE = 'date';
     public const TYPE_DATETIME = 'datetime';
     public const TYPE_ARRAY = 'array';

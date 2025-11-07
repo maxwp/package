@@ -325,7 +325,7 @@ class StringUtils_RussianNameDeclensionalConverter {
             case $this -> gcaseAcc: $mod = $rule["mods"][2]; break;
             case $this -> gcaseIns: $mod = $rule["mods"][3]; break;
             case $this -> gcasePos: $mod = $rule["mods"][4]; break;
-            default: exit("Unknown grammatic case: "+gcase);
+            default: exit("Unknown grammatic case: ".$gcase);
         }
         $n = strlen($mod);
         for($i = 0; $i < $n; $i++) {
