@@ -5,7 +5,6 @@
  *
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
-
 /**
  * Abstract content
  */

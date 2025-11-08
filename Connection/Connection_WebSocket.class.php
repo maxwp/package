@@ -4,6 +4,8 @@
  * Copyright (C) 2007-2025 WebProduction
  *
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
+ *
+ * @deprecated use StreamLoop_WebSocket
  */
 class Connection_WebSocket implements Connection_IConnection {
 
