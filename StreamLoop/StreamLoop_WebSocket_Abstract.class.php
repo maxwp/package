@@ -10,7 +10,7 @@
 abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract {
 
     abstract protected function _onInit();
-    abstract protected function _onReceive($tsSelect, $payload);
+    abstract protected function _onReceive($tsSelect, $payload, $opcode);
     abstract protected function _onError($tsSelect, $errorMessage);
     abstract protected function _onReady($tsSelect);
 
@@ -200,6 +200,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                         }
 
                         // Обработка опкодов
+                        // @todo if
                         switch ($opcode) {
                             case 0x8: // FRAME CLOSED
                                 $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_FRAME_CLOSED);
@@ -227,7 +228,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                                 break;
                             default: // FRAME PAYLOAD
                                 try {
-                                    $this->_onReceive($tsSelect, $payload); // @todo пересылаем opcode сюда, так прийдется ради opcode1, opcode2...
+                                    $this->_onReceive($tsSelect, $payload, $opcode);
                                 } catch (Exception $userException) {
                                     // тут вылетаем, но надо сделать disconnect
                                     $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER);

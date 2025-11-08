@@ -143,6 +143,7 @@ class Connection_WebSocket implements Connection_IConnection {
                         // fread() считал больше данных чем я ожидал - и тогда будет казаться что данные пришли из будущего.
 
                         // Обработка опкодов
+                        // @todo if 1 2 ...
                         switch ($opcode) {
                             case 0x8: // FRAME CLOSED
                                 $this->disconnect();
