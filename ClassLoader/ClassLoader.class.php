@@ -123,7 +123,12 @@ class ClassLoader extends Pattern_ASingleton {
         $a = $this->_scandir($dir);
 
         foreach ($a as $x) {
-            $this->registerClass($x);
+            if (str_contains($x, '.class.php')
+            || str_contains($x, '.interface.php')) {
+                if (!str_contains($x, '.compiled')) {
+                    $this->registerClass($x);
+                }
+            }
         }
 
         // записываем cache

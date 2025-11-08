@@ -66,7 +66,7 @@ class StringUtils_FormatterPhoneUACN extends StringUtils_FormatterPhoneDefault {
             if (strlen($digits) == 10) {
                 return '+38 '.$x;
             }
-            if (strlen($digits) == 11 && $digits{0} == '8') {
+            if (strlen($digits) == 11 && $digits[0] == '8') {
                 return '+3'.$x;
             }
         }
