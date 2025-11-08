@@ -143,41 +143,44 @@ class Connection_WebSocket implements Connection_IConnection {
                         // fread() считал больше данных чем я ожидал - и тогда будет казаться что данные пришли из будущего.
 
                         // Обработка опкодов
-                        // @todo if 1 2 ...
-                        switch ($opcode) {
-                            case 0x8: // FRAME CLOSED
+                        if ($opcode == 0x1) { // payload text
+                            try {
+                                $callback($tsSelect, microtime(true), $payload);
+                                $called = true;
+                            } catch (Exception $userException) {
                                 $this->disconnect();
-                                throw new Connection_Exception(__CLASS__.": received frame-closed");
-                            case 0x9: // FRAME PING
-                                # debug:start
-                                Cli::Print_n(__CLASS__.": received frame-ping $payload");
-                                # debug:end
+                                throw $userException;
+                            }
+                        } elseif ($opcode == 0x2) { // payload binary
+                            try {
+                                $callback($tsSelect, microtime(true), $payload);
+                                $called = true;
+                            } catch (Exception $userException) {
+                                $this->disconnect();
+                                throw $userException;
+                            }
+                        } elseif ($opcode == 0xA) { // FRAME PONG
+                            # debug:start
+                            Cli::Print_n(__CLASS__.": received frame-pong $payload");
+                            # debug:end
 
-                                fwrite($stream, $this->_encodeWebSocketMessage($payload, 0xA));
+                            // подвигаем pong
+                            $tsPong = $tsPing + $pongDeadline;
+                        } elseif ($opcode == 0x9) { // FRAME PING
+                            # debug:start
+                            Cli::Print_n(__CLASS__.": received frame-ping $payload");
+                            # debug:end
 
-                                # debug:start
-                                Cli::Print_n(__CLASS__.": send frame-pong $payload");
-                                # debug:end
+                            fwrite($stream, $this->_encodeWebSocketMessage($payload, 0xA));
 
-                                break;
-                            case 0xA: // FRAME PONG
-                                # debug:start
-                                Cli::Print_n(__CLASS__.": received frame-pong $payload");
-                                # debug:end
-
-                                // подвигаем pong
-                                $tsPong = $tsPing + $pongDeadline;
-                                break;
-                            default: // FRAME with payload
-                                try {
-                                    $callback($tsSelect, microtime(true), $payload);
-                                    $called = true;
-                                } catch (Exception $userException) {
-                                    $this->disconnect();
-                                    throw $userException;
-                                }
-
-                                break;
+                            # debug:start
+                            Cli::Print_n(__CLASS__.": send frame-pong $payload");
+                            # debug:end
+                        } elseif ($opcode == 0x8) { // FRAME CLOSED
+                            $this->disconnect();
+                            throw new Connection_Exception(__CLASS__.": received frame-closed");
+                        } else {
+                            throw new Connection_Exception("Unknown opcode $opcode");
                         }
 
                         // Сдвигаем указатель на следующий фрейм

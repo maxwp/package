@@ -200,45 +200,52 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                         }
 
                         // Обработка опкодов
-                        // @todo if
-                        switch ($opcode) {
-                            case 0x8: // FRAME CLOSED
-                                $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_FRAME_CLOSED);
+                        if ($opcode == 0x1) { // FRAME PAYLOAD text
+                            try {
+                                $this->_onReceive($tsSelect, $payload, $opcode);
+                            } catch (Exception $userException) {
+                                // тут вылетаем, но надо сделать disconnect
+                                $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER);
                                 return;
-                            case 0x9: // FRAME PING
-                                # debug:start
-                                Cli::Print_n(__CLASS__.": received frame-ping $payload");
-                                # debug:end
+                            } catch (Throwable $te) {
+                                // более жесткая ошибка
+                                $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER);
+                                return;
+                            }
+                        } elseif ($opcode == 0x2) { // FRAME PAYLOAD binary
+                            try {
+                                $this->_onReceive($tsSelect, $payload, $opcode);
+                            } catch (Exception $userException) {
+                                // тут вылетаем, но надо сделать disconnect
+                                $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER);
+                                return;
+                            } catch (Throwable $te) {
+                                // более жесткая ошибка
+                                $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER);
+                                return;
+                            }
+                        } elseif ($opcode == 0xA) { // FRAME PONG
+                            # debug:start
+                            Cli::Print_n(__CLASS__.": received frame-pong $payload");
+                            # debug:end
 
-                                fwrite($stream, $this->_encodeWebSocketMessage($payload, 0xA));
+                            // обнуляем pong
+                            $this->_tsPong = 0;
+                        } elseif ($opcode == 0x9) { // FRAME PING
+                            # debug:start
+                            Cli::Print_n(__CLASS__.": received frame-ping $payload");
+                            # debug:end
 
-                                # debug:start
-                                Cli::Print_n(__CLASS__.": sent frame-pong $payload");
-                                # debug:end
+                            fwrite($stream, $this->_encodeWebSocketMessage($payload, 0xA));
 
-                                break;
-                            case 0xA:
-                                // FRAME PONG
-                                # debug:start
-                                Cli::Print_n(__CLASS__.": received frame-pong $payload");
-                                # debug:end
-
-                                // обнуляем pong
-                                $this->_tsPong = 0;
-                                break;
-                            default: // FRAME PAYLOAD
-                                try {
-                                    $this->_onReceive($tsSelect, $payload, $opcode);
-                                } catch (Exception $userException) {
-                                    // тут вылетаем, но надо сделать disconnect
-                                    $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER);
-                                    return;
-                                } catch (Throwable $te) {
-                                    // более жесткая ошибка
-                                    $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER);
-                                    return;
-                                }
-                                break;
+                            # debug:start
+                            Cli::Print_n(__CLASS__.": sent frame-pong $payload");
+                            # debug:end
+                        } elseif ($opcode == 0x8) { // FRAME CLOSED
+                            $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_FRAME_CLOSED);
+                            return;
+                        } else {
+                            throw new StreamLoop_Exception("Unknown opcode $opcode");
                         }
 
                         // Сдвигаем указатель на следующий фрейм
@@ -251,6 +258,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                     // @todo тут сразу if strlen >= $readFrameLength - continue,
                     // потому что данные есть,
                     // и только потом в конце выгодно проверят всякие исключения/eof/false
+                    // @todo if priority
 
                     if ($data === false) {
                         // в неблокирующем режиме если данных нет - то будет string ''
