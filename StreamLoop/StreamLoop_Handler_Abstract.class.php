@@ -1,5 +1,5 @@
 <?php
-abstract class StreamLoop_AHandler {
+abstract class StreamLoop_Handler_Abstract {
 
     abstract public function readyRead($tsSelect);
     abstract public function readyWrite($tsSelect);

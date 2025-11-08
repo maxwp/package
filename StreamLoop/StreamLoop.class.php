@@ -87,10 +87,10 @@ class StreamLoop {
      * Регистрация handler'a: в этот момент у меня уже должен быть stream & streamID,
      * иначе его нельзя зарегистрировать.
      *
-     * @param StreamLoop_AHandler $handler
+     * @param StreamLoop_Handler_Abstract $handler
      * @return void
      */
-    public function registerHandler(StreamLoop_AHandler $handler) {
+    public function registerHandler(StreamLoop_Handler_Abstract $handler) {
         // проверка чтобы я не натупил и не вызвал дублей
         if (isset($this->_handlerArray[$handler->streamID])) {
             throw new StreamLoop_Exception('stream_handler already registered');
@@ -99,7 +99,7 @@ class StreamLoop {
         $this->_handlerArray[$handler->streamID] = $handler;
     }
 
-    public function unregisterHandler(StreamLoop_AHandler $handler) {
+    public function unregisterHandler(StreamLoop_Handler_Abstract $handler) {
         // важно: этот метод надо вызывать ДО fclose, пока есть streamID
         $streamID = $handler->streamID;
         if ($streamID) {
@@ -111,7 +111,7 @@ class StreamLoop {
         }
     }
 
-    public function updateHandlerFlags(StreamLoop_AHandler $handler, $flagRead, $flagWrite, $flagExcept) {
+    public function updateHandlerFlags(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite, $flagExcept) {
         if (!$handler->streamID) {
             return;
         }
@@ -140,7 +140,7 @@ class StreamLoop {
     }
 
     // @todo сюда достаточно передавать streamID
-    public function updateHandlerTimeoutTo(StreamLoop_AHandler $handler, $timeoutTo) {
+    public function updateHandlerTimeoutTo(StreamLoop_Handler_Abstract $handler, $timeoutTo) {
         if ($timeoutTo > 0) {
             $this->_selectTimeoutToArray[$handler->streamID] = $timeoutTo;
         } else {
@@ -157,7 +157,7 @@ class StreamLoop {
     }
 
     /**
-     * @var array<StreamLoop_AHandler>
+     * @var array<StreamLoop_Handler_Abstract>
      */
     private $_handlerArray = [];
 

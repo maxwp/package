@@ -1,5 +1,5 @@
 <?php
-class StreamLoop_HTTPS extends StreamLoop_AHandler {
+class StreamLoop_HTTPS extends StreamLoop_Handler_Abstract {
 
     public function __construct(StreamLoop $loop, $host, $port, $ip = false, $bindIP = false, $bindPort = false) {
         parent::__construct($loop);
@@ -98,7 +98,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
 
         $this->_loop->registerHandler($this);
 
-        $this->_updateState(self::_STATE_CONNECTING, false, true, false);
+        $this->_updateState(StreamLoop_HTTPS_Const::STATE_CONNECTING, false, true, false);
 
         // Устанавливаем буфер до начала SSL
         $this->_socket = new Connection_SocketStream($stream);
@@ -122,10 +122,10 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
 
     public function readyRead($tsSelect) {
         switch ($this->_state) {
-            case self::_STATE_HANDSHAKE:
+            case StreamLoop_HTTPS_Const::STATE_HANDSHAKE:
                 $this->_checkHandshake();
                 return;
-            case self::_STATE_WAIT_FOR_RESPONSE_HEADERS:
+            case StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS:
                 // drain read headers
                 while (1) {
                     $line = fgets($this->stream, 4096); // я читаю через fgetS и врядли будет строка больше 4Kb
@@ -161,7 +161,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
                         }
 
                         $this->_updateState(
-                            self::_STATE_WAIT_FOR_RESPONSE_BODY,
+                            StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_BODY,
                             true,
                             false,
                             false,
@@ -180,7 +180,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
                 }
 
                 return;
-            case self::_STATE_WAIT_FOR_RESPONSE_BODY:
+            case StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_BODY:
                 $headerArray = $this->_headerArray;
 
                 if (isset($headerArray['content-length'])) {
@@ -216,7 +216,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
                             // очистка буфера, потому что считали тело до конца
                             $buffer = '';
 
-                            $this->_updateState(self::_STATE_READY, false, false, false);
+                            $this->_updateState(StreamLoop_HTTPS_Const::STATE_READY, false, false, false);
                             $this->_reset();
                             $this->_checkRequestQue();
 
@@ -244,7 +244,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
 
     public function readyWrite($tsSelect) {
         switch ($this->_state) {
-            case self::_STATE_CONNECTING:
+            case StreamLoop_HTTPS_Const::STATE_CONNECTING:
                 // коннект установился, я готов к записи
                 $stream = $this->stream;
 
@@ -257,13 +257,13 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
                 stream_context_set_option($stream, 'ssl', 'peer_name', $this->_host);
                 stream_context_set_option($stream, 'ssl', 'allow_self_signed', true);
 
-                $this->_updateState(self::_STATE_HANDSHAKE, true, true, false, false);
+                $this->_updateState(StreamLoop_HTTPS_Const::STATE_HANDSHAKE, true, true, false, false);
                 $this->_checkHandshake();
                 return;
-            case self::_STATE_HANDSHAKE:
+            case StreamLoop_HTTPS_Const::STATE_HANDSHAKE:
                 $this->_checkHandshake();
                 return;
-            case self::_STATE_READY:
+            case StreamLoop_HTTPS_Const::STATE_READY:
                 $this->_activeRequest = false;
 
                 $this->_checkRequestQue();
@@ -274,7 +274,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
     public function readyExcept($tsSelect) {
         $this->_checkEOF(); // тут оставить как есть, потому что state machine не покрывает все косяки
 
-        if ($this->_state == self::_STATE_HANDSHAKE) {
+        if ($this->_state == StreamLoop_HTTPS_Const::STATE_HANDSHAKE) {
             $this->_checkHandshake();
             return;
         }
@@ -370,7 +370,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         $this->_loop->updateHandlerTimeoutTo($this, $activeRequestTS + $activeRequest['timeout']);
 
         $this->_updateState(
-            self::_STATE_WAIT_FOR_RESPONSE_HEADERS,
+            StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS,
             true,
             false,
             false,
@@ -387,7 +387,7 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
         if ($return === true) {
             $this->_reset();
 
-            $this->_updateState(self::_STATE_READY, false, false, false);
+            $this->_updateState(StreamLoop_HTTPS_Const::STATE_READY, false, false, false);
 
             $this->_checkRequestQue();
         } elseif ($return === false) {
@@ -558,10 +558,5 @@ class StreamLoop_HTTPS extends StreamLoop_AHandler {
     public readonly SplQueue $requestQue; // @todo переделать на понятный array of StreamLoop_HTTP_IRequest
 
     private $_state;
-    private const _STATE_CONNECTING = 1;
-    private const _STATE_HANDSHAKE = 2;
-    private const _STATE_WAIT_FOR_RESPONSE_HEADERS = 3;
-    private const _STATE_WAIT_FOR_RESPONSE_BODY = 4;
-    private const _STATE_READY = 5;
 
 }

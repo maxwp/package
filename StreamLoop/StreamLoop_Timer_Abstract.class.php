@@ -1,5 +1,5 @@
 <?php
-abstract class StreamLoop_ATimer extends StreamLoop_AHandler {
+abstract class StreamLoop_Timer_Abstract extends StreamLoop_Handler_Abstract {
 
     abstract protected function _onTimer($tsSelect);
 

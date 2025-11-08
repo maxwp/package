@@ -7,7 +7,7 @@
  * Такой подход делает меньше вызовов selectTimeout и позволяет держать сильно больше WebSocket-handler-ов внутри одного StreamLoop,
  * но timer не будет синхронизирован с last event от websocket. Хотя он и в C_WS может быть не синхронизирован из-за app-layer & iframe-layer ping-pong.
  */
-abstract class StreamLoop_AWebSocket extends StreamLoop_AHandler {
+abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract {
 
     abstract protected function _onInit();
     abstract protected function _onReceive($tsSelect, $payload);

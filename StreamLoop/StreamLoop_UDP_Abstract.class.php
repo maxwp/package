@@ -1,5 +1,5 @@
 <?php
-abstract class StreamLoop_AUDP extends StreamLoop_AHandler {
+abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
 
     abstract public function _onReceive($tsSelect, $message, $messageSize, $fromAddress, $fromPort);
 

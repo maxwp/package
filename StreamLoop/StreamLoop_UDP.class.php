@@ -1,5 +1,5 @@
 <?php
-class StreamLoop_UDP extends StreamLoop_AHandler {
+class StreamLoop_UDP extends StreamLoop_Handler_Abstract {
 
     public function __construct(StreamLoop $loop, $host, $port, StreamLoop_UDP_ICallback $receiver) {
         parent::__construct($loop);
