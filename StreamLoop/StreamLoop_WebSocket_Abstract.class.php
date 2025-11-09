@@ -228,6 +228,18 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                                     $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER);
                                     return;
                                 }
+                            } elseif ($opcode == 11) { // custom user pong
+                                try {
+                                    $this->_onReceive($tsSelect, $payload, $opcode);
+                                } catch (Exception $userException) {
+                                    // тут вылетаем, но надо сделать disconnect
+                                    $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER);
+                                    return;
+                                } catch (Throwable $te) {
+                                    // более жесткая ошибка
+                                    $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER);
+                                    return;
+                                }
                             } elseif ($opcode == 0xA) { // FRAME PONG
                                 # debug:start
                                 Cli::Print_n(__CLASS__ . ": received frame-pong $payload");
