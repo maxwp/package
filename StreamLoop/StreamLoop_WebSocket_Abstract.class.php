@@ -164,7 +164,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                                 if ($bufferLength - $offset < $maskOffset) {
                                     break;
                                 }
-                                $parts = unpack('Ca/Cb/Nc', substr($buffer, $offset, $maskOffset));
+                                $parts = unpack('Ca/Cb/Jc', substr($buffer, $offset, $maskOffset));
                                 $opcode = $parts['a'] & 0x0F;
                                 $payloadLength = $parts['c'];
                             } else {
