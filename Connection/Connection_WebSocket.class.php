@@ -5,7 +5,7 @@
  *
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  *
- * @deprecated use StreamLoop_WebSocket
+ * @deprecated use StreamLoop_WebSocket, сейчас Connection_WebSocket уже не такой быстрый по парсингу как SL_WS
  */
 class Connection_WebSocket implements Connection_IConnection {
 
