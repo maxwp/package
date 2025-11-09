@@ -392,6 +392,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
             $this->_buffer .= $line; // @todo locals
             // пустая строка — конец блока заголовков
             if ($line == "\r\n" || $line == "\n") {
+                // @todo not not
                 if (!str_contains($this->_buffer, '101 Switching Protocols')) {
                     $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_HANDSHAKE);
                     return;
