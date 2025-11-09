@@ -112,6 +112,8 @@ class StreamLoop {
             unset($this->_selectExceptArray[$streamID]);
             unset($this->_selectTimeoutToArray[$streamID]);
         }
+
+        $this->_rweFlag = ($this->_selectReadArray || $this->_selectWriteArray || $this->_selectExceptArray);
     }
 
     public function updateHandlerFlags(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite, $flagExcept) {
