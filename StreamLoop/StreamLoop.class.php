@@ -6,6 +6,9 @@ class StreamLoop {
             throw new StreamLoop_Exception('No handler array');
         }
 
+        // первый раз меряем tsSelect до круга
+        $tsSelect = microtime(true);
+
         // event loop
         while (1) {
             // копирование массивов, в них уже задано что нужно для stream_select
@@ -17,9 +20,9 @@ class StreamLoop {
             $timeoutMin = $this->_selectTimeoutToMin;
             if ($timeoutMin) {
                 $timeoutS = 0;
-                $timeoutUS = ($timeoutMin - microtime(true)) * 1_000_000;
+                $timeoutUS = ($timeoutMin - $tsSelect) * 1_000_000;
                 if ($timeoutUS <= 0) {
-                    $timeoutUS = 0; // если 0 - то это просто разовая проверка флагов rwe, значит какой-то таймаут уже близко
+                    $timeoutUS = 0; // если <=0 - то это просто разовая проверка флагов rwe, значит какой-то таймаут уже близко
                 }
             } else {
                 // timeout может быть null - если нет timeout array вообще - то все сокеты (стримы) будут ждать вечно
@@ -27,51 +30,51 @@ class StreamLoop {
                 $timeoutUS = null;
             }
 
-            // так как в stream_select надо всегда передавать rwe, а если у нас нет стримов - то эмуляция через usleep()
-            if (!$r && !$w && !$e && $timeoutUS !== null) {
-                usleep($timeoutUS);
-                $result = 0; // int
-            } else {
+            if ($this->_rweFlag) {
                 $result = stream_select($r, $w, $e, $timeoutS, $timeoutUS);
+            } elseif ($timeoutUS !== null) {
+                usleep($timeoutUS);
+                $result = 0;
+            } else {
+                // тут может быть странная ситуация, что нет rwe, а timeout is null - то это явно бажина,
+                // потому что таймер должен был снять регистрацию handler'a
+                throw new StreamLoop_Exception('No RWE and timeout is null');
             }
 
             // меряем время select'a
             $tsSelect = microtime(true);
 
-            $calledArray = [];
+            $handlerArray = $this->_handlerArray; // to locals
+            $timeoutArray = $this->_selectTimeoutToArray;
 
-            foreach ($r as $id => $stream) {
-                $this->_handlerArray[$id]->readyRead($tsSelect);
-                $calledArray[$id] = true;
+            foreach ($r as $streamID => $stream) {
+                $handlerArray[$streamID]->readyRead($tsSelect);
+                unset($timeoutArray[$streamID]);
             }
 
             // наличие if тут оправдано, потому что чаще массив пустой
             if ($w) {
-                foreach ($w as $id => $stream) {
-                    $this->_handlerArray[$id]->readyWrite($tsSelect);
-                    $calledArray[$id] = true;
+                foreach ($w as $streamID => $stream) {
+                    $handlerArray[$streamID]->readyWrite($tsSelect);
+                    unset($timeoutArray[$streamID]);
                 }
             }
 
             // наличие if тут оправдано, потому что чаще массив пустой
             if ($e) {
-                foreach ($e as $id => $stream) {
-                    $this->_handlerArray[$id]->readyExcept($tsSelect);
-                    $calledArray[$id] = true;
+                foreach ($e as $streamID => $stream) {
+                    $handlerArray[$streamID]->readyExcept($tsSelect);
+                    unset($timeoutArray[$streamID]);
                 }
             }
-
-            // заново узнаем время, потому что вызовы readyXXX могли занять время
-            // @todo если убрать то станет вместо 180 ms станет 140 ms, то есть -20%
-            $tsEnd = microtime(true);
 
             // если для handler не вызывался сейчас ни один ready*
             // и при этом я перешел за timeout
             // = то надо вызвать readySelectTimeout
-            foreach ($this->_selectTimeoutToArray as $streamID => $timeoutTo) {
-                if ($timeoutTo > 0 && $timeoutTo <= $tsEnd) {
-                    if (empty($calledArray[$streamID])) {
-                        $this->_handlerArray[$streamID]->readySelectTimeout($tsSelect);
+            if ($timeoutArray) {
+                foreach ($timeoutArray as $streamID => $timeoutTo) {
+                    if ($timeoutTo > 0 && $timeoutTo <= $tsSelect) {
+                        $handlerArray[$streamID]->readySelectTimeout($tsSelect);
                     }
                 }
             }
@@ -137,10 +140,22 @@ class StreamLoop {
         } else {
             unset($this->_selectExceptArray[$streamID]);
         }
+
+        // обновляем rwe флаг
+        $this->_rweFlag = ($this->_selectReadArray || $this->_selectWriteArray || $this->_selectExceptArray);
     }
 
-    // @todo сюда достаточно передавать streamID
+    /**
+     * Важно: таймер может сработать не супер точно, а с дрейфом на время обработки handler-ов.
+     * Это связано с тем, что я использую prev_tsSelect для расчета таймеров следуюего круга.
+     * Потому что запрос времени занимает 40 ns, и это реально 1/3 от всего event loop'a.
+     *
+     * @param StreamLoop_Handler_Abstract $handler
+     * @param $timeoutTo
+     * @return void
+     */
     public function updateHandlerTimeoutTo(StreamLoop_Handler_Abstract $handler, $timeoutTo) {
+        // @todo сюда достаточно передавать streamID
         if ($timeoutTo > 0) {
             $this->_selectTimeoutToArray[$handler->streamID] = $timeoutTo;
         } else {
@@ -160,7 +175,7 @@ class StreamLoop {
      * @var array<StreamLoop_Handler_Abstract>
      */
     private $_handlerArray = [];
-
+    private $_rweFlag = false; // bool
     private array $_selectReadArray = [];
     private array $_selectWriteArray = [];
     private array $_selectExceptArray = [];

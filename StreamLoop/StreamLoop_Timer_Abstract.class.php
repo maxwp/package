@@ -3,6 +3,16 @@ abstract class StreamLoop_Timer_Abstract extends StreamLoop_Handler_Abstract {
 
     abstract protected function _onTimer($tsSelect);
 
+    /**
+     *  Важно: таймер может сработать не супер точно, а с дрейфом на время обработки handler-ов.
+     *  Это связано с тем, что я использую prev_tsSelect для расчета таймеров следуюего круга.
+     *  Потому что запрос времени занимает 40 ns, и это реально 1/3 от всего event loop'a.
+     *
+     * @param StreamLoop $loop
+     * @param $timerID
+     * @param $timeout
+     * @throws StreamLoop_Exception
+     */
     public function __construct(StreamLoop $loop, $timerID, $timeout) {
         parent::__construct($loop);
 
