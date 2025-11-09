@@ -27,13 +27,6 @@ abstract class Connection_Socket_Abstract implements Connection_IConnection {
         return $this->_socket;
     }
 
-    // @todo
-    // Использование опции IP_MTU_DISCOVER с режимом IP_PMTUDISC_WANT позволяет сокету попытаться определить
-    // максимальный размер пакета (MTU) по пути к получателю без фрагментации.
-    //socket_set_option($this->_socket, IPPROTO_IP, IP_MTU_DISCOVER, IP_PMTUDISC_WANT);
-
-    // @todo busy poll, busy read support
-
     public function setNonBlocking() {
         socket_set_nonblock($this->_socket);
     }
@@ -46,6 +39,10 @@ abstract class Connection_Socket_Abstract implements Connection_IConnection {
         if (!socket_set_option($this->_socket, SOL_SOCKET, $type, $value)) {
             throw new Connection_Exception("Socket option error type=$type");
         }
+    }
+
+    public function getSocketOption($type) {
+        return socket_get_option($this->_socket, SOL_SOCKET, $type);
     }
 
     public function setTimeoutRead($timeoutSec, $timeoutUsec) {
