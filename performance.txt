@@ -1554,6 +1554,16 @@ hash('murmur3a', microtime(true)+rand()); // 230 ms
 
 ==============================================================
 
+Это 1М вызовов:
+
+$data = json_decode($payload, true); // 945 ms
+$data = json_decode($payload); // 1020 ms
+$data = json_decode($payload, true, 5, JSON_OBJECT_AS_ARRAY | JSON_INVALID_UTF8_IGNORE);
+$data = simdjson_decode($payload, true); // 490 ms, simdjson
+$data = simdjson_decode($payload, true); // 455 ms, simdjson_plus
+
+==============================================================
+
 Количество потоков
 
 Конечно это не всегда изи сделать, но если у вас есть 10 скриптов, которые суммарно зажирают 50% от 1 vcpu,
