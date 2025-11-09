@@ -1274,6 +1274,30 @@ if ($x == 1 || $x == 2 || $x == 3 || $x == 4) {}
 
 ==============================================================
 
+switch vs short if
+
+На 10М вызовов:
+
+// 82-135 = 108.5 avg если не выносить to locals
+// 92-112 = = 102 avg если выносить
+$action = $this->_action;
+if ($action == AMM_Const::ACTION_BUY) {
+
+} elseif ($action == AMM_Const::ACTION_SELL) {
+
+}
+
+// 210 ms - и не важно выносить или нет
+$action = $this->_action;
+switch ($action) {
+    case AMM_Const::ACTION_BUY:
+        break;
+    case AMM_Const::ACTION_SELL:
+        break;
+}
+
+==============================================================
+
 switch и типы данных
 
 // супер важно чтобы тип данных в $x и case совпадал.
