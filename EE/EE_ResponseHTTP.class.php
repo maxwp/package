@@ -10,8 +10,6 @@
  * Система ответа в Engine.
  * Позволяет удобно устанавливать ответы заголовки HTTP-ответа.
  * Например, настройки cache, gzip, last-modified, body, ...
- *
- * @todo rename to EE_ResponseHTTP
  */
 class EE_ResponseHTTP implements EE_IResponse {
 
