@@ -413,7 +413,10 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
                 $this->_tsPing = $tsSelect + $this->_pingInterval;
                 $this->_tsPong = 0;
-                // @todo тут надо ставить interval в 0?
+
+                // чтобы первый раз вызвался какой-нибудь таймаут если в сокете тишина будет
+                // и я ничего не жду
+                $this->_loop->updateHandlerTimeoutTo($this, $this->_tsPing);
 
                 $this->_onReady($tsSelect);
             }
