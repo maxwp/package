@@ -98,6 +98,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         stream_set_write_buffer($stream, 0);
 
         // устанавливаем лимит на timeout connection
+        // @todo единый метод?
         $this->_timeoutTill = time() + $this->_timeoutLimit;
         $this->_loop->updateHandlerTimeoutTo($this, $this->_timeoutTill);
 
@@ -109,13 +110,18 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         // это приводит к тому, что SL временно забывает про handler и не ебет его
         $this->_loop->unregisterHandler($this);
 
-        fclose($this->stream);
+        // бывают ситуации когда throwError два раза подряд и тогда disconnect два раза подряд
+        if ($this->stream) {
+            fclose($this->stream);
+        }
+
         $this->_buffer = '';
         $this->_timeoutTill = 0;
         $this->_state = StreamLoop_WebSocket_Const::STATE_STOPPED;
     }
 
     public function readyRead($tsSelect) {
+        // @todo if-tree
         switch ($this->_state) {
             case StreamLoop_WebSocket_Const::STATE_HANDSHAKING:
                 $this->_checkHandshake($tsSelect);
@@ -324,7 +330,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     public function readyExcept($tsSelect) {
         switch ($this->_state) {
             case StreamLoop_WebSocket_Const::STATE_CONNECTING:
-                $this->_checkEOF($tsSelect);
+                $this->_checkEOF($tsSelect); // не надо проверять на if return true then exit
                 return;
             case StreamLoop_WebSocket_Const::STATE_HANDSHAKING:
                 $this->_checkHandshake($tsSelect);
@@ -409,7 +415,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                 $this->_updateState(StreamLoop_WebSocket_Const::STATE_READY, true, false, false);
                 $this->_buffer = '';
                 $this->_timeoutTill = 0; // я успешно подключился поэтому timeout обнуляем
-                $this->_loop->updateHandlerTimeoutTo($this, 0);
 
                 $this->_tsPing = $tsSelect + $this->_pingInterval;
                 $this->_tsPong = 0;
@@ -557,7 +562,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     private $_headerArray = [];
     private $_buffer = '';
     private $_state = 0; // stop by default
-    private $_timeoutTill; // float
+    private $_timeoutTill; // float @todo rename to timeoutConnectTill
     private $_timeoutLimit = 10; // сколько секунд timeout подключения
     private $_tsPing = 0;
     private $_tsPong = 0;
