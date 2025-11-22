@@ -1,4 +1,7 @@
 <?php
+/**
+ * @deprecated use UDP_Abstract
+ */
 class StreamLoop_UDP_DrainBackward extends StreamLoop_UDP {
 
     public function readyRead($tsSelect) {

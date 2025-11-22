@@ -94,6 +94,9 @@ class StreamLoop {
      * @return void
      */
     public function registerHandler(StreamLoop_Handler_Abstract $handler) {
+        // @todo тут есть прикол что регистрация handler'a заранее не нужна, как и его снятие.
+        // @todo достаточно оперировать только updateFlags и если что-то есть, то регистрировать handler на лету
+
         // проверка чтобы я не натупил и не вызвал дублей
         if (isset($this->_handlerArray[$handler->streamID])) {
             throw new StreamLoop_Exception('stream_handler already registered');
@@ -157,7 +160,11 @@ class StreamLoop {
      * @return void
      */
     public function updateHandlerTimeoutTo(StreamLoop_Handler_Abstract $handler, $timeoutTo) {
-        // @todo сюда достаточно передавать streamID
+        // @todo слепить с updateHandlerFlags и переименовать в updateHandler(),
+        // @todo плюс updateHandler сам снимает регистрацию если что
+        // @todo upd: надо сделать updateHandler, updateHandlerFlags, updateHandlerTimeout(), потому что везде чуть разная логика и где-то менять флаги не надо.
+        // хотя насколько дороже вызов только timeout чем со всеми флагами?
+
         if ($timeoutTo > 0) {
             $this->_selectTimeoutToArray[$handler->streamID] = $timeoutTo;
         } else {

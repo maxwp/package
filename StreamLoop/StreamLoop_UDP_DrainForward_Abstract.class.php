@@ -1,8 +1,5 @@
 <?php
-/**
- * @deprecated use UDP_Abstract
- */
-class StreamLoop_UDP_DrainForward extends StreamLoop_UDP {
+abstract class StreamLoop_UDP_DrainForward_Abstract extends StreamLoop_UDP_Abstract {
 
     public function readyRead($tsSelect) {
         // в php init локальной переменной дешевле чем доступ к свойству
@@ -13,7 +10,6 @@ class StreamLoop_UDP_DrainForward extends StreamLoop_UDP {
         // to locals
         $socket = $this->_socketResource;
         $drainLimit = $this->_drainLimit; // как правило drain есть, поэтому я выношу всегда в locals
-        $receiver = $this->_receiver; // как правило readyRead срабатывает если что-то есть
 
         for ($drainIndex = 0; $drainIndex < $drainLimit; $drainIndex++) {
             $bytes = socket_recvfrom(
@@ -26,7 +22,7 @@ class StreamLoop_UDP_DrainForward extends StreamLoop_UDP {
             );
 
             if ($bytes > 0) {
-                $receiver->onReceive($this, $tsSelect, $buffer, $bytes, $fromAddress, $fromPort);
+                $this->_onReceive($tsSelect, $buffer, $bytes, $fromAddress, $fromPort);
             } else {
                 // внимание! я не делаю тут проверки на ошибки, потому что эта штука занимает 0..1,1 us
 

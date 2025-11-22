@@ -1,4 +1,7 @@
 <?php
+/**
+ * @deprecated use StreamLoop_HTTPS_Abstract
+ */
 class StreamLoop_HTTPS extends StreamLoop_Handler_Abstract {
 
     public function __construct(StreamLoop $loop, $host, $port, $ip = false, $bindIP = false, $bindPort = false) {
