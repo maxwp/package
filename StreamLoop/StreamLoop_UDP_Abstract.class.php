@@ -1,9 +1,9 @@
 <?php
 abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
 
-    abstract public function _onReceive($tsSelect, $message, $messageSize, $fromAddress, $fromPort);
+    abstract protected function _onReceive($tsSelect, $message, $messageSize, $fromAddress, $fromPort);
 
-    abstract public function _onError($tsSelect, $errorCode);
+    abstract protected function _onError($tsSelect, $errorCode);
 
     public function updateConnection($host, $port) {
         $this->_host = $host;
