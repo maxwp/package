@@ -205,7 +205,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
 
                     return;
                 } elseif (!$line) {
-                    // fgets может вернуть false - это или просто ничего нет в не-блок-режиме или реально EOF
+                    // fgets может вернуть false - это или просто ничего нет в не-блок-режиме или реально EOF (не путай с fread)
                     $this->_checkEOF();
                     break; // break цикла
                 }

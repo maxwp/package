@@ -120,7 +120,11 @@ class StreamLoop_HTTPS extends StreamLoop_Handler_Abstract {
         $this->_loop->unregisterHandler($this);
 
         $this->_reset();
-        fclose($this->stream);
+
+        // на случай если вызову два раза подряд
+        if ($this->stream) {
+            fclose($this->stream);
+        }
     }
 
     public function readyRead($tsSelect) {
