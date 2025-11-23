@@ -344,9 +344,22 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
             $this->_checkPingPong($tsSelect);
         } elseif ($tsSelect > $this->_timeoutTill) {
             $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_TIMEOUT, false);
-            return;
         }
     }
+
+    /**
+     * @todo новая идея idle ping:
+     * - изначально после подключения ставится первый интервал в 10-15 (rand) секунд updateHandlerTimeout(),
+     *   а флаг active = 1 (bool)
+     * - при каждом pong ставится active =1 и продлевается updateHandlerTimeout() на 10-15 sec rand
+     * - когда запускается readyTimeout():
+     *   если флаг active = 1, то я ставлю active = 0 и вбрасываю ping и продлеваю updateHandlerTimeout на 10-15 sec rand.
+     *   если флаг active = 0 - я выхожу по ошибке что мол нет iframe pong'a
+     *
+     * Таким образом интервалы длинные, нет бесконечных проверок в конце каждого read.
+     *
+     * плюс я отказываюсь от переменных ping intrval чтобы их не запрашивать все время.
+     */
 
     private function _checkPingPong($ts) {
         // websocket layer ping
@@ -367,7 +380,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
             # debug:end
 
             // ответ pong должен прилететь до этого момента
-            // @todo можно сделать что pong должен прилететь до следующего ping'a
             $this->_tsPong = $ts + $this->_pongDeadline;
 
             // следующий ping через interval
