@@ -66,7 +66,7 @@ abstract class Connection_Socket_Abstract implements Connection_IConnection {
         $this->setSocketOption(SO_REUSEADDR, $mode);
     }
 
-    public function setQuickAsk($value = 1) {
+    public function setQuickACK($value = 1) {
         socket_set_option($this->_socket, SOL_TCP, 12, $value); // TCP_QUICKACK as 12 defined in php 8.3+ only
     }
 

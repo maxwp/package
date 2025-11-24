@@ -104,10 +104,10 @@ class StreamLoop_HTTPS extends StreamLoop_Handler_Abstract {
         $this->_updateState(StreamLoop_HTTPS_Const::STATE_CONNECTING, false, true, false);
 
         // Устанавливаем буфер до начала SSL
-        $this->_socket = new Connection_SocketStream($stream);
-        $this->_socket->setBufferSizeRead(10 * 1024 * 1024);
-        $this->_socket->setBufferSizeWrite(2 * 1024 * 1024);
-        $this->_socket->setKeepAlive();
+        $socket = new Connection_SocketStream($stream);
+        $socket->setBufferSizeRead(10 * 1024 * 1024);
+        $socket->setBufferSizeWrite(2 * 1024 * 1024);
+        $socket->setKeepAlive();
 
         stream_set_blocking($stream, false);
 
@@ -356,8 +356,6 @@ class StreamLoop_HTTPS extends StreamLoop_Handler_Abstract {
         $request .= "\r\n";
         $request .= $body; // даже если body пустота - ну и ладно, это бытсрее if (body) ...
 
-        $this->_socket->setQuickAsk(1);
-
         $n = fwrite($this->stream, $request);
         if ($n === false) {
             $activeRequest['callback']->onError(
@@ -550,20 +548,13 @@ class StreamLoop_HTTPS extends StreamLoop_Handler_Abstract {
     }
 
     private $_host, $_port, $_ip, $_bindIP, $_bindPort;
-
-    /**
-     * @var Connection_SocketStream
-     */
-    private $_socket;
     private $_buffer = '';
     private $_headerArray = [];
     private $_statusCode = 0;
     private $_statusMessage = '';
-
     private $_activeRequest;
     private $_activeRequestTS = 0;
     public readonly SplQueue $requestQue; // @todo переделать на понятный array of StreamLoop_HTTP_IRequest
-
     private $_state;
 
 }
