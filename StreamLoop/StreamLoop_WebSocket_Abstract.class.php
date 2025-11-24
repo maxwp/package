@@ -86,6 +86,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         $socket->setBufferSizeRead(10 * 1024 * 1024);
         $socket->setBufferSizeWrite(2 * 1024 * 1024);
         $socket->setKeepAlive();
+        $socket->setQuickACK(1);
 
         stream_set_blocking($stream, false);
 
@@ -469,6 +470,11 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
     public function write($data) {
         fwrite($this->stream, $this->_encodeWebSocketMessage($data));
+    }
+
+    public function writeAndFlush($data) {
+        fwrite($this->stream, $this->_encodeWebSocketMessage($data));
+        fflush($this->stream);
     }
 
     /**
