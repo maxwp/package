@@ -95,9 +95,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
         $this->_updateState(StreamLoop_WebSocket_Const::STATE_CONNECTING, false, true, true);
 
-        // устанавливаем лимит на timeout connection
-        $this->_timeoutTill = time() + $this->_timeoutConnectLimit;
-        $this->_loop->updateHandlerTimeoutTo($this, $this->_timeoutTill);
+        // устанавливаем timeout на connect + handshake + upgrade
+        $this->_loop->updateHandlerTimeoutTo($this, time() + 10);
 
         $this->_onInit();
     }
@@ -113,7 +112,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         }
 
         $this->_buffer = '';
-        $this->_timeoutTill = 0;
         $this->_state = StreamLoop_WebSocket_Const::STATE_STOPPED;
     }
 
@@ -233,8 +231,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                             Cli::Print_n(__CLASS__ . ": received frame-pong $payload");
                             # debug:end
 
-                            // обнуляем pong
-                            $this->_tsPong = 0;
+                            // считаем что соединение активно и с ним все ок
+                            $this->_active = true;
                         } elseif ($opcode == 0x9) { // FRAME PING
                             # debug:start
                             Cli::Print_n(__CLASS__ . ": received frame-ping $payload");
@@ -284,11 +282,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
             // сохраняем буфер или что от него осталось
             $this->_buffer = $buffer;
-
-            // ping-pong в конце каждого read,
-            // потому что при большой нагрузке selectTimeout не будет вызван
-            // @todo а надо ли ping-pong при большой нагрузке?
-            $this->_checkPingPong($tsSelect);
         } elseif ($state == StreamLoop_WebSocket_Const::STATE_HANDSHAKING) {
             $this->_checkHandshake($tsSelect);
         } elseif ($state == StreamLoop_WebSocket_Const::STATE_UPGRADING) {
@@ -339,61 +332,39 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     }
 
     public function readySelectTimeout($tsSelect) {
-        if ($this->_state == StreamLoop_WebSocket_Const::STATE_READY) {
-            // если прилетел readySelectTimeout() - то это только из-за того что пора делать ping-pong
-            $this->_checkPingPong($tsSelect);
-        } elseif ($tsSelect > $this->_timeoutTill) {
-            $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_TIMEOUT, false);
-        }
-    }
-
-    /**
-     * @todo новая идея idle ping:
-     * - изначально после подключения ставится первый интервал в 10-15 (rand) секунд updateHandlerTimeout(),
-     *   а флаг active = 1 (bool)
-     * - при каждом pong ставится active =1 и продлевается updateHandlerTimeout() на 10-15 sec rand
-     * - когда запускается readyTimeout():
-     *   если флаг active = 1, то я ставлю active = 0 и вбрасываю ping и продлеваю updateHandlerTimeout на 10-15 sec rand.
-     *   если флаг active = 0 - я выхожу по ошибке что мол нет iframe pong'a
-     *
-     * Таким образом интервалы длинные, нет бесконечных проверок в конце каждого read.
-     *
-     * плюс я отказываюсь от переменных ping intrval чтобы их не запрашивать все время.
-     */
-
-    private function _checkPingPong($ts) {
-        // websocket layer ping
-        // auto ping frame
-
-        /**
-         * tsPing отвечает за "когда в следующий раз пробовать пинговать"
-         * tsPong отвечает за "до какого времени необходимо чтобы прилетел pong и обнулил tsPong".
-         * tsPong == 0 означает что можно запускать следующий ping
+        /*
+         * idle ping logic:
+         * - изначально после подключения ставится первый интервал в 10-15 sec (rand) updateHandlerTimeout(),
+         *   а флаг active = 1 (bool)
+         * - при каждом pong ставится active =1 и продлевается updateHandlerTimeout() на 10-15 sec rand
+         * - когда запускается readySelectTimeout():
+         *   если флаг active = 1, то я ставлю active = 0 и вбрасываю ping и продлеваю updateHandlerTimeout на 10-15 sec rand.
+         *   если флаг active = 0 - я выхожу по ошибке что мол нет iframe pong'a
+         *
+         * Таким образом интервалы длинные, нет бесконечных проверок в конце каждого read.
+         *
+         * плюс я отказываюсь от переменных ping intrval чтобы их не запрашивать все время.
          */
 
-        // если pong пришел и настало время пинга - все ок
-        if ($this->_tsPong == 0 && $ts > $this->_tsPing) {
-            fwrite($this->stream, $this->_encodeWebSocketMessage('', 9));
+        if ($this->_state == StreamLoop_WebSocket_Const::STATE_READY) {
+            // в состоянии READY может прилететь timeout только ради ping
+            if ($this->_active) {
+                $this->_active = false;
+                fwrite($this->stream, $this->_encodeWebSocketMessage('', 9));
 
-            # debug:start
-            Cli::Print_n(__CLASS__.": sent frame-ping");
-            # debug:end
+                # debug:start
+                Cli::Print_n(__CLASS__.": sent frame-ping");
+                # debug:end
+            } else {
+                $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_NO_PONG, false);
+                return;
+            }
 
-            // ответ pong должен прилететь до этого момента
-            $this->_tsPong = $ts + $this->_pongDeadline;
-
-            // следующий ping через interval
-            $this->_tsPing = $ts + $this->_pingInterval + rand(0, 5); // rand interval: чтобы не попадать на одинаковое ping time
-            $this->_loop->updateHandlerTimeoutTo($this, $this->_tsPing);
-        }
-
-        // если я перешагнул на tsPong - ахтунг
-        if ($this->_tsPong > 0 && $ts > $this->_tsPong) {
-            // если задан дедлайн pong,
-            // и время уже больше этого дедлайна, то это означает что pong не пришет
-            // и мы идем на выход
-            $this->throwError($ts, StreamLoop_WebSocket_Const::ERROR_NO_PONG, false);
-            return;
+            $this->_loop->updateHandlerTimeoutTo($this, $tsSelect + rand(10, 15));
+        } else {
+            // во всех остальных случаях я нарвался на проблему что за timeout я не смог установить соединение и сделать handshake/upgrade
+            // (то есть не успел аж до ready)
+            $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_TIMEOUT, false);
         }
     }
 
@@ -420,14 +391,11 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
                 $this->_updateState(StreamLoop_WebSocket_Const::STATE_READY, true, false, false);
                 $this->_buffer = '';
-                $this->_timeoutTill = 0; // я успешно подключился поэтому timeout обнуляем
 
-                $this->_tsPing = $tsSelect + $this->_pingInterval;
-                $this->_tsPong = 0;
-
-                // чтобы первый раз вызвался какой-нибудь таймаут если в сокете тишина будет
-                // и я ничего не жду
-                $this->_loop->updateHandlerTimeoutTo($this, $this->_tsPing);
+                // считаем соединение активно и с ни все ок
+                $this->_active = true;
+                // таймер двигаем вперед на 10-15 сек
+                $this->_loop->updateHandlerTimeoutTo($this, $tsSelect + rand(10, 15));
 
                 $this->_onReady($tsSelect);
             }
@@ -564,16 +532,11 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     }
 
     private $_host, $_port, $_path, $_ip, $_bindIP, $_bindPort;
-    private $_writeArray;
+    private $_writeArray = [];
     private $_headerArray = [];
-    private $_buffer = '';
-    private $_state = 0; // stop by default
-    private $_timeoutTill; // float
-    private $_timeoutConnectLimit = 10; // сколько секунд timeout подключения
-    private $_tsPing = 0;
-    private $_tsPong = 0;
-    private $_pingInterval = 5;
-    private $_pongDeadline = 3;
+    private $_buffer = ''; // string
+    private $_state = 0; // 0 is a stop, by default
+    private $_active = false; // bool, см логику idle ping
     private $_readFrameLength = 4096; // 4Kb by default
     private $_readFrameDrain = 1;
 
