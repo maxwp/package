@@ -537,11 +537,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         return $this->_state == $state;
     }
 
-    public function getHost() {
-        return $this->_host;
-    }
-
-    private $_host, $_port, $_path, $_ip, $_bindIP, $_bindPort;
+    protected $_host, $_port, $_path, $_ip, $_bindIP, $_bindPort;
     private $_writeArray = [];
     private $_headerArray = [];
     private $_buffer = ''; // string
