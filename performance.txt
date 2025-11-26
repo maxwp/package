@@ -853,6 +853,16 @@ $this->bp->method2(); // 18 ms на 1М вызовов
 
 ==============================================================
 
+private function _format(&$price, &$amount) {
+    $price += 1;
+    $amount += 1;
+}
+
+$this->_format($price, $amount); // 33 ns на вызов (сам вызов)
+// и это примерно на 3-4 ns быстрее чем сделать два call + return
+
+==============================================================
+
 DTO vs new DTO vs isset
 
 // 59 ms
@@ -1500,6 +1510,60 @@ sprintf быстрее примено на 20% и требует меньше п
 Тест на 1M вызовов, без jit и без opcache
 number_format(123456.123456789123, 12, '.', ''); // 375 ms
 sprintf('%.12f', 123456.123456789123); // 326 ms
+
+==============================================================
+
+sprintf('%.2f'', $price); // 142 ns на вызов
+
+sprintf('%.2f'', $price); // 185 ns на вызов
+
+// 94 ns на вызов - самый топ
+// а если сделать ее static в final static class и сделать его include - то будет -3 ns на вызов
+function number_format_fast($value, $precision, $precision_power10) {
+        // важно: отрицательные оно не хавает
+        // важно: без round не сработает $value = 0.059999999999999; $p = 3;, а во float может быть такая хуйня
+        //$n = (int) round($value * $precision_power10);
+
+        // ручное округление вместо round() дало -20ns
+        $x = $value * $precision_power10;
+        if ($x >= 0) {
+            $n = (int) ($x + 0.5);
+        } else {
+            $n = (int) ($x - 0.5);
+        }
+
+        if ($precision == 0) {
+            // upd: даже форматировать в string не надо, это -2 ns
+            return (string) $n;
+        }
+
+        // тут только сравнение по int, без strlen
+        if ($n < $precision_power10) {
+            return '0.' . str_pad((string) $n, $precision, '0', STR_PAD_LEFT);
+        }
+        // hot path: n < 10^precision → вся часть == 0
+        // чуть быстрее, но код гавно на 3 ns
+        /*if ($n < $precision_power10) {
+            $s = (string) $n;
+            $len = strlen($s);
+
+            if ($len < $precision) {
+                // максимум 12 знаков → держим строку нулей и берем префикс
+                static $zeros = '000000000000'; // 12 нулей
+                $padLen = $precision - $len;
+                // $padLen от 1 до 12
+                return '0.' . substr($zeros, 0, $padLen) . $s;
+            }
+
+            // len == precision
+            return '0.' . $s;
+        }*/
+
+        // сюда попадаем только когда len > precision → тут уже нужен strlen
+        $s = (string) $n;
+        $intLen = strlen($s) - $precision;
+        return substr($s, 0, $intLen) . '.' . substr($s, $intLen);
+    }
 
 ==============================================================
 
