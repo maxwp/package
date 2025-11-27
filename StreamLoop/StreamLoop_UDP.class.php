@@ -8,7 +8,7 @@ class StreamLoop_UDP extends StreamLoop_Handler_Abstract {
         parent::__construct($loop);
 
         $this->stream = stream_socket_server(
-            sprintf('udp://%s:%d', $host, $port),
+            'udp://'.$host.':'.$port,
             $errno,
             $errstr,
             STREAM_SERVER_BIND

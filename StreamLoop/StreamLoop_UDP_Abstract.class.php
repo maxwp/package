@@ -12,7 +12,7 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
 
     public function connect() {
         $this->stream = stream_socket_server(
-            sprintf('udp://%s:%d', $this->_host, $this->_port),
+            'udp://'.$this->_host.':'.$this->_port,
             $errno,
             $errstr,
             STREAM_SERVER_BIND
