@@ -1672,6 +1672,55 @@ $data = simdjson_decode($payload, true); // 455 ms, simdjson_plus
 
 ==============================================================
 
+int vs float
+
+//$aInt = rand();
+//$bInt = rand(); // 27.5 incl loop
+//$aFloat = rand() / rand();
+//$bFloat = rand() / rand(); // 57.8 incl loop
+
+//if ($aInt > $bInt) {} // 33.8-27.5 = 6.3 ns
+//if ($aInt == $bInt) {} // 29.5 = 2 ns
+//if ($aInt != $bInt) {} // 28.5 = 1 ns
+//$x = $aInt - $bInt; // 31.1 = 3.6 ns
+//$x = $aInt + $bInt; // 31.1 = 3.6 ns
+//$x = $aInt * $bInt; // 31.3 = 3.8 bs
+//$x = $aInt / $bInt; // 33.5 = 6 ns
+
+//if ($aFloat > $bFloat) {} // 66.2 = 8.4 ns
+//if ($aFloat == $bFloat) {} // 59.2 = 1.4 ns
+//if ($aFloat != $bFloat) {} // 58.5 = 0.7 ns
+//$x = $aFloat - $bFloat; // 60.5 = 2.7 ns
+//$x = $aFloat + $bFloat; // 60.5 = 2.7 ns
+//$x = $aFloat * $bFloat; // 60.9 = 3.1 ns
+//$x = $aFloat / $bFloat; // 63.5 = 5.7 ns
+
+Операции сравнения больше/меньше чуть быстрее в int,
+операции сравнения == быстрее в float, но они не точные.
+Математические операции быстрее во float, что странно :)
+
+НО!
+//$x = (string) $aInt; // 27.5
+//$x = (string) $aFloat; // 141.2 ns и это супер не точно
+//$x = $this->number_format_fastX($aFloat, 2); // 99 ns, см код выше
+//$x = sprintf('%.2f', $aFloat); // 134 ns
+По сути, если вам нужно куда-то писать float число - то перевести его в string сильно геморно.
+Куда выгоднее все делать в int, или на крайняк помножить float на 10**precision и дальше передавать int.
+
+НО! Если использовать pack - то он double LE пакует и распаковывает быстрее:
+
+$message = pack('e', $aFloat); // 37 ns, double (machine dependent size, little endian byte order), ARM
+$message = pack('P', $aInt); // int64: 41 ns, unsigned long long (always 64 bit, little endian byte order), ARM
+$message = pack('V', $aInt); // int32: 40 ns, unsigned long (always 32 bit, little endian byte order)
+
+unpack('e', $message); // 45 ns
+unpack('P', $message); // 48 ns
+unpack('V', $message); // 46 ns
+
+В тестах я использовал LE и ARM, чтобы совпадала архитектура cpu. Если не совпадает - будет дольше.
+
+==============================================================
+
 Количество потоков
 
 Конечно это не всегда изи сделать, но если у вас есть 10 скриптов, которые суммарно зажирают 50% от 1 vcpu,
