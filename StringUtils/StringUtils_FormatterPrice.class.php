@@ -7,11 +7,73 @@
  */
 
 class StringUtils_FormatterPrice {
+
+    public static function FormatPricePrecisionPowered($value, $precision, $precision_power10) {
+        // важно: отрицательные оно не хавает
+        // важно: без round не сработает $value = 0.059999999999999; $p = 3;, а во float может быть такая хуйня
+
+        //$n = (int) ($value * $precision_power10);
+
+        // ручное округление вместо round() дало -20ns
+        //$n = (int) round($value * $precision_power10);
+        $x = $value * $precision_power10;
+        if ($x >= 0) {
+            $n = (int) ($x + 0.5);
+        } else {
+            $n = (int) ($x - 0.5);
+        }
+
+        if ($precision == 0) {
+            // upd: даже форматировать в string не надо, это -2 ns
+            return (string) $n;
+        }
+
+        // тут только сравнение по int, без strlen
+        if ($n < $precision_power10) {
+            return '0.' . str_pad((string) $n, $precision, '0', STR_PAD_LEFT);
+        }
+
+        // сюда попадаем только когда len > precision → тут уже нужен strlen
+        $s = (string) $n;
+        return substr_replace($s, '.', strlen($s) - $precision, 0);
+    }
+
+    public static function FormatPricePrecision($value, $precision) {
+        // важно: не лепить в один метод, это даст +10 ns/call, я проверял
+        // важно: отрицательные оно не хавает
+        // важно: без round не сработает $value = 0.059999999999999; $p = 3;, а во float может быть такая хуйня
+
+        // ручное округление вместо round() дало -20ns
+        //$n = (int) round($value * $precision_power10);
+        $pw = (10 ** $precision);
+        $x = $value * $pw;
+        if ($x >= 0) {
+            $n = (int) ($x + 0.5);
+        } else {
+            $n = (int) ($x - 0.5);
+        }
+
+        if ($precision == 0) {
+            // upd: даже форматировать в string не надо, это -2 ns
+            return (string) $n;
+        }
+
+        // тут только сравнение по int, без strlen
+        if ($n < $pw) {
+            return '0.' . str_pad((string) $n, $precision, '0', STR_PAD_LEFT);
+        }
+
+        // сюда попадаем только когда len > precision → тут уже нужен strlen
+        $s = (string) $n;
+        return substr_replace($s, '.', strlen($s) - $precision, 0);
+    }
+
     /**
+     * @deprecated old fuck
      * @param $price
      * @return mixed|string
      */
-    public static function format($price) {
+    public static function Format($price) {
         if (is_bool($price)) {
             return 0;
         }

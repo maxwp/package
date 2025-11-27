@@ -24,6 +24,7 @@ ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_FormatterPhoneDefault.cl
 ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_FormatterPhoneUACN.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_FormatterAddressUACN.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_FormatterURL.class.php');
-ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_FormatterPrice.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_MD5.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StringUtils_Exception.class.php');
+include_once __DIR__.'/StringUtils_FormatterPrice.class.php'; // no autoload for static classes, performance
+include_once __DIR__.'/StringUtils_FormatterTimestamp.class.php'; // no autoload for static classes, performance
