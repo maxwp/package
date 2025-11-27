@@ -1559,6 +1559,17 @@ function number_format_fast_ts($value) {
 
 ==============================================================
 
+round vs floor vs ceil
+
+$x = round($tx); // 34 ns
+$x = floor($tx); // 10 ns
+$x = (int) floor($tx); // 14 ns
+$x = ceil($tx); // 10 ns
+$x = (int) ceil($tx); // 14 ns
+$x = (int) $tx; // 7 ns, но это по сути truncate. Условные 5.99999999999 он приведет в int 5, а не в int 6.
+
+==============================================================
+
 ini_set('zend.enable_gc', 0);
 
 Убирает запуск garbage collector, все становится чуть сложнее, но циклы стабильне.
