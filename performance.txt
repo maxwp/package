@@ -466,14 +466,10 @@ for ($i = 0; $i < $n; $i++) {
 
 Втягивние переменных внутрь метода
 
-1М вызовов метода:
-
-// 16 ms call пустого метода
-// 0 ms jit
+// 12 ns call пустого метода
 private function _test() {}
 
 // 22 ms если внутри метода один раз достать $this->_x;
-// 12 ms jit
 private function _test() {
     $this->_x;
 }
