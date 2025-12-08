@@ -4,9 +4,8 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
     abstract protected function _onResponse($tsSelect, $statusCode, $statusMessage, $headerArray, $body);
     abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
 
-    public function __construct(StreamLoop $loop, $host, $port, $ip = false, $bindIP = false, $bindPort = false) {
-        parent::__construct($loop);
-
+    public function updateConnection($host, $port, $ip = false, $bindIP = false, $bindPort = false) {
+        // @todo возможно структура connection'a?
         $this->_host = $host;
         $this->_port = $port;
         $this->setIP($ip);
