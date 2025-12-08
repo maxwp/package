@@ -233,12 +233,14 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
                         // надо сначала поменять состояние и все очистить,
                         // а только потом вызывать onResponce,
                         // потому что в onResponce я могу вызвать request снова, а там проверка на activeRequest
+                        $statusCode = $this->_statusCode; // запоминаем перед очисткой
+                        $statusMessage = $this->_statusMessage;
                         $this->_reset(); // reset in wait for body
 
                         $this->_onResponse(
                             $tsSelect,
-                            $this->_statusCode,
-                            $this->_statusMessage,
+                            $statusCode,
+                            $statusMessage,
                             $headerArray,
                             $buffer
                         );
