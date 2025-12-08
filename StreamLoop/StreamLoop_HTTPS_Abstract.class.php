@@ -32,7 +32,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
 
     public function request($method, $path, $body, $headerArray, $timeout = 10) {
         if ($this->_active) {
-            throw new StreamLoop_Exception("Stream loop already under active request");
+            throw new StreamLoop_Exception("SL_HTTP already under active request");
         }
 
         if ($timeout) {
