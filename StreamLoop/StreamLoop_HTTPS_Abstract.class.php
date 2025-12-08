@@ -2,7 +2,7 @@
 abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
 
     abstract protected function _onResponse($tsSelect, $statusCode, $statusMessage, $headerArray, $body);
-    abstract protected function _onError($tsSelect, $statusCode, $statusMessage);
+    abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
 
     public function __construct(StreamLoop $loop, $host, $port, $ip = false, $bindIP = false, $bindPort = false) {
         parent::__construct($loop);
@@ -150,6 +150,8 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
 
         // закрываем соединение
         fclose($this->stream);
+
+        $this->_state = StreamLoop_HTTPS_Const::STATE_DISCONNECTED;
     }
 
     public function readyRead($tsSelect) {
@@ -394,12 +396,16 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         );
     }
 
+    public function getState() {
+        return $this->_state;
+    }
+
     private $_host, $_port, $_ip, $_bindIP, $_bindPort;
     private $_buffer = '';
     private $_headerArray = [];
     private $_statusCode = 0;
     private $_statusMessage = '';
     private $_active = false; // bool
-    protected $_state; // int
+    protected $_state = 0; // int, 0 is STATE_DISCONNECTED, by default disconnected
 
 }
