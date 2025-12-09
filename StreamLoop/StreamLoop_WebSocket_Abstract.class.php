@@ -528,11 +528,16 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         $this->_readFrameDrain = $drain;
     }
 
-    // @todo maybe state machine (если opcache/jit ее инлайнит)
+    /**
+     * @deprecated
+     */
     public function getState() {
         return $this->_state;
     }
 
+    /**
+     * @deprecated
+     */
     public function isState($state) {
         return $this->_state == $state;
     }
@@ -541,7 +546,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     private $_writeArray = [];
     private $_headerArray = [];
     private $_buffer = ''; // string
-    private $_state = 0; // 0 is a stop, by default
+    protected $_state = 0; // 0 is a stop, by default
     private $_active = false; // bool, см логику idle ping
     private $_readFrameLength = 4096; // 4Kb by default
     private $_readFrameDrain = 1;
