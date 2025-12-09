@@ -3,6 +3,8 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
 
     abstract protected function _onResponse($tsSelect, $statusCode, $statusMessage, $headerArray, $body);
     abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
+    // @todo надо переписановать onReady, потому что для SL это скорее on 1st ready
+    abstract protected function _onReady($tsSelect);
 
     public function updateConnection($host, $port, $ip = false, $bindIP = false, $bindPort = false) {
         // @todo возможно структура connection'a?
@@ -266,7 +268,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
                 throw new StreamLoop_Exception('Unsupported encoding');
             }
         } elseif ($state == StreamLoop_HTTPS_Const::STATE_HANDSHAKE) {
-            $this->_checkHandshake();
+            $this->_checkHandshake($tsSelect);
         }
     }
 
@@ -296,9 +298,11 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
                 false,
                 false // не менять timeout
             );
-            $this->_checkHandshake();
+
+            // и сразу же проверяем его, вдруг подключился
+            $this->_checkHandshake($tsSelect);
         } elseif ($state == StreamLoop_HTTPS_Const::STATE_HANDSHAKE) {
-            $this->_checkHandshake();
+            $this->_checkHandshake($tsSelect);
         }
     }
 
@@ -308,7 +312,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         }
 
         if ($this->_state == StreamLoop_HTTPS_Const::STATE_HANDSHAKE) {
-            $this->_checkHandshake();
+            $this->_checkHandshake($tsSelect);
             return;
         }
     }
@@ -345,7 +349,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         }
     }
 
-    private function _checkHandshake() {
+    private function _checkHandshake($tsSelect) {
         $return = stream_socket_enable_crypto(
             $this->stream,
             true,
@@ -353,7 +357,11 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         );
 
         if ($return === true) {
-            $this->_reset(); // reset in handshake passed
+            // я подключился
+            $this->_reset(); // reset чтобы очистить все
+
+            // бросам событие что я готов
+            $this->_onReady($tsSelect);
         } elseif ($return === false) {
             //throw new StreamLoop_Exception("Failed to setup SSL");
             $this->disconnect();
