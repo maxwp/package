@@ -1,6 +1,7 @@
 <?php
 abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
 
+    abstract protected function _setupConnection();
     abstract protected function _onReceive($tsSelect, $message, $messageSize, $fromAddress, $fromPort);
 
     abstract protected function _onError($tsSelect, $errorCode);
@@ -11,18 +12,22 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
     }
 
     public function connect() {
-        $this->stream = stream_socket_server(
+        // перед connect надо вызвать setupConnection чтобы он поправил все параметры соединения
+        $this->_setupConnection();
+
+        $stream = stream_socket_server(
             'udp://'.$this->_host.':'.$this->_port,
             $errno,
             $errstr,
-            STREAM_SERVER_BIND
+            STREAM_SERVER_BIND,
         );
-        if ($this->stream === false) {
+        if (!$stream) {
             // критическая ошибка — завершаем
             throw new StreamLoop_Exception("$errstr ($errno)");
         }
 
-        $this->streamID = (int) $this->stream;
+        $this->stream = $stream;
+        $this->streamID = (int) $stream;
 
         // регистрация handler'a в loop'e
         $this->_loop->registerHandler($this);

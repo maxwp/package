@@ -9,6 +9,7 @@
  */
 abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract {
 
+    abstract protected function _setupConnection();
     abstract protected function _onInit();
     abstract protected function _onReceive($tsSelect, $payload, $opcode);
     abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
@@ -49,13 +50,9 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         $this->_bindPort = $bindPort;
     }
 
-    public function setupConnection() { // @todo abstr + protected
-
-    }
-
     public function connect() {
         // перед connect я вызываю setupConnection чтобы он поправил все что надо
-        $this->setupConnection();
+        $this->_setupConnection();
 
         $this->_buffer = '';
 
@@ -79,12 +76,12 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
             $context, // @todo возможно надо будет таки перенести контекст из Connection_WebSocket
         );
         if (!$stream) {
-            // @todo шо делать с такой ошибкой?
+            // критическая ошибка — завершаем
             throw new StreamLoop_Exception("TCP connect failed immediately: $errstr ($errno)");
         }
 
-        $this->streamID = (int) $stream;
         $this->stream = $stream;
+        $this->streamID = (int) $stream;
 
         $loop->registerHandler($this);
 
@@ -246,7 +243,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                             Cli::Print_n(__CLASS__ . ": received frame-ping $payload");
                             # debug:end
 
-                            fwrite($stream, $this->_encodeWebSocketMessage($payload, 0xA));
+                            fwrite($stream, $this->_encodeWebSocketMessage($payload, 0xA)); // pong
 
                             # debug:start
                             Cli::Print_n(__CLASS__ . ": sent frame-pong $payload");
@@ -358,7 +355,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
             // в состоянии READY может прилететь timeout только ради ping
             if ($this->_active) {
                 $this->_active = false;
-                fwrite($this->stream, $this->_encodeWebSocketMessage('', 9));
+                fwrite($this->stream, $this->_encodeWebSocketMessage('', 9)); // ping
 
                 # debug:start
                 Cli::Print_n(__CLASS__.": sent frame-ping");
@@ -475,13 +472,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         $this->_loop->updateHandlerFlags($this, $flagRead, $flagWrite, $flagExcept);
     }
 
-    public function write($data) {
-        fwrite($this->stream, $this->_encodeWebSocketMessage($data));
-    }
-
-    public function writeAndFlush($data) {
-        fwrite($this->stream, $this->_encodeWebSocketMessage($data));
-        fflush($this->stream);
+    public function write($data, $opcode = 1) {
+        fwrite($this->stream, $this->_encodeWebSocketMessage($data, $opcode)); // write
     }
 
     /**
@@ -549,11 +541,11 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         return $this->_state == $state;
     }
 
-    protected $_host, $_port, $_path, $_ip, $_bindIP, $_bindPort;
+    private $_host, $_port, $_path, $_ip, $_bindIP, $_bindPort;
     private $_writeArray = [];
     private $_headerArray = [];
     private $_buffer = ''; // string
-    protected $_state = 0; // 0 is a stop, by default
+    protected $_state = 0; // 0 is a stop, by default // @todo protected это лажа
     private $_active = false; // bool, см логику idle ping
     private $_readFrameLength = 4096; // 4Kb by default
     private $_readFrameDrain = 1;

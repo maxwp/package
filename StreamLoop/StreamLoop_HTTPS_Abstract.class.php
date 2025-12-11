@@ -1,6 +1,7 @@
 <?php
 abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
 
+    abstract protected function _setupConnection();
     abstract protected function _onReceive($tsSelect, $statusCode, $statusMessage, $headerArray, $body);
     abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
     abstract protected function _onReady($tsSelect); // @todo надо переписановать onReady, потому что для SL это скорее on 1st ready @todo после StateMachines
@@ -31,11 +32,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         $this->_bindPort = $bindPort;
     }
 
-    public function setupConnection() { // @todo abstr + protected
-
-    }
-
-    public function request($method, $path, $body, $headerArray, $timeout = 10) { // @todo rename
+    public function write($method, $path, $body, $headerArray, $timeout = 10) {
         if ($this->_active) {
             throw new StreamLoop_Exception("SL_HTTP already under active request");
         }
@@ -94,7 +91,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
 
     public function connect() {
         // перед connect надо вызвать setupConnection чтобы он поправил все параметры соединения
-        $this->setupConnection();
+        $this->_setupConnection();
 
         $this->_active = true; // ставим флаг что я активен (потому что подключаюсь)
 
@@ -114,14 +111,15 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
             $errstr,
             0, // timeout = 0, чтобы мгновенно вернулось
             STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT,
-            $context
+            $context,
         );
         if (!$stream) {
+            // критическая ошибка — завершаем
             throw new StreamLoop_Exception("TCP connect failed immediately: $errstr ($errno)");
         }
 
-        $this->streamID = (int) $stream;
         $this->stream = $stream;
+        $this->streamID = (int) $stream;
 
         // регистрируем handler
         $this->_loop->registerHandler($this);
@@ -421,6 +419,6 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
     private $_statusCode = 0;
     private $_statusMessage = '';
     private $_active = false; // bool
-    protected $_state = 0; // int, 0 is STATE_DISCONNECTED, by default disconnected
+    protected $_state = 0; // int, 0 is STATE_DISCONNECTED, by default disconnected // @todo protected это лажа
 
 }
