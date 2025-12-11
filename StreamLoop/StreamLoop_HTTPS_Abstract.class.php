@@ -1,10 +1,9 @@
 <?php
 abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
 
-    abstract protected function _onResponse($tsSelect, $statusCode, $statusMessage, $headerArray, $body);
+    abstract protected function _onReceive($tsSelect, $statusCode, $statusMessage, $headerArray, $body);
     abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
-    // @todo надо переписановать onReady, потому что для SL это скорее on 1st ready
-    abstract protected function _onReady($tsSelect);
+    abstract protected function _onReady($tsSelect); // @todo надо переписановать onReady, потому что для SL это скорее on 1st ready @todo после StateMachines
 
     public function updateConnection($host, $port, $ip = false, $bindIP = false, $bindPort = false) {
         // @todo возможно структура connection'a?
@@ -32,7 +31,11 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         $this->_bindPort = $bindPort;
     }
 
-    public function request($method, $path, $body, $headerArray, $timeout = 10) {
+    public function setupConnection() { // @todo abstr + protected
+
+    }
+
+    public function request($method, $path, $body, $headerArray, $timeout = 10) { // @todo rename
         if ($this->_active) {
             throw new StreamLoop_Exception("SL_HTTP already under active request");
         }
@@ -90,6 +93,9 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
     }
 
     public function connect() {
+        // перед connect надо вызвать setupConnection чтобы он поправил все параметры соединения
+        $this->setupConnection();
+
         $this->_active = true; // ставим флаг что я активен (потому что подключаюсь)
 
         $ip = $this->_ip ? $this->_ip : $this->_host;
@@ -239,7 +245,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
                         $statusMessage = $this->_statusMessage;
                         $this->_reset(); // reset in wait for body
 
-                        $this->_onResponse(
+                        $this->_onReceive(
                             $tsSelect,
                             $statusCode,
                             $statusMessage,

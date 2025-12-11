@@ -49,7 +49,14 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         $this->_bindPort = $bindPort;
     }
 
+    public function setupConnection() { // @todo abstr + protected
+
+    }
+
     public function connect() {
+        // перед connect я вызываю setupConnection чтобы он поправил все что надо
+        $this->setupConnection();
+
         $this->_buffer = '';
 
         // to locals
