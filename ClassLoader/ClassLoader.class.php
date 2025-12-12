@@ -25,9 +25,16 @@ class ClassLoader extends Pattern_ASingleton {
             }
 
             $arg = preg_replace('/^--/', '', $arg);
+
+            // дебажим все
             if ($arg == 'debug') {
-                $this->setDebug(true);
+                $this->_debugAll = true;
                 break;
+            }
+
+            // дебажим конкретные классы
+            if (preg_match("/^debug:(.+?)$/ius", $arg, $r)) {
+                $this->_debugArray[$r[1]] = true;
             }
         }
     }
@@ -43,8 +50,9 @@ class ClassLoader extends Pattern_ASingleton {
         if (!empty($this->_classArray[$className])) {
             $file = $this->_classArray[$className];
 
-            if ($this->_debug) {
-                // просто подключаем
+            if ($this->_debugAll) {
+                include_once $file;
+            } elseif (isset($this->_debugArray[$className])) {
                 include_once $file;
             } else {
                 // делаем компиляцию
@@ -164,11 +172,6 @@ class ClassLoader extends Pattern_ASingleton {
         return $a;
     }
 
-    public function setDebug(bool $debug) {
-        $this->_debug = $debug;
-
-    }
-
     /**
      * Список зарегистрированный классов
      *
@@ -176,6 +179,7 @@ class ClassLoader extends Pattern_ASingleton {
      */
     private array $_classArray = [];
 
-    private bool $_debug = false;
+    private $_debugAll = false;
+    private $_debugArray = [];
 
 }
