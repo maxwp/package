@@ -10,7 +10,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         // @todo возможно структура connection'a?
         $this->_host = $host;
         $this->_port = $port;
-        $this->setIP($ip);
+        $this->_ip = $ip;
 
         if ($bindIP) {
             if (!Checker::CheckIP($bindIP)) {
@@ -84,14 +84,13 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         );
     }
 
-    public function setIP($ip) {
-        // этот метод нужен чтобы на лету менять ip не пересоздавая полностью весь handler
-        $this->_ip = $ip;
-    }
-
     public function connect() {
         // перед connect надо вызвать setupConnection чтобы он поправил все параметры соединения
         $this->_setupConnection();
+
+        # debug:start
+        Cli::Print_n(__CLASS__." connecting to {$this->_host} ip={$this->_ip} port={$this->_port}");
+        # debug:end
 
         $this->_active = true; // ставим флаг что я активен (потому что подключаюсь)
 
@@ -271,7 +270,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
             } else {
                 throw new StreamLoop_Exception('Unsupported encoding');
             }
-        } elseif ($state == StreamLoop_HTTPS_Const::STATE_HANDSHAKE) {
+        } elseif ($state == StreamLoop_HTTPS_Const::STATE_HANDSHAKING) {
             $this->_checkHandshake($tsSelect);
         }
     }
@@ -296,16 +295,16 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
             ));
 
             $this->_updateState( // handshake starting
-                StreamLoop_HTTPS_Const::STATE_HANDSHAKE,
+                StreamLoop_HTTPS_Const::STATE_HANDSHAKING,
                 true,
+                false, // не ставим write, потому что во время handshaking всегда идет write и просто зайобка
                 true,
-                false,
                 false // не менять timeout
             );
 
             // и сразу же проверяем его, вдруг подключился
             $this->_checkHandshake($tsSelect);
-        } elseif ($state == StreamLoop_HTTPS_Const::STATE_HANDSHAKE) {
+        } elseif ($state == StreamLoop_HTTPS_Const::STATE_HANDSHAKING) {
             $this->_checkHandshake($tsSelect);
         }
     }
@@ -315,7 +314,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
             return;
         }
 
-        if ($this->_state == StreamLoop_HTTPS_Const::STATE_HANDSHAKE) {
+        if ($this->_state == StreamLoop_HTTPS_Const::STATE_HANDSHAKING) {
             $this->_checkHandshake($tsSelect);
             return;
         }

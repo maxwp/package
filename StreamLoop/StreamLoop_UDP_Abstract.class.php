@@ -15,6 +15,10 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
         // перед connect надо вызвать setupConnection чтобы он поправил все параметры соединения
         $this->_setupConnection();
 
+        # debug:start
+        Cli::Print_n(__CLASS__." connecting to {$this->_host} port={$this->_port}");
+        # debug:end
+
         $stream = stream_socket_server(
             'udp://'.$this->_host.':'.$this->_port,
             $errno,

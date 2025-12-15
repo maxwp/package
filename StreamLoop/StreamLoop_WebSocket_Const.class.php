@@ -1,7 +1,7 @@
 <?php
 final class StreamLoop_WebSocket_Const  {
 
-    public const STATE_STOPPED = 0;
+    public const STATE_DISCONNECTED = 0;
     public const STATE_CONNECTING = 1;
     public const STATE_HANDSHAKING = 2;
     public const STATE_UPGRADING = 3;

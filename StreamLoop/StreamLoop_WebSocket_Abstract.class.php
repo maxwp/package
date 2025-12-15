@@ -28,7 +28,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         $this->_path = $path;
         $this->_writeArray = $writeArray;
         $this->_headerArray = $headerArray;
-        $this->_ip = $ip ? $ip : $this->_host;
+        $this->_ip = $ip;
 
         if ($bindIP) {
             if (!Checker::CheckIP($bindIP)) {
@@ -54,10 +54,13 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         // перед connect я вызываю setupConnection чтобы он поправил все что надо
         $this->_setupConnection();
 
+        # debug:start
+        Cli::Print_n(__CLASS__." connecting to {$this->_host} ip={$this->_ip} port={$this->_port}");
+        # debug:end
+
         $this->_buffer = '';
 
-        // to locals
-        $loop = $this->_loop;
+        $ip = $this->_ip ? $this->_ip : $this->_host;
 
         // супер важно: надо создавать контекст без ssl-опций!
         $context = stream_context_create([
@@ -68,7 +71,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         ]);
 
         $stream = stream_socket_client(
-            "tcp://{$this->_ip}:{$this->_port}",
+            "tcp://{$ip}:{$this->_port}",
             $errno,
             $errstr,
             0, // timeout = 0, чтобы мгновенно вернулось
@@ -83,7 +86,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         $this->stream = $stream;
         $this->streamID = (int) $stream;
 
-        $loop->registerHandler($this);
+        $this->_loop->registerHandler($this);
 
         // Устанавливаем буфер до начала SSL
         $socket = new Connection_SocketStream($stream);
@@ -117,7 +120,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         }
 
         $this->_buffer = '';
-        $this->_state = StreamLoop_WebSocket_Const::STATE_STOPPED;
+        $this->_state = StreamLoop_WebSocket_Const::STATE_DISCONNECTED;
     }
 
     public function readyRead($tsSelect) {
@@ -307,7 +310,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                     ],
                 ));
 
-                $this->_updateState(StreamLoop_WebSocket_Const::STATE_HANDSHAKING, true, true, false);
+                $this->_updateState(StreamLoop_WebSocket_Const::STATE_HANDSHAKING, true, false, true);
                 $this->_checkHandshake($tsSelect);
                 return;
             case StreamLoop_WebSocket_Const::STATE_HANDSHAKING:
@@ -412,6 +415,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
             $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_EOF, false);
             return true;
         }
+
+        return false;
     }
 
     /**
