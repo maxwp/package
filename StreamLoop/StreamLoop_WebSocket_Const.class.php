@@ -14,5 +14,6 @@ final class StreamLoop_WebSocket_Const  {
     public const ERROR_USER = 6;
     public const ERROR_RESET_BY_PEER = 7;
     public const ERROR_TIMEOUT = 8;
+    public const ERROR_RESTART = -1;
 
 }
