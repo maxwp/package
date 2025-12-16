@@ -17,6 +17,9 @@ abstract class StreamLoop_Handler_Abstract {
         return $this->_loop;
     }
 
+    /**
+     * @var resource
+     */
     public $stream;
     public $streamID;
     /**

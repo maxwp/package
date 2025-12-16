@@ -16,8 +16,6 @@ abstract class StreamLoop_Timer_Abstract extends StreamLoop_Handler_Abstract {
     public function __construct(StreamLoop $loop, $timerID, $timeout) {
         parent::__construct($loop);
 
-        $loop->unregisterHandler($this);
-
         $this->setTimeout($timeout);
 
         // @todo check id

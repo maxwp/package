@@ -152,8 +152,12 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         // сниммаем регистрацию
         $this->_loop->unregisterHandler($this);
 
-        // закрываем соединение
-        fclose($this->stream);
+        // бывают ситуации когда throwError два раза подряд и тогда disconnect два раза подряд
+        if ($this->stream) {
+            fclose($this->stream);
+            $this->streamID = 0;
+            $this->stream = null;
+        }
 
         $this->_state = StreamLoop_HTTPS_Const::STATE_DISCONNECTED;
     }
