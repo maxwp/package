@@ -153,11 +153,11 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         $this->_loop->unregisterHandler($this);
 
         // бывают ситуации когда throwError два раза подряд и тогда disconnect два раза подряд
-        if ($this->stream) {
+        if (is_resource($this->stream)) {
             fclose($this->stream);
-            $this->streamID = 0;
-            $this->stream = null;
         }
+        $this->streamID = 0;
+        $this->stream = null;
 
         $this->_state = StreamLoop_HTTPS_Const::STATE_DISCONNECTED;
     }
