@@ -76,8 +76,7 @@ class ImageProcessor_ActionWatermarkPNG extends ImageProcessor_Action {
         $watermarkWidth = imagesx($watermark);
         $watermarkHeight = imagesy($watermark);
 
-        $proportionalSize = SettingService::Get()->getSettingValue('watermark-proportion-size');
-
+        $proportionalSize = 0; //SettingService::Get()->getSettingValue('watermark-proportion-size');
         if (!$proportionalSize) {
             $proportionalSize = 5; // отношение размера картинки к размеру вотермарки
         }
