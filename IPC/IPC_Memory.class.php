@@ -13,7 +13,7 @@ class IPC_Memory {
 
         $this->_memory = shmop_open(
             $ipcAddress,
-            "c",
+            'c',
             0644,
             $this->_blockSize
         );
