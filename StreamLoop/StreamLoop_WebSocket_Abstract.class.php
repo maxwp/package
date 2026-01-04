@@ -200,7 +200,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
                         $payload = substr(
                             $buffer,
-                            $offset + $maskOffset + ($isMasked ? 4 : 0),
+                            $offset + $maskOffset + ($isMasked ? 4 : 0), // @todo можно закопать выше
                             $payloadLength
                         );
 
@@ -275,7 +275,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                 } elseif ($data === '') {
                     // на втором месте по частоте срабатывания - пустая строка, я упрусь в drain limit
                     // Если fread вернул пустую строку, проверяем, достигнут ли EOF
-                    if ($this->_checkEOF($tsSelect)) {
+                    if ($this->_checkEOF($tsSelect)) { // @todo checkEOF проверять только если это первый read и он сразу пустой
                         // EOF: connection closed by remote host
                         return; // на выход, чтобы дальше ничего не проверять, ошибка уже выкинута
                     }
@@ -326,6 +326,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     }
 
     public function readyExcept($tsSelect) {
+        // @todo EOF here
+
         switch ($this->_state) {
             case StreamLoop_WebSocket_Const::STATE_CONNECTING:
                 $this->_checkEOF($tsSelect); // не надо проверять на if return true then exit
