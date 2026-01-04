@@ -128,6 +128,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
     public function readyRead($tsSelect) {
         $state = $this->_state; // to locals
+
         // if-tree optimization
         if ($state == StreamLoop_WebSocket_Const::STATE_READY) {
             $readFrameLength = $this->_readFrameLength;
@@ -158,7 +159,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
                         $secondByte = ord($buffer[$offset + 1]);
                         $lenFlag = $secondByte & 0x7F;
-                        $isMasked = ($secondByte & 0x80);
+                        $isMasked = (bool) ($secondByte & 0x80);
 
                         if ($lenFlag == 126) { // чаще всего срабатывает 126
                             $maskOffset = 4;
@@ -183,13 +184,9 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                             $payloadLength = $parts['b'] & 0x7F;
                         }
 
-                        $frameLength = $maskOffset + $payloadLength;
-                        $payloadOffset = $offset + $maskOffset;
-                        if ($isMasked) {
-                            $frameLength += 4;
-                            $payloadOffset += 4;
-                        }
-
+                        $maskLen = $isMasked ? 4 : 0; // +4 если masked
+                        $payloadOffset = $offset + $maskOffset + $maskLen;
+                        $frameLength   = $maskOffset + $maskLen + $payloadLength;
                         if ($bufferLength - $offset < $frameLength) {
                             break;
                         }
