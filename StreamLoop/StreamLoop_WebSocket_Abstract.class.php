@@ -184,27 +184,24 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                         }
 
                         $frameLength = $maskOffset + $payloadLength;
+                        $payloadOffset = $offset + $maskOffset;
                         if ($isMasked) {
                             $frameLength += 4;
+                            $payloadOffset += 4;
                         }
 
                         if ($bufferLength - $offset < $frameLength) {
                             break;
                         }
 
-                        if ($isMasked) {
-                            $maskKey = substr($buffer, $offset + $maskOffset, 4);
-                        } else {
-                            $maskKey = '';
-                        }
-
                         $payload = substr(
                             $buffer,
-                            $offset + $maskOffset + ($isMasked ? 4 : 0), // @todo можно закопать выше
+                            $payloadOffset,
                             $payloadLength
                         );
 
                         if ($isMasked) {
+                            $maskKey = substr($buffer, $offset + $maskOffset, 4);
                             for ($j = 0; $j < $payloadLength; $j++) {
                                 $payload[$j] = chr(
                                     ord($payload[$j]) ^ ord($maskKey[$j & 3])
@@ -275,7 +272,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                 } elseif ($data === '') {
                     // на втором месте по частоте срабатывания - пустая строка, я упрусь в drain limit
                     // Если fread вернул пустую строку, проверяем, достигнут ли EOF
-                    if ($this->_checkEOF($tsSelect)) { // @todo checkEOF проверять только если это первый read и он сразу пустой
+                    // upd: она запускается только если drain вернул пустоту, что бывает очень редко, так как есть проверка на length
+                    if ($this->_checkEOF($tsSelect)) { // in drain read
                         // EOF: connection closed by remote host
                         return; // на выход, чтобы дальше ничего не проверять, ошибка уже выкинута
                     }
@@ -326,19 +324,15 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     }
 
     public function readyExcept($tsSelect) {
-        // @todo EOF here
+        if ($this->_checkEOF($tsSelect)) { // in except
+            return; // на выход
+        }
 
         switch ($this->_state) {
-            case StreamLoop_WebSocket_Const::STATE_CONNECTING:
-                $this->_checkEOF($tsSelect); // не надо проверять на if return true then exit
-                return;
             case StreamLoop_WebSocket_Const::STATE_HANDSHAKING:
                 $this->_checkHandshake($tsSelect);
                 return;
             case StreamLoop_WebSocket_Const::STATE_UPGRADING:
-                if ($this->_checkEOF($tsSelect)) {
-                    return; // на выход
-                }
                 $this->_checkUpgrade($tsSelect);
                 return;
         }
@@ -384,7 +378,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     private function _checkUpgrade($tsSelect) {
         $line = fgets($this->stream, 4096);
         if ($line === false) {
-            $this->_checkEOF($tsSelect);
+            $this->_checkEOF($tsSelect); // in upgrade
         } else {
             $this->_buffer .= $line; // @todo locals
             // пустая строка — конец блока заголовков
@@ -438,7 +432,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     }
 
     private function _checkHandshake($tsSelect) {
-        if ($this->_checkEOF($tsSelect)) {
+        if ($this->_checkEOF($tsSelect)) { // in handshake
             return; // на выход потому что ошибка уже выкинута
         }
 
