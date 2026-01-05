@@ -474,37 +474,39 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
         // random_bytes занимает 350 us, а конструкция с int занимает 31 us
         //$mask = random_bytes(4);
-        $mask = (string) ($this->_mask ++);
+        /*$mask = (string) ($this->_mask ++);
         if ($this->_mask > 9999) {
             $this->_mask = 1000;
-        }
+        }*/
 
-        // 1. FIN + opcode
-        $frame = chr(0x80 | $opcode);
-
-        // @todo константы chr 126 127
-
-        // 2. Длина и, при необходимости, extended-length
         if ($length <= 125) {
-            $frame .= chr(0x80 | $length);
-        } elseif ($length <= 0xFFFF) {
-            $frame .= chr(0x80 | 126).chr(($length >> 8) & 0xFF).chr($length & 0xFF);
+            fwrite(
+                $this->stream,
+                chr(0x80 | $opcode) . chr(0x80 | $length).$this->_mask.($data ^ $this->_maskStream125)
+            );
+        } elseif ($length <= 1024) {
+            fwrite(
+                $this->stream,
+                chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length).$this->_mask.($data ^ $this->_maskStream1024)
+            );
         } else {
-            $frame .= chr(0x80 | 127);
-            for ($i = 7; $i >= 0; $i--) {
-                $frame .= chr(($length >> ($i * 8)) & 0xFF);
+            $rem = $length & 3;
+            $mask = $this->_mask;
+            $maskStream = str_repeat($mask, $length >> 2) . ($rem ? substr($mask, 0, $rem) : '');
+
+            if ($length <= 0xFFFF) {
+                $frame = chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length).$this->_mask.($data ^ $maskStream);
+            } else {
+                // 64-bit length (network order)
+                $frame = chr(0x80 | $opcode). $this->_chr127 . pack('J', $length).$this->_mask.($data ^ $maskStream);
             }
+
+            fwrite($this->stream, $frame);
         }
 
-        // 3. Маска
-        $frame .= $mask;
-
-        // 4. Сразу маскируем и доклеиваем payload вариант с циклом:
-        for ($i = 0; $i < $length; $i++) {
-            $frame .= chr(ord($data[$i]) ^ ord($mask[$i & 3]));
-        }
-
-        fwrite($this->stream, $frame);
+        /*$rem = $length & 3;
+        $maskStream = str_repeat($mask, $length >> 2) . ($rem ? substr($mask, 0, $rem) : '');
+        fwrite($this->stream, $frame.$mask.($data ^ $maskStream));*/
     }
 
     public function setReadFrame(int $length, int $drain) {
@@ -532,6 +534,15 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         return $this->_state == $state;
     }
 
+    public function __construct(StreamLoop $loop) {
+        parent::__construct($loop);
+
+        $this->_chr126 = chr(0x80 | 126);
+        $this->_chr127 = chr(0x80 | 127);
+        $this->_maskStream125 = str_repeat($this->_mask, 32);
+        $this->_maskStream1024 = str_repeat($this->_mask, 256);
+    }
+
     private $_host, $_port, $_path, $_ip, $_bindIP, $_bindPort;
     private $_writeArray = [];
     private $_headerArray = [];
@@ -540,6 +551,9 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     private $_active = false; // bool, см логику idle ping
     private $_readFrameLength = 4096; // 4Kb by default
     private $_readFrameDrain = 1;
-    private $_mask = 1000; // 1000..9999
+    private $_chr126, $_chr127;
+    private $_maskStream125 = '';
+    private $_maskStream1024 = '';
+    private $_mask = '1234'; // fixed hack
 
 }
