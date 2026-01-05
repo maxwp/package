@@ -159,29 +159,25 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
                         $secondByte = ord($buffer[$offset + 1]);
                         $lenFlag = $secondByte & 0x7F;
-                        $isMasked = (bool) ($secondByte & 0x80);
+                        $isMasked = ($secondByte >= 128); // установлен ли 7й бит, это быстрее чем & + bool
+                        $opcode = ord($buffer[$offset]) & 0x0F;
 
                         if ($lenFlag == 126) { // чаще всего срабатывает 126
-                            $maskOffset = 4;
+                            $maskOffset = 4; // 2 + 2 bytes ext len
                             if ($bufferLength - $offset < $maskOffset) {
                                 break;
                             }
-                            $parts = unpack('Ca/Cb/nc', substr($buffer, $offset, $maskOffset));
-                            $opcode = $parts['a'] & 0x0F;
-                            $payloadLength = $parts['c'];
-                        } elseif ($lenFlag == 127) {
-                            $maskOffset = 10;
+                            $payloadLength = (ord($buffer[$offset + 2]) << 8) | ord($buffer[$offset + 3]);
+                        } elseif ($lenFlag == 127) { // 127 почти никогда не срабатывает
+                            $maskOffset = 10; // 2 + 8 bytes ext len
                             if ($bufferLength - $offset < $maskOffset) {
                                 break;
                             }
-                            $parts = unpack('Ca/Cb/Jc', substr($buffer, $offset, $maskOffset));
-                            $opcode = $parts['a'] & 0x0F;
-                            $payloadLength = $parts['c'];
+                            // я проверял, тут unpack(J) это правильно и это быстрее чем ord
+                            $payloadLength = unpack('J', $buffer, $offset + 2)[1];
                         } else {
                             $maskOffset = 2;
-                            $parts = unpack('Ca/Cb', substr($buffer, $offset, $maskOffset));
-                            $opcode = $parts['a'] & 0x0F;
-                            $payloadLength = $parts['b'] & 0x7F;
+                            $payloadLength = $lenFlag; // 0..125
                         }
 
                         $maskLen = $isMasked ? 4 : 0; // +4 если masked
@@ -486,13 +482,13 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         // 1. FIN + opcode
         $frame = chr(0x80 | $opcode);
 
+        // @todo константы chr 126 127
+
         // 2. Длина и, при необходимости, extended-length
         if ($length <= 125) {
             $frame .= chr(0x80 | $length);
         } elseif ($length <= 0xFFFF) {
-            $frame .= chr(0x80 | 126)
-                . chr(($length >> 8) & 0xFF)
-                . chr($length & 0xFF);
+            $frame .= chr(0x80 | 126).chr(($length >> 8) & 0xFF).chr($length & 0xFF);
         } else {
             $frame .= chr(0x80 | 127);
             for ($i = 7; $i >= 0; $i--) {
