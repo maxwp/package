@@ -475,7 +475,13 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
     public function write($data, $opcode = 1) {
         $length = strlen($data);
-        $mask = random_bytes(4);
+
+        // random_bytes занимает 350 us, а конструкция с int занимает 31 us
+        //$mask = random_bytes(4);
+        $mask = (string) ($this->_mask ++);
+        if ($this->_mask > 9999) {
+            $this->_mask = 1000;
+        }
 
         // 1. FIN + opcode
         $frame = chr(0x80 | $opcode);
@@ -538,5 +544,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     private $_active = false; // bool, см логику idle ping
     private $_readFrameLength = 4096; // 4Kb by default
     private $_readFrameDrain = 1;
+    private $_mask = 1000; // 1000..9999
 
 }
