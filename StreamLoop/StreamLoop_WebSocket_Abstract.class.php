@@ -186,7 +186,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
                         $maskLen = $isMasked ? 4 : 0; // +4 если masked
                         $payloadOffset = $offset + $maskOffset + $maskLen;
-                        $frameLength   = $maskOffset + $maskLen + $payloadLength;
+                        $frameLength = $maskOffset + $maskLen + $payloadLength;
                         if ($bufferLength - $offset < $frameLength) {
                             break;
                         }
@@ -243,7 +243,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                             Cli::Print_n(__CLASS__ . ": received frame-ping $payload");
                             # debug:end
 
-                            fwrite($stream, $this->_encodeWebSocketMessage($payload, 0xA)); // pong
+                            $this->write($payload, 0xA); // pong
 
                             # debug:start
                             Cli::Print_n(__CLASS__ . ": sent frame-pong $payload");
@@ -354,7 +354,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
             // в состоянии READY может прилететь timeout только ради ping
             if ($this->_active) {
                 $this->_active = false;
-                fwrite($this->stream, $this->_encodeWebSocketMessage('', 9)); // ping
+                $this->write('', 9); // ping
 
                 # debug:start
                 Cli::Print_n(__CLASS__.": sent frame-ping");
@@ -474,19 +474,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     }
 
     public function write($data, $opcode = 1) {
-        fwrite($this->stream, $this->_encodeWebSocketMessage($data, $opcode)); // write
-    }
-
-    /**
-     * Функция для кодирования сообщений с маскировкой в WebSocket Frame
-     *
-     * @param $message
-     * @param $opcode
-     * @return string
-     * @throws \Random\RandomException
-     */
-    private function _encodeWebSocketMessage($message, $opcode = 1) {
-        $length = strlen($message);
+        $length = strlen($data);
         $mask = random_bytes(4);
 
         // 1. FIN + opcode
@@ -511,10 +499,10 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
         // 4. Сразу маскируем и доклеиваем payload вариант с циклом:
         for ($i = 0; $i < $length; $i++) {
-            $frame .= chr(ord($message[$i]) ^ ord($mask[$i & 3]));
+            $frame .= chr(ord($data[$i]) ^ ord($mask[$i & 3]));
         }
 
-        return $frame;
+        fwrite($this->stream, $frame);
     }
 
     public function setReadFrame(int $length, int $drain) {
