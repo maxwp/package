@@ -195,16 +195,16 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
                         if ($isMasked) {
                             $maskKey = substr($buffer, $offset + $maskOffset, 4);
-                            for ($j = 0; $j < $payloadLength; $j++) {
-                                $payload[$j] = chr(
-                                    ord($payload[$j]) ^ ord($maskKey[$j & 3])
-                                );
-                            }
+
+                            // повторяем маску до длины payload и XOR'им строкой
+                            $mask = str_repeat($maskKey, ($payloadLength + 3) >> 2);
+                            $payload = $payload ^ substr($mask, 0, $payloadLength);
                         }
 
                         // Обработка опкодов
                         if ($opcode == 0x1) { // FRAME PAYLOAD text
                             try {
+                                // @todo общий try-catch сверху, все равно error?
                                 $this->_onReceive($tsSelect, $payload, $opcode);
                             } catch (Exception $ue) {
                                 // тут вылетаем, но надо сделать disconnect
