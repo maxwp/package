@@ -472,41 +472,26 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     public function write($data, $opcode = 1) {
         $length = strlen($data);
 
-        // random_bytes занимает 350 us, а конструкция с int занимает 31 us
-        //$mask = random_bytes(4);
-        /*$mask = (string) ($this->_mask ++);
-        if ($this->_mask > 9999) {
-            $this->_mask = 1000;
-        }*/
-
         if ($length <= 125) {
             fwrite(
                 $this->stream,
-                chr(0x80 | $opcode) . chr(0x80 | $length).$this->_mask.($data ^ $this->_maskStream125)
+                chr(0x80 | $opcode) . chr(0x80 | $length)."\x00\x00\x00\x00".$data
             );
         } elseif ($length <= 1024) {
             fwrite(
                 $this->stream,
-                chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length).$this->_mask.($data ^ $this->_maskStream1024)
+                chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length)."\x00\x00\x00\x00".$data
             );
         } else {
-            $rem = $length & 3;
-            $mask = $this->_mask;
-            $maskStream = str_repeat($mask, $length >> 2) . ($rem ? substr($mask, 0, $rem) : '');
-
             if ($length <= 0xFFFF) {
-                $frame = chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length).$this->_mask.($data ^ $maskStream);
+                $frame = chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length)."\x00\x00\x00\x00".$data;
             } else {
                 // 64-bit length (network order)
-                $frame = chr(0x80 | $opcode). $this->_chr127 . pack('J', $length).$this->_mask.($data ^ $maskStream);
+                $frame = chr(0x80 | $opcode). $this->_chr127 . pack('J', $length)."\x00\x00\x00\x00".$data;
             }
 
             fwrite($this->stream, $frame);
         }
-
-        /*$rem = $length & 3;
-        $maskStream = str_repeat($mask, $length >> 2) . ($rem ? substr($mask, 0, $rem) : '');
-        fwrite($this->stream, $frame.$mask.($data ^ $maskStream));*/
     }
 
     public function setReadFrame(int $length, int $drain) {
@@ -539,8 +524,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
         $this->_chr126 = chr(0x80 | 126);
         $this->_chr127 = chr(0x80 | 127);
-        $this->_maskStream125 = str_repeat($this->_mask, 32);
-        $this->_maskStream1024 = str_repeat($this->_mask, 256);
     }
 
     private $_host, $_port, $_path, $_ip, $_bindIP, $_bindPort;
@@ -552,8 +535,5 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     private $_readFrameLength = 4096; // 4Kb by default
     private $_readFrameDrain = 1;
     private $_chr126, $_chr127;
-    private $_maskStream125 = '';
-    private $_maskStream1024 = '';
-    private $_mask = '1234'; // fixed hack
 
 }
