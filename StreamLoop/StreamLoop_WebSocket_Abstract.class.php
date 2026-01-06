@@ -145,160 +145,153 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
             $bufLen = $this->_bufferLength;
             $offset = $this->_bufferOffset;
 
-            // dynamic drain: если после вычитки большого пакета fread() он считался ровно впритык - то вызываем
-            // чтение еще раз и так до drainLimit.
-            // Надо стараться делать меньше fread (syscall overhead), но если все-таки данных много - то лучше читать
-            // еще раз, чтобы не ждать нового круга stream_select(). Но опять-таки, это сильно зависит от количество
-            // потоков внутри всего StreamLoop и насколько я могу затупить на одном handler'e.
-            for ($drainIndex = 1; $drainIndex <= $readFrameDrain; $drainIndex++) {
-                $data = fread($stream, $readFrameLength);
-                $length = strlen($data);
+            // один общий try-catch экономит до 11% cpu time если вызовов onReceive несколько
+            try {
+                // dynamic drain: если после вычитки большого пакета fread() он считался ровно впритык - то вызываем
+                // чтение еще раз и так до drainLimit.
+                // Надо стараться делать меньше fread (syscall overhead), но если все-таки данных много - то лучше читать
+                // еще раз, чтобы не ждать нового круга stream_select(). Но опять-таки, это сильно зависит от количество
+                // потоков внутри всего StreamLoop и насколько я могу затупить на одном handler'e.
+                for ($drainIndex = 1; $drainIndex <= $readFrameDrain; $drainIndex++) {
+                    $data = fread($stream, $readFrameLength);
+                    $length = strlen($data);
 
-                // чаще всего будет срабатывать length > 0
-                if ($length > 0) {
-                    $buffer .= $data;
-                    $bufLen += $length;
+                    // чаще всего будет срабатывать length > 0
+                    if ($length > 0) {
+                        $buffer .= $data;
+                        $bufLen += $length;
 
-                    // минимальный заголовок - 2 байта
-                    while ($bufLen - $offset >= 2) {
-                        $secondByte = ord($buffer[$offset + 1]);
-                        $lenFlag = $secondByte & 0x7F;
-                        $isMasked = ($secondByte >= 128); // установлен ли 7й бит, это быстрее чем & + bool
-                        $opcode = ord($buffer[$offset]) & 0x0F;
+                        // минимальный заголовок - 2 байта
+                        while ($bufLen - $offset >= 2) {
+                            $secondByte = ord($buffer[$offset + 1]);
+                            $lenFlag = $secondByte & 0x7F;
+                            $isMasked = ($secondByte >= 128); // установлен ли 7й бит, это быстрее чем & + bool
+                            $opcode = ord($buffer[$offset]) & 0x0F;
 
-                        if ($lenFlag == 126) { // чаще всего срабатывает 126
-                            $maskOffset = 4; // 2 + 2 bytes ext len
-                            if ($bufLen - $offset < $maskOffset) {
+                            if ($lenFlag == 126) { // чаще всего срабатывает 126
+                                $maskOffset = 4; // 2 + 2 bytes ext len
+                                if ($bufLen - $offset < $maskOffset) {
+                                    break;
+                                }
+                                $payloadLength = (ord($buffer[$offset + 2]) << 8) | ord($buffer[$offset + 3]);
+                            } elseif ($lenFlag == 127) { // 127 почти никогда не срабатывает
+                                $maskOffset = 10; // 2 + 8 bytes ext len
+                                if ($bufLen - $offset < $maskOffset) {
+                                    break;
+                                }
+                                // я проверял, тут unpack(J) это правильно и это быстрее чем ord
+                                $payloadLength = unpack('J', $buffer, $offset + 2)[1];
+                            } else {
+                                $maskOffset = 2;
+                                $payloadLength = $lenFlag; // 0..125
+                            }
+
+                            $maskLen = $isMasked ? 4 : 0; // +4 если masked
+                            $payloadOffset = $offset + $maskOffset + $maskLen;
+                            $frameLength = $maskOffset + $maskLen + $payloadLength;
+                            if ($bufLen - $offset < $frameLength) {
                                 break;
                             }
-                            $payloadLength = (ord($buffer[$offset + 2]) << 8) | ord($buffer[$offset + 3]);
-                        } elseif ($lenFlag == 127) { // 127 почти никогда не срабатывает
-                            $maskOffset = 10; // 2 + 8 bytes ext len
-                            if ($bufLen - $offset < $maskOffset) {
-                                break;
+
+                            $payload = substr(
+                                $buffer,
+                                $payloadOffset,
+                                $payloadLength
+                            );
+
+                            // masked frames бывают редко
+                            if ($isMasked) {
+                                $maskKey = substr($buffer, $offset + $maskOffset, 4);
+
+                                // повторяем маску до длины payload и XOR'им строкой
+                                $mask = str_repeat($maskKey, ($payloadLength + 3) >> 2);
+                                $payload ^= substr($mask, 0, $payloadLength);
                             }
-                            // я проверял, тут unpack(J) это правильно и это быстрее чем ord
-                            $payloadLength = unpack('J', $buffer, $offset + 2)[1];
-                        } else {
-                            $maskOffset = 2;
-                            $payloadLength = $lenFlag; // 0..125
+
+                            // Обработка опкодов
+                            if ($opcode == 0x1) { // FRAME PAYLOAD text
+                                $this->_onReceive($tsSelect, $payload, $opcode);
+                            } elseif ($opcode == 0x2) { // FRAME PAYLOAD binary
+                                $this->_onReceive($tsSelect, $payload, $opcode);
+                            } elseif ($opcode == 0xA) { // FRAME PONG
+                                # debug:start
+                                Cli::Print_n(__CLASS__ . ": received frame-pong $payload");
+                                # debug:end
+
+                                // считаем что соединение активно и с ним все ок
+                                $this->_active = true;
+                            } elseif ($opcode == 0x9) { // FRAME PING
+                                # debug:start
+                                Cli::Print_n(__CLASS__ . ": received frame-ping $payload");
+                                # debug:end
+
+                                $this->write($payload, 0xA); // pong
+
+                                # debug:start
+                                Cli::Print_n(__CLASS__ . ": sent frame-pong $payload");
+                                # debug:end
+                            } elseif ($opcode == 0x8) { // FRAME CLOSED
+                                throw new StreamLoop_Exception(StreamLoop_WebSocket_Const::ERROR_FRAME_CLOSED);
+                            } else {
+                                throw new StreamLoop_Exception(StreamLoop_WebSocket_Const::ERROR_UNKNOWN_OPCODE);
+                            }
+
+                            // Сдвигаем указатель на следующий фрейм
+                            $offset += $frameLength;
                         }
 
-                        $maskLen = $isMasked ? 4 : 0; // +4 если masked
-                        $payloadOffset = $offset + $maskOffset + $maskLen;
-                        $frameLength = $maskOffset + $maskLen + $payloadLength;
-                        if ($bufLen - $offset < $frameLength) {
+                        // если всё съели - сбрасываем буфер полностью (самый дешевый случай)
+                        if ($offset == $bufLen) {
+                            $buffer = '';
+                            $bufLen = 0;
+                            $offset = 0;
+                        } elseif ($offset > 65536) {
+                            // редкое "сжатие" буфера
+                            $buffer = substr($buffer, $offset);
+                            $bufLen = strlen($buffer);
+                            $offset = 0;
+                        }
+
+                        if ($length < $readFrameLength) {
+                            // Если fread вернул меньше, чем запрошено — дальше не дренируем
                             break;
                         }
-
-                        $payload = substr(
-                            $buffer,
-                            $payloadOffset,
-                            $payloadLength
-                        );
-
-                        // masked frames бывают редко
-                        if ($isMasked) {
-                            $maskKey = substr($buffer, $offset + $maskOffset, 4);
-
-                            // повторяем маску до длины payload и XOR'им строкой
-                            $mask = str_repeat($maskKey, ($payloadLength + 3) >> 2);
-                            $payload ^= substr($mask, 0, $payloadLength);
+                    } elseif ($data === '') {
+                        // на втором месте по частоте срабатывания - пустая строка, я упрусь в drain limit
+                        // Если fread вернул пустую строку, проверяем, достигнут ли EOF
+                        // upd: она запускается только если drain вернул пустоту, что бывает очень редко, так как есть проверка на length
+                        if ($this->_checkEOF($tsSelect)) { // in drain read
+                            // EOF: connection closed by remote host
+                            return; // на выход, чтобы дальше ничего не проверять, ошибка уже выкинута
                         }
-
-                        // Обработка опкодов
-                        if ($opcode == 0x1) { // FRAME PAYLOAD text
-                            try {
-                                // @todo общий try-catch сверху = -11%
-                                $this->_onReceive($tsSelect, $payload, $opcode);
-                            } catch (Exception $ue) {
-                                // тут вылетаем, но надо сделать disconnect
-                                $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER, $ue->getMessage());
-                                return;
-                            } catch (Throwable $te) {
-                                // более жесткая ошибка
-                                $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER, $te->getMessage());
-                                return;
-                            }
-                        } elseif ($opcode == 0x2) { // FRAME PAYLOAD binary
-                            try {
-                                $this->_onReceive($tsSelect, $payload, $opcode);
-                            } catch (Exception $ue) {
-                                // тут вылетаем, но надо сделать disconnect
-                                $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER, $ue->getMessage());
-                                return;
-                            } catch (Throwable $te) {
-                                // более жесткая ошибка
-                                $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER, $te->getMessage());
-                                return;
-                            }
-                        } elseif ($opcode == 0xA) { // FRAME PONG
-                            # debug:start
-                            Cli::Print_n(__CLASS__ . ": received frame-pong $payload");
-                            # debug:end
-
-                            // считаем что соединение активно и с ним все ок
-                            $this->_active = true;
-                        } elseif ($opcode == 0x9) { // FRAME PING
-                            # debug:start
-                            Cli::Print_n(__CLASS__ . ": received frame-ping $payload");
-                            # debug:end
-
-                            $this->write($payload, 0xA); // pong
-
-                            # debug:start
-                            Cli::Print_n(__CLASS__ . ": sent frame-pong $payload");
-                            # debug:end
-                        } elseif ($opcode == 0x8) { // FRAME CLOSED
-                            $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_FRAME_CLOSED, false);
-                            return;
-                        } else {
-                            throw new StreamLoop_Exception("Unknown opcode $opcode in ".$this->_host);
-                        }
-
-                        // Сдвигаем указатель на следующий фрейм
-                        $offset += $frameLength;
-                    }
-
-                    // если всё съели - сбрасываем буфер полностью (самый дешевый случай)
-                    if ($offset == $bufLen) {
-                        $buffer = '';
-                        $bufLen = 0;
-                        $offset = 0;
-                    } elseif ($offset > 65536) {
-                        // редкое "сжатие" буфера
-                        $buffer = substr($buffer, $offset);
-                        $bufLen = strlen($buffer);
-                        $offset = 0;
-                    }
-
-                    if ($length < $readFrameLength) {
-                        // Если fread вернул меньше, чем запрошено — дальше не дренируем
                         break;
+                    } elseif ($data === false) {
+                        // и в редких случаях ошибка drain
+                        // в неблокирующем режиме если данных нет - то будет string ''
+                        // а если false - то это ошибка чтения
+                        // например, PHP Warning: fread(): SSL: Connection reset by peer
+                        //$errorString = error_get_last()['message'];
+                        throw new StreamLoop_Exception(StreamLoop_WebSocket_Const::ERROR_RESET_BY_PEER);
                     }
-                } elseif ($data === '') {
-                    // на втором месте по частоте срабатывания - пустая строка, я упрусь в drain limit
-                    // Если fread вернул пустую строку, проверяем, достигнут ли EOF
-                    // upd: она запускается только если drain вернул пустоту, что бывает очень редко, так как есть проверка на length
-                    if ($this->_checkEOF($tsSelect)) { // in drain read
-                        // EOF: connection closed by remote host
-                        return; // на выход, чтобы дальше ничего не проверять, ошибка уже выкинута
-                    }
-                    break;
-                } elseif ($data === false) {
-                    // и в редких случаях ошибка drain
-                    // в неблокирующем режиме если данных нет - то будет string ''
-                    // а если false - то это ошибка чтения
-                    // например, PHP Warning: fread(): SSL: Connection reset by peer
-                    //$errorString = error_get_last()['message'];
-                    $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_RESET_BY_PEER, false);
-                    return;
                 }
+
+                $this->_buffer = $buffer;
+                $this->_bufferLength = $bufLen;
+                $this->_bufferOffset = $offset;
+
+            } catch (StreamLoop_Exception $se) {
+                $this->throwError($tsSelect, $se->getMessage());
+                return;
+            } catch (Exception $ue) {
+                // тут вылетаем, но надо сделать disconnect
+                $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER, $ue->getMessage());
+                return;
+            } catch (Throwable $te) {
+                // более жесткая ошибка
+                $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_USER, $te->getMessage());
+                return;
             }
 
-            $this->_buffer = $buffer;
-            $this->_bufferLength = $bufLen;
-            $this->_bufferOffset = $offset;
         } elseif ($state == StreamLoop_WebSocket_Const::STATE_HANDSHAKING) {
             $this->_checkHandshake($tsSelect);
         } elseif ($state == StreamLoop_WebSocket_Const::STATE_UPGRADING) {
