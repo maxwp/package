@@ -59,6 +59,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         # debug:end
 
         $this->_buffer = '';
+        $this->_bufferOffset = 0;
 
         $ip = $this->_ip ? $this->_ip : $this->_host;
 
@@ -123,6 +124,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         $this->stream = null;
 
         $this->_buffer = '';
+        $this->_bufferOffset = 0;
+
         $this->_state = StreamLoop_WebSocket_Const::STATE_DISCONNECTED;
     }
 
@@ -134,7 +137,11 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
             $readFrameLength = $this->_readFrameLength;
             $readFrameDrain = $this->_readFrameDrain;
             $stream = $this->stream;
+
+            // берем buffer + cursor
             $buffer = $this->_buffer;
+            $offset = $this->_bufferOffset;
+            $bufLen = strlen($buffer); // @todo bench
 
             // dynamic drain: если после вычитки большого пакета fread() он считался ровно впритык - то вызываем
             // чтение еще раз и так до drainLimit.
@@ -148,15 +155,10 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                 // чаще всего будет срабатывать length > 0
                 if ($length > 0) {
                     $buffer .= $data;
-                    $offset = 0;
-                    $bufferLength = strlen($buffer);
+                    $bufLen += $length;
 
-                    while ($offset < $bufferLength) {
-                        // Минимальный заголовок — 2 байта
-                        if ($bufferLength - $offset < 2) {
-                            break;
-                        }
-
+                    // минимальный заголовок - 2 байта
+                    while ($bufLen - $offset >= 2) {
                         $secondByte = ord($buffer[$offset + 1]);
                         $lenFlag = $secondByte & 0x7F;
                         $isMasked = ($secondByte >= 128); // установлен ли 7й бит, это быстрее чем & + bool
@@ -164,13 +166,13 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
                         if ($lenFlag == 126) { // чаще всего срабатывает 126
                             $maskOffset = 4; // 2 + 2 bytes ext len
-                            if ($bufferLength - $offset < $maskOffset) {
+                            if ($bufLen - $offset < $maskOffset) {
                                 break;
                             }
                             $payloadLength = (ord($buffer[$offset + 2]) << 8) | ord($buffer[$offset + 3]);
                         } elseif ($lenFlag == 127) { // 127 почти никогда не срабатывает
                             $maskOffset = 10; // 2 + 8 bytes ext len
-                            if ($bufferLength - $offset < $maskOffset) {
+                            if ($bufLen - $offset < $maskOffset) {
                                 break;
                             }
                             // я проверял, тут unpack(J) это правильно и это быстрее чем ord
@@ -183,7 +185,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                         $maskLen = $isMasked ? 4 : 0; // +4 если masked
                         $payloadOffset = $offset + $maskOffset + $maskLen;
                         $frameLength = $maskOffset + $maskLen + $payloadLength;
-                        if ($bufferLength - $offset < $frameLength) {
+                        if ($bufLen - $offset < $frameLength) {
                             break;
                         }
 
@@ -193,18 +195,19 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                             $payloadLength
                         );
 
+                        // masked frames бывают редко
                         if ($isMasked) {
                             $maskKey = substr($buffer, $offset + $maskOffset, 4);
 
                             // повторяем маску до длины payload и XOR'им строкой
                             $mask = str_repeat($maskKey, ($payloadLength + 3) >> 2);
-                            $payload = $payload ^ substr($mask, 0, $payloadLength);
+                            $payload ^= substr($mask, 0, $payloadLength);
                         }
 
                         // Обработка опкодов
                         if ($opcode == 0x1) { // FRAME PAYLOAD text
                             try {
-                                // @todo общий try-catch сверху, все равно error?
+                                // @todo общий try-catch сверху, все равно error? @todo bench
                                 $this->_onReceive($tsSelect, $payload, $opcode);
                             } catch (Exception $ue) {
                                 // тут вылетаем, но надо сделать disconnect
@@ -255,8 +258,13 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                         $offset += $frameLength;
                     }
 
-                    // Удаляем обработанные данные из буфера
-                    $buffer = substr($buffer, $offset);
+                    // РЕДКОЕ "сжатие" буфера: только когда cursor уже большой
+                    // (иначе НЕ делаем substr!)
+                    if ($offset > 65536) {
+                        $buffer = substr($buffer, $offset);
+                        $bufLen = strlen($buffer);
+                        $offset = 0;
+                    }
 
                     if ($length < $readFrameLength) {
                         // Если fread вернул меньше, чем запрошено — дальше не дренируем
@@ -282,8 +290,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                 }
             }
 
-            // сохраняем буфер или что от него осталось
             $this->_buffer = $buffer;
+            $this->_bufferOffset = $offset;
         } elseif ($state == StreamLoop_WebSocket_Const::STATE_HANDSHAKING) {
             $this->_checkHandshake($tsSelect);
         } elseif ($state == StreamLoop_WebSocket_Const::STATE_UPGRADING) {
@@ -530,6 +538,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     private $_writeArray = [];
     private $_headerArray = [];
     private $_buffer = ''; // string
+    private $_bufferOffset = 0; // cursor: сколько байт уже "съели" из _buffer
     protected $_state = 0; // 0 is a stop, by default // @todo protected это лажа
     private $_active = false; // bool, см логику idle ping
     private $_readFrameLength = 4096; // 4Kb by default
