@@ -59,6 +59,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         # debug:end
 
         $this->_buffer = '';
+        $this->_bufferLength = 0;
         $this->_bufferOffset = 0;
 
         $ip = $this->_ip ? $this->_ip : $this->_host;
@@ -124,6 +125,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         $this->stream = null;
 
         $this->_buffer = '';
+        $this->_bufferLength = 0;
         $this->_bufferOffset = 0;
 
         $this->_state = StreamLoop_WebSocket_Const::STATE_DISCONNECTED;
@@ -140,8 +142,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
             // берем buffer + cursor
             $buffer = $this->_buffer;
+            $bufLen = $this->_bufferLength;
             $offset = $this->_bufferOffset;
-            $bufLen = strlen($buffer); // @todo bench
 
             // dynamic drain: если после вычитки большого пакета fread() он считался ровно впритык - то вызываем
             // чтение еще раз и так до drainLimit.
@@ -207,7 +209,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                         // Обработка опкодов
                         if ($opcode == 0x1) { // FRAME PAYLOAD text
                             try {
-                                // @todo общий try-catch сверху, все равно error? @todo bench
+                                // @todo общий try-catch сверху = -11%
                                 $this->_onReceive($tsSelect, $payload, $opcode);
                             } catch (Exception $ue) {
                                 // тут вылетаем, но надо сделать disconnect
@@ -258,9 +260,13 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                         $offset += $frameLength;
                     }
 
-                    // РЕДКОЕ "сжатие" буфера: только когда cursor уже большой
-                    // (иначе НЕ делаем substr!)
-                    if ($offset > 65536) {
+                    // если всё съели - сбрасываем буфер полностью (самый дешевый случай)
+                    if ($offset == $bufLen) {
+                        $buffer = '';
+                        $bufLen = 0;
+                        $offset = 0;
+                    } elseif ($offset > 65536) {
+                        // редкое "сжатие" буфера
                         $buffer = substr($buffer, $offset);
                         $bufLen = strlen($buffer);
                         $offset = 0;
@@ -291,6 +297,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
             }
 
             $this->_buffer = $buffer;
+            $this->_bufferLength = $bufLen;
             $this->_bufferOffset = $offset;
         } elseif ($state == StreamLoop_WebSocket_Const::STATE_HANDSHAKING) {
             $this->_checkHandshake($tsSelect);
@@ -399,6 +406,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
 
                 $this->_updateState(StreamLoop_WebSocket_Const::STATE_READY, true, false, false);
                 $this->_buffer = '';
+                $this->_bufferLength = 0;
+                $this->_bufferOffset = 0;
 
                 // считаем соединение активно и с ни все ок
                 $this->_active = true;
@@ -538,6 +547,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     private $_writeArray = [];
     private $_headerArray = [];
     private $_buffer = ''; // string
+    private $_bufferLength = 0; // int
     private $_bufferOffset = 0; // cursor: сколько байт уже "съели" из _buffer
     protected $_state = 0; // 0 is a stop, by default // @todo protected это лажа
     private $_active = false; // bool, см логику idle ping
