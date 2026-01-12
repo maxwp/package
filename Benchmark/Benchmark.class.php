@@ -3,12 +3,15 @@ class Benchmark extends EE_AContentCli {
 
     public function process() {
         $className = $this->getArgument('class', EE_Typing::TYPE_STRING);
+        $simulateCount = $this->getArgument('count', EE_Typing::TYPE_INT);
+        if (!$simulateCount) {
+            $simulateCount = 1_000_000;
+        }
 
         $stub = new Benchmark_Stub();
 
         // сначала меряем пустой вызов и цикл
         $tAvg = [];
-        $simulateCount = 1_000_000;
         for ($simulation = 1; $simulation <= 10; $simulation++) {
             $t = hrtime(true);
 
@@ -29,7 +32,6 @@ class Benchmark extends EE_AContentCli {
         $testObject = new $className();
 
         $tAvg = [];
-        $simulateCount = 1_000_000;
         for ($simulation = 1; $simulation <= 10; $simulation++) {
             $t = hrtime(true);
 
