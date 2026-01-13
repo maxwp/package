@@ -19,11 +19,24 @@ class Connection_SocketUDPConnected extends Connection_SocketUDP {
     }
 
     public function write($message, $messageSize) {
-        socket_write(
+        if (socket_write(
             $this->_socket,
             $message,
             $messageSize,
-        );
+        ) != $messageSize) {
+            // reconnect
+            socket_connect($this->_socket, $this->_host, $this->_port);
+
+            // повторная отправка
+            return socket_write(
+                $this->_socket,
+                $message,
+                $messageSize,
+            ) == $messageSize;
+        }
+
+        // я отправил
+        return true;
     }
 
     // @todo override read() to socket_recv()
