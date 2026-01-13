@@ -482,25 +482,29 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     public function write($data, $opcode = 1) {
         $length = strlen($data);
 
-        if ($length <= 125) {
-            fwrite(
-                $this->stream,
-                chr(0x80 | $opcode) . chr(0x80 | $length)."\x00\x00\x00\x00".$data
-            );
-        } elseif ($length <= 1024) {
-            fwrite(
-                $this->stream,
-                chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length)."\x00\x00\x00\x00".$data
-            );
-        } else {
-            if ($length <= 0xFFFF) {
-                $frame = chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length)."\x00\x00\x00\x00".$data;
+        try {
+            if ($length <= 125) {
+                fwrite(
+                    $this->stream,
+                    chr(0x80 | $opcode) . chr(0x80 | $length)."\x00\x00\x00\x00".$data
+                );
+            } elseif ($length <= 1024) {
+                fwrite(
+                    $this->stream,
+                    chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length)."\x00\x00\x00\x00".$data
+                );
             } else {
-                // 64-bit length (network order)
-                $frame = chr(0x80 | $opcode). $this->_chr127 . pack('J', $length)."\x00\x00\x00\x00".$data;
-            }
+                if ($length <= 0xFFFF) {
+                    $frame = chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length)."\x00\x00\x00\x00".$data;
+                } else {
+                    // 64-bit length (network order)
+                    $frame = chr(0x80 | $opcode). $this->_chr127 . pack('J', $length)."\x00\x00\x00\x00".$data;
+                }
 
-            fwrite($this->stream, $frame);
+                fwrite($this->stream, $frame);
+            }
+        } catch (Throwable $te) {
+            $this->throwError(microtime(true), StreamLoop_WebSocket_Const::ERROR_EOF, $te->getMessage());
         }
     }
 
