@@ -3,7 +3,7 @@ class Benchmark extends EE_AContentCli {
 
     public function process() {
         $className = $this->getArgument('class', EE_Typing::TYPE_STRING);
-        $simulateCount = $this->getArgument('count', EE_Typing::TYPE_INT);
+        $simulateCount = $this->getArgumentSecure('count', EE_Typing::TYPE_INT);
         if (!$simulateCount) {
             $simulateCount = 1_000_000;
         }
