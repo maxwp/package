@@ -75,7 +75,7 @@ class ClassLoader extends Pattern_ASingleton {
     /**
      * Получить загруженные классы
      *
-     * @return array
+     * @return array<string>
      */
     public function getClassArray() {
         return $this->_classArray;
@@ -88,13 +88,12 @@ class ClassLoader extends Pattern_ASingleton {
      * @param string $file
      */
     public function registerClass($file) {
-        // @todo internal registry array?
-
         $file = str_replace('//', '/', $file);
 
         $hash = basename($file);
         $hash = str_replace('.class.php', '', $hash);
         $hash = str_replace('.interface.php', '', $hash);
+        $hash = str_replace('.trait.php', '', $hash);
         $hash = str_replace('.php', '', $hash);
         $this->_classArray[$hash] = $file;
     }
@@ -132,7 +131,9 @@ class ClassLoader extends Pattern_ASingleton {
 
         foreach ($a as $x) {
             if (str_contains($x, '.class.php')
-            || str_contains($x, '.interface.php')) {
+            || str_contains($x, '.interface.php')
+            || str_contains($x, '.trait.php')
+            ) {
                 if (!str_contains($x, '.compiled')) {
                     $this->registerClass($x);
                 }
@@ -175,10 +176,9 @@ class ClassLoader extends Pattern_ASingleton {
     /**
      * Список зарегистрированный классов
      *
-     * @var array
+     * @var array<string>
      */
-    private array $_classArray = [];
-
+    private $_classArray = [];
     private $_debugAll = false;
     private $_debugArray = [];
 
