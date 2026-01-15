@@ -6,6 +6,9 @@
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
+/**
+ * UDPConnected на отправку быстрее на 16% - я проверял это на hot-cold benchmark
+ */
 class Connection_SocketUDPConnected extends Connection_SocketUDP {
 
     public function __construct($host, int $port) {
