@@ -368,7 +368,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                 return;
             }
 
-            $this->_loop->updateHandlerTimeoutTo($this, $tsSelect + rand(10, 15));
+            $this->_loop->updateHandlerTimeoutTo($this, $tsSelect + 10 + rand() % 5);
         } else {
             // во всех остальных случаях я нарвался на проблему что за timeout я не смог установить соединение и сделать handshake/upgrade
             // (то есть не успел аж до ready)
@@ -405,7 +405,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                 // считаем соединение активно и с ни все ок
                 $this->_active = true;
                 // таймер двигаем вперед на 10-15 сек
-                $this->_loop->updateHandlerTimeoutTo($this, $tsSelect + rand(10, 15));
+                $this->_loop->updateHandlerTimeoutTo($this, $tsSelect + 10 + rand() % 5);
 
                 $this->_onReady($tsSelect);
             }
