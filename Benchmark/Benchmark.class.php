@@ -83,6 +83,7 @@ class Benchmark extends EE_AContentCli {
 
         $this->print_break();
         //$this->print_n("empty       = ".round($emptyCallHot)." ns/call");
+        $this->print_n("sim cnt = $simulateCount");
 
         $this->print_n("hot  avg = ".round(Array_Static::Avg($tHotAvg))." ns/call");
         $this->print_n("hot  med = ".round(Array_Static::Med($tHotAvg))." ns/call");
