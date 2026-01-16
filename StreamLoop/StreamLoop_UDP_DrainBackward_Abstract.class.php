@@ -11,6 +11,15 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Abst
         $socket = $this->_socketResource;
         $drainLimit = $this->_drainLimit; // как правило drain есть, поэтому я выношу всегда в locals
 
+        /**
+         * @todo
+         * прочитал первое
+         * попробовал прочитать второе (один extra recv)
+         * если второго нет → обработал первое и вышел (как сейчас)
+         * если второе есть → буферизуешь и первое, и второе, потом дочитываешь до лимита и отдаёшь в обратном порядке (начиная с самого нового)
+         * Это даст тебе “latest-first” почти бесплатно (добавится максимум один recvfrom в редких случаях, когда в очереди >1).
+         */
+
         // первое сообщене всегда, независимо от drain
         // так нужно сделать, потому что в 90% случаев сообщение в порту всего одно
         // и не надо тратиться на циклы с массивами
@@ -31,52 +40,47 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Abst
         }
 
         // если дальше drain нет - на выход
-        if ($drainLimit <= 1) {
-            return;
-        }
+        if ($drainLimit > 1) {
+            $found = 0;
+            $bufferArray = [];
+            $bytesArray = [];
+            $fromAddressArray = [];
+            $fromPortArray = [];
 
-        $found = 0;
-        $bufferArray = [];
-        $bytesArray = [];
-        $fromAddressArray = [];
-        $fromPortArray = [];
+            for ($drainIndex = 2; $drainIndex <= $drainLimit; $drainIndex++) {
+                $bytes = socket_recvfrom(
+                    $socket,
+                    $buffer,
+                    1024,
+                    MSG_DONTWAIT,
+                    $fromAddress,
+                    $fromPort
+                );
 
-        for ($drainIndex = 2; $drainIndex <= $drainLimit; $drainIndex++) {
-            $bytes = socket_recvfrom(
-                $socket,
-                $buffer,
-                1024,
-                MSG_DONTWAIT,
-                $fromAddress,
-                $fromPort
-            );
+                if ($bytes > 0) { // пустые дата-граммы мне не нужны
+                    // три параллельных массива быстрее чем один вложенный
+                    $bufferArray[] = $buffer;
+                    $bytesArray[] = $bytes;
+                    $fromAddressArray[] = $fromAddress;
+                    $fromPortArray[] = $fromPort;
+                    $found++;
+                } else {
+                    // тут более правильно проверять на === false,
+                    // но в реальности пустой дата-граммы быть не может
 
-            if ($bytes > 0) { // пустые дата-граммы мне не нужны
-                // три параллельных массива быстрее чем один вложенный
-                $bufferArray[] = $buffer;
-                $bytesArray[] = $bytes;
-                $fromAddressArray[] = $fromAddress;
-                $fromPortArray[] = $fromPort;
-                $found ++;
-            } else {
-                // тут более правильно проверять на === false,
-                // но в реальности пустой дата-граммы быть не может
+                    // внимание! я не делаю тут проверки на ошибки, потому что эта штука занимает 0..1,1 us
 
-                // внимание! я не делаю тут проверки на ошибки, потому что эта штука занимает 0..1,1 us
-
-                // end of drain
-                break;
+                    // end of drain
+                    break;
+                }
             }
-        }
 
-        // если вдруг ничего нет - на выход
-        if ($found == 0) {
-            return;
-        }
-
-        // вдуваем сообщения в обратном порядке
-        for ($j = $found - 1; $j >= 0; $j--) {
-            $this->_onReceive($tsSelect, $bufferArray[$j], $bytesArray[$j], $fromAddressArray[$j], $fromPortArray[$j]);
+            if ($found > 0) {
+                // вдуваем сообщения в обратном порядке
+                for ($j = $found - 1; $j >= 0; $j--) {
+                    $this->_onReceive($tsSelect, $bufferArray[$j], $bytesArray[$j], $fromAddressArray[$j], $fromPortArray[$j]);
+                }
+            }
         }
     }
 
