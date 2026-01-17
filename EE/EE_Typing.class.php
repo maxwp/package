@@ -25,6 +25,7 @@ class EE_Typing {
             case self::TYPE_STRING:
                 return (string) $value;
             case self::TYPE_INT:
+                $value = str_replace('_', '', $value);
                 return (int) $value;
             case self::TYPE_BOOL:
                 if ($value == 'true') {
