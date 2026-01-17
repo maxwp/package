@@ -248,7 +248,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                         } elseif ($offset > 65536) {
                             // редкое "сжатие" буфера
                             $buffer = substr($buffer, $offset);
-                            $bufLen = strlen($buffer);
+                            $bufLen -= $offset;
                             $offset = 0;
                         }
 
