@@ -2,28 +2,16 @@
 abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Abstract {
 
     public function readyRead($tsSelect) {
-        // в php init локальной переменной дешевле чем доступ к свойству
-        $buffer = '';
-        $fromAddress = '';
-        $fromPort = 0;
-
         // to locals
         $socket = $this->_socketResource;
         $drainLimit = $this->_drainLimit; // как правило drain есть, поэтому я выношу всегда в locals
 
-        /**
-         * @todo
-         * прочитал первое
-         * попробовал прочитать второе (один extra recv)
-         * если второго нет → обработал первое и вышел (как сейчас)
-         * если второе есть → буферизуешь и первое, и второе, потом дочитываешь до лимита и отдаёшь в обратном порядке (начиная с самого нового)
-         * Это даст тебе “latest-first” почти бесплатно (добавится максимум один recvfrom в редких случаях, когда в очереди >1).
-         */
+        $buffer = '';
+        $fromAddress = '';
+        $fromPort = 0;
 
-        // первое сообщене всегда, независимо от drain
-        // так нужно сделать, потому что в 90% случаев сообщение в порту всего одно
-        // и не надо тратиться на циклы с массивами
-        $bytes = socket_recvfrom(
+        // --- recv #1 (must exist if select says readable) ---
+        $bytes1 = socket_recvfrom(
             $socket,
             $buffer,
             1024,
@@ -32,55 +20,76 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Abst
             $fromPort
         );
 
-        if ($bytes > 0) {
-            $this->_onReceive($tsSelect, $buffer, $bytes, $fromAddress, $fromPort);
-        } else {
+        if ($bytes1 <= 0) {
+            // rare: select said readable but nothing read
             // редкая ситуация select сказал что данные есть, но ничего не прочиталось
             return;
         }
 
-        // если дальше drain нет - на выход
-        if ($drainLimit > 1) {
-            $found = 0;
-            $bufferArray = [];
-            $bytesArray = [];
-            $fromAddressArray = [];
-            $fromPortArray = [];
+        // stash #1 (because next recv overwrites vars)
+        $buffer1 = $buffer;
+        $addr1   = $fromAddress;
+        $port1   = $fromPort;
 
-            for ($drainIndex = 2; $drainIndex <= $drainLimit; $drainIndex++) {
-                $bytes = socket_recvfrom(
-                    $socket,
-                    $buffer,
-                    1024,
-                    MSG_DONTWAIT,
-                    $fromAddress,
-                    $fromPort
-                );
+        // --- recv #2 (single extra recv to detect batching) ---
+        $bytes2 = socket_recvfrom(
+            $socket,
+            $buffer,
+            1024,
+            MSG_DONTWAIT,
+            $fromAddress,
+            $fromPort
+        );
 
-                if ($bytes > 0) { // пустые дата-граммы мне не нужны
-                    // три параллельных массива быстрее чем один вложенный
-                    $bufferArray[] = $buffer;
-                    $bytesArray[] = $bytes;
-                    $fromAddressArray[] = $fromAddress;
-                    $fromPortArray[] = $fromPort;
-                    $found++;
-                } else {
-                    // тут более правильно проверять на === false,
-                    // но в реальности пустой дата-граммы быть не может
+        if ($bytes2 <= 0) {
+            // common case: only one datagram available -> no arrays/loops
+            $this->_onReceive($tsSelect, $buffer1, $bytes1, $addr1, $port1);
+            return;
+        }
 
-                    // внимание! я не делаю тут проверки на ошибки, потому что эта штука занимает 0..1,1 us
+        // --- batching case: buffer ALL and emit latest-first ---
+        // push #1
+        // push #2 (currently in $buffer/$fromAddress/$fromPort)
+        $bufferArray = [$buffer1, $buffer];
+        $bytesArray = [$bytes1, $bytes2];
+        $fromAddressArray = [$addr1, $fromAddress];
+        $fromPortArray = [$port1, $fromPort];
 
-                    // end of drain
-                    break;
-                }
+        $found = 2;
+
+        // drain up to limit
+        // start from 3 because we already have 2
+        for ($drainIndex = 3; $drainIndex <= $drainLimit; $drainIndex++) {
+            $bytes = socket_recvfrom(
+                $socket,
+                $buffer,
+                1024,
+                MSG_DONTWAIT,
+                $fromAddress,
+                $fromPort
+            );
+
+            if ($bytes > 0) {
+                $bufferArray[] = $buffer;
+                $bytesArray[] = $bytes;
+                $fromAddressArray[] = $fromAddress;
+                $fromPortArray[] = $fromPort;
+                $found ++;
+            } else {
+                // end of drain
+                break;
             }
+        }
 
-            if ($found > 0) {
-                // вдуваем сообщения в обратном порядке
-                for ($j = $found - 1; $j >= 0; $j--) {
-                    $this->_onReceive($tsSelect, $bufferArray[$j], $bytesArray[$j], $fromAddressArray[$j], $fromPortArray[$j]);
-                }
-            }
+        // emit latest-first: newest datagram first
+        for ($j = $found - 1; $j >= 0; $j--) {
+            $this->_onReceive(
+                $tsSelect,
+                $bufferArray[$j],
+                $bytesArray[$j],
+                $fromAddressArray[$j],
+                $fromPortArray[$j]
+            );
         }
     }
 
@@ -97,9 +106,12 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Abst
     }
 
     public function setDrain(int $limit) {
+        if ($limit <= 1) {
+            throw new StreamLoop_Exception("Drain limit can not be less than 2");
+        }
         $this->_drainLimit = $limit;
     }
 
-    private int $_drainLimit = 1;
+    private int $_drainLimit = 3; // нет никакого смысла в drain=1
 
 }
