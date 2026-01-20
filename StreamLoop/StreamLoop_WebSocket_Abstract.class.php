@@ -10,7 +10,7 @@
 abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract {
 
     abstract protected function _setupConnection();
-    abstract protected function _onInit();
+    abstract protected function _onInit(); // @todo rename to _onConnect
     abstract protected function _onReceive($tsSelect, $payload, $opcode);
     abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
     abstract protected function _onReady($tsSelect);
