@@ -10,6 +10,10 @@ class StringUtils_FormatterPrice {
 
     public static function FormatPricePrecisionPowered($value, $precision, $precision_power10) {
         // важно: отрицательные оно не хавает
+        if ($value <= 0) {
+            return 0;
+        }
+
         // важно: без round не сработает $value = 0.059999999999999; $p = 3;, а во float может быть такая хуйня
 
         //$n = (int) ($value * $precision_power10);
@@ -39,8 +43,12 @@ class StringUtils_FormatterPrice {
     }
 
     public static function FormatPricePrecision($value, $precision) {
-        // важно: не лепить в один метод, это даст +10 ns/call, я проверял
         // важно: отрицательные оно не хавает
+        if ($value <= 0) {
+            return 0;
+        }
+
+        // важно: не лепить в один метод, это даст +10 ns/call, я проверял
         // важно: без round не сработает $value = 0.059999999999999; $p = 3;, а во float может быть такая хуйня
 
         // ручное округление вместо round() дало -20ns
