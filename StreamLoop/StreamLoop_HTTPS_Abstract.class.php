@@ -75,13 +75,9 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         }
 
         // timeout на запрос есть всегда, по дефолту это 10 сек (см код выше)
-        $this->_updateState( // new request
-            StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS,
-            true,
-            false,
-            false,
-            microtime(true) + $timeout
-        );
+        $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS; // new request
+        $this->_loop->updateHandlerFlags($this, true, false, false);
+        $this->_loop->updateHandlerTimeoutTo($this, microtime(true) + $timeout);
     }
 
     public function connect() {
@@ -123,14 +119,10 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         // регистрируем handler
         $this->_loop->registerHandler($this);
 
+        $this->_state = StreamLoop_HTTPS_Const::STATE_CONNECTING; // in 1st connect
+        $this->_loop->updateHandlerFlags($this, false, true, true);
         // устанавливаем timeout на подключение
-        $this->_updateState(  // in 1st connect
-            StreamLoop_HTTPS_Const::STATE_CONNECTING,
-            false,
-            true,
-            true, // если прилетит херня - будем проверять на eof
-            microtime(true) + 10
-        );
+        $this->_loop->updateHandlerTimeoutTo($this, microtime(true) + 10);
 
         // Устанавливаем буфер до начала SSL
         $socket = new Connection_SocketStream($stream);
@@ -201,13 +193,8 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
                         }
                     }
 
-                    $this->_updateState( // in read
-                        StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_BODY,
-                        true,
-                        false,
-                        false,
-                        false // не менять timeout
-                    );
+                    $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_BODY; // in read
+                    $this->_loop->updateHandlerFlags($this, true, false, false);
 
                     $this->_buffer = '';
 
@@ -298,13 +285,9 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
                 ],
             ));
 
-            $this->_updateState( // handshake starting
-                StreamLoop_HTTPS_Const::STATE_HANDSHAKING,
-                true,
-                false, // не ставим write, потому что во время handshaking всегда идет write и просто зайобка
-                true,
-                false // не менять timeout
-            );
+            $this->_state = StreamLoop_HTTPS_Const::STATE_HANDSHAKING; // handshake starting
+            // не ставим write, потому что во время handshaking всегда идет write и просто зайобка
+            $this->_loop->updateHandlerFlags($this, true, false, true);
 
             // и сразу же проверяем его, вдруг подключился
             $this->_checkHandshake($tsSelect);
@@ -384,16 +367,6 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         $this->_checkEOF();
     }
 
-    private function _updateState($state, $flagRead, $flagWrite, $flagExcept, $timeoutTo) {
-        $this->_state = $state;
-        $this->_loop->updateHandlerFlags($this, $flagRead, $flagWrite, $flagExcept);
-
-        // при false я не меняю timeout, просто не трогаю
-        if ($timeoutTo !== false) {
-            $this->_loop->updateHandlerTimeoutTo($this, $timeoutTo);
-        }
-    }
-
     private function _reset() {
         // чистка всего перед новым запросом или отключением
         $this->_buffer = '';
@@ -403,13 +376,9 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         $this->_active = false;
 
         // обнуляем состояние в ready и стираем все таймеры
-        $this->_updateState( // in reset
-            StreamLoop_HTTPS_Const::STATE_READY,
-            false,
-            false,
-            false,
-            0 // стереть таймер
-        );
+        $this->_state = StreamLoop_HTTPS_Const::STATE_READY; // in reset
+        $this->_loop->updateHandlerFlags($this, false, false, false);
+        $this->_loop->updateHandlerTimeoutTo($this, 0); // стереть таймер
     }
 
     public function getState() {
