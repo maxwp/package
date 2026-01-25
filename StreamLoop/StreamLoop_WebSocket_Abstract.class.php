@@ -103,7 +103,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         stream_set_read_buffer($stream, 0);
         stream_set_write_buffer($stream, 0);
 
-        $this->_updateState(StreamLoop_WebSocket_Const::STATE_CONNECTING, false, true, true);
+        $this->_state = StreamLoop_WebSocket_Const::STATE_CONNECTING;
+        $this->_loop->updateHandlerFlags($this, false, true, true);
 
         // устанавливаем timeout на connect + handshake + upgrade
         $this->_loop->updateHandlerTimeoutTo($this, time() + 10);
@@ -312,7 +313,9 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                     ],
                 ));
 
-                $this->_updateState(StreamLoop_WebSocket_Const::STATE_HANDSHAKING, true, false, true);
+                $this->_state = StreamLoop_WebSocket_Const::STATE_HANDSHAKING;
+                $this->_loop->updateHandlerFlags($this, true, false, true);
+
                 $this->_checkHandshake($tsSelect);
                 return;
             case StreamLoop_WebSocket_Const::STATE_HANDSHAKING:
@@ -397,7 +400,9 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                     }
                 }
 
-                $this->_updateState(StreamLoop_WebSocket_Const::STATE_READY, true, false, false);
+                $this->_state = StreamLoop_WebSocket_Const::STATE_READY;
+                $this->_loop->updateHandlerFlags($this, true, false, false);
+
                 $this->_buffer = '';
                 $this->_bufferLength = 0;
                 $this->_bufferOffset = 0;
@@ -464,19 +469,16 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
                 . $customHeaderString
                 . "\r\n";
             fwrite($this->stream, $headers);
-            $this->_updateState(StreamLoop_WebSocket_Const::STATE_UPGRADING, true, false, false);
+
+            $this->_state = StreamLoop_WebSocket_Const::STATE_UPGRADING;
+            $this->_loop->updateHandlerFlags($this, true, false, false);
+
             $this->_checkUpgrade($tsSelect);
 
         } elseif ($return === false) {
             $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_SSL, false);
             return;
         }
-    }
-
-    private function _updateState($state, $flagRead, $flagWrite, $flagExcept) {
-        // @todo maybe inline
-        $this->_state = $state;
-        $this->_loop->updateHandlerFlags($this, $flagRead, $flagWrite, $flagExcept);
     }
 
     public function write($data, $opcode = 1) {
