@@ -258,6 +258,106 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
                 }
 
                 $this->_buffer = $buffer;
+            } elseif (isset($headerArray['transfer-encoding']) && stripos($headerArray['transfer-encoding'], 'chunked') !== false) {
+                // ---- chunked ----
+                $stream = $this->stream;
+
+                // докачиваем сырой поток chunked-данных в _buffer
+                for ($drainIndex = 1; $drainIndex <= 10; $drainIndex++) {
+                    $chunk = fread($stream, 4096);
+                    if ($chunk === '') {
+                        break;
+                    } elseif ($chunk === false) {
+                        $this->_checkEOF();
+                        break;
+                    }
+                    $this->_buffer .= $chunk;
+                }
+
+                // пытаемся распарсить то, что уже есть в _buffer
+                while (true) {
+                    // 1) если не знаем размер текущего чанка — читаем строку размера
+                    if ($this->_chunkExpected === null) {
+                        $pos = strpos($this->_buffer, "\r\n");
+                        if ($pos === false) {
+                            // нет целой строки размера
+                            break;
+                        }
+
+                        $line = substr($this->_buffer, 0, $pos);
+                        $this->_buffer = (string) substr($this->_buffer, $pos + 2);
+
+                        // отрезаем chunk-ext после ';'
+                        $sc = strpos($line, ';');
+                        if ($sc !== false) {
+                            $line = substr($line, 0, $sc);
+                        }
+
+                        $line = trim($line);
+                        if ($line === '') {
+                            // иногда бывает лишний CRLF — просто пропускаем
+                            continue;
+                        }
+
+                        // hex -> int
+                        $size = hexdec($line);
+                        $this->_chunkExpected = $size;
+
+                        // нулевой чанк = конец. дальше могут быть трейлеры + пустая строка
+                        if ($size === 0) {
+                            // ждём конец трейлеров: \r\n\r\n (или просто \r\n если трейлеров нет)
+                            $end = strpos($this->_buffer, "\r\n\r\n");
+                            if ($end !== false) {
+                                $this->_buffer = (string) substr($this->_buffer, $end + 4);
+                            } else {
+                                // самый частый кейс: сразу \r\n
+                                if (substr($this->_buffer, 0, 2) === "\r\n") {
+                                    $this->_buffer = (string) substr($this->_buffer, 2);
+                                } else {
+                                    // трейлеры ещё не пришли полностью
+                                    break;
+                                }
+                            }
+
+                            // готово — отдаём
+                            $statusCode = $this->_statusCode;
+                            $statusMessage = $this->_statusMessage;
+                            $body = $this->_bodyDecoded;
+
+                            $this->_reset();
+
+                            $this->_onReceive(
+                                $tsSelect,
+                                $statusCode,
+                                $statusMessage,
+                                $headerArray,
+                                $body
+                            );
+
+                            break; // всё, запрос завершён
+                        }
+                    }
+
+                    // 2) у нас есть ожидаемый размер чанка > 0: ждём данные + \r\n
+                    $need = $this->_chunkExpected + 2; // data + CRLF
+                    if (strlen($this->_buffer) < $need) {
+                        break; // не хватает данных
+                    }
+
+                    $data = substr($this->_buffer, 0, $this->_chunkExpected);
+                    $crlf = substr($this->_buffer, $this->_chunkExpected, 2);
+
+                    // “по тупому”: если не CRLF — можно либо падать, либо пытаться жить
+                    if ($crlf !== "\r\n") {
+                        throw new StreamLoop_Exception("Bad chunked encoding (missing CRLF after chunk data)");
+                    }
+
+                    $this->_bodyDecoded .= $data;
+                    $this->_buffer = substr($this->_buffer, $need);
+
+                    // ждём следующий chunk-size
+                    $this->_chunkExpected = null;
+                }
             } else {
                 throw new StreamLoop_Exception('Unsupported encoding');
             }
@@ -375,6 +475,10 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         $this->_headerArray = [];
         $this->_active = false;
 
+        // reset chunked state
+        $this->_chunkExpected = null;
+        $this->_bodyDecoded = '';
+
         // обнуляем состояние в ready и стираем все таймеры
         $this->_state = StreamLoop_HTTPS_Const::STATE_READY; // in reset
         $this->_loop->updateHandlerFlags($this, false, false, false);
@@ -392,5 +496,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
     private $_statusMessage = '';
     private $_active = false; // bool
     protected $_state = 0; // int, 0 is STATE_DISCONNECTED, by default disconnected // @todo protected это лажа
+    private $_chunkExpected = null; // int|null, сколько байт данных ждем в текущем чанке
+    private $_bodyDecoded = '';     // сюда складываем уже декодированное тело (без chunk-обвязки)
 
 }
