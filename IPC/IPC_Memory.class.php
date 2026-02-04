@@ -8,15 +8,24 @@
 
 class IPC_Memory {
 
-    public function __construct($ipcAddress, $blockSize = 128) {
+    public function __construct($ipcAddress, $blockSize = 128, $readOnly = false) {
         $this->_blockSize = $blockSize;
 
-        $this->_memory = shmop_open(
-            $ipcAddress,
-            'c',
-            0644,
-            $this->_blockSize
-        );
+        if ($readOnly) {
+            $this->_memory = @shmop_open( // тут с собакой, только в режиме read only
+                $ipcAddress,
+                'a', // SHM_RDONLY
+                0644,
+                $this->_blockSize
+            );
+        } else {
+            $this->_memory = shmop_open(
+                $ipcAddress,
+                'c', // IPC_CREATE
+                0644,
+                $this->_blockSize
+            );
+        }
     }
 
     public function read($offset, $length) {
@@ -89,7 +98,6 @@ class IPC_Memory {
     }
 
     private $_memory;
-
     private $_blockSize;
 
 }
