@@ -8,6 +8,8 @@
 
 /**
  * Content for CLI
+ *
+ * @todo возможно в нем больше нет смысла, ведь можно перейти на cli
  */
 abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
 
@@ -46,25 +48,5 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
     public function print_f($s, $format, $eol = ' ', $color = false) {
         Cli::Print_f($s, $format, $eol, $color);
     }
-
-    protected function _setWorkTimeLimit(float $seconds) {
-        $this->_workTimeLimit = time() + $seconds;
-    }
-
-    /**
-     * ВАЖНО: нельзя вызывать этот метод если лимит не задан!
-     *
-     * @return bool
-     */
-    protected function _checkWorkTimeLimit() {
-        if (time() > $this->_workTimeLimit) {
-            $this->print_n("Exit by work time limit");
-            return true;
-        }
-
-        return false;
-    }
-
-    private float $_workTimeLimit = 0;
 
 }
