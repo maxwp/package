@@ -542,6 +542,14 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         $this->_chr127 = chr(0x80 | 127);
     }
 
+    protected function _getHost() {
+        return $this->_host;
+    }
+
+    protected function _getIP() {
+        return $this->_ip;
+    }
+
     private $_host, $_port, $_path, $_ip, $_bindIP, $_bindPort;
     private $_writeArray = [];
     private $_headerArray = [];

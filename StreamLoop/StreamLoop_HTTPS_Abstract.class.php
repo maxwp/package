@@ -489,6 +489,14 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         return $this->_state;
     }
 
+    protected function _getHost() {
+        return $this->_host;
+    }
+
+    protected function _getIP() {
+        return $this->_ip;
+    }
+
     private $_host, $_port, $_ip, $_bindIP, $_bindPort;
     private $_buffer = '';
     private $_headerArray = [];
