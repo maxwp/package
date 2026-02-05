@@ -65,9 +65,9 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
             $this->disconnect();
 
             // и кидаем ошибку
-            $this->_onError(
+            $this->_onError( // closed by server / reset by peer
                 microtime(true), // tsSelect
-                0, // http code 0
+                StreamLoop_HTTPS_Const::ERROR_CLOSED_BY_SERVER, // http code 0
                 'Connection closed by server', // ясное сообщение
             );
 
@@ -416,9 +416,9 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
 
         $this->disconnect();
 
-        $this->_onError(
+        $this->_onError( // timeout 408
             $tsSelect,
-            408,
+            StreamLoop_HTTPS_Const::ERROR_TIMEOUT,
             'timeout',
         );
     }
@@ -429,9 +429,9 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
             $this->disconnect();
 
             // затем кидаем ошибку (оно само переподключится если надо)
-            $this->_onError(
+            $this->_onError( // EOF
                 microtime(true),
-                0, // http code 0
+                StreamLoop_HTTPS_Const::ERROR_EOF, // http code 0
                 'Connection closed by server', // ясное сообщение
             );
 
@@ -455,9 +455,9 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         } elseif ($return === false) {
             //throw new StreamLoop_Exception("Failed to setup SSL");
             $this->disconnect();
-            $this->_onError(
-                microtime(true),
-                0,
+            $this->_onError( // handshake
+                $tsSelect,
+                StreamLoop_HTTPS_Const::ERROR_HANDSHAKE,
                 'Failed to setup SSL'
             );
 
