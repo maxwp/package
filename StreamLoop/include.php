@@ -3,6 +3,7 @@ ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_Exception.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_Handler_Abstract.class.php');
 include __DIR__.'/StreamLoop_HTTPS_Const.class.php';
+ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_TCP_Abstract.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_HTTPS_Abstract.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP_Abstract.class.php');
 ClassLoader::Get()->registerClass(__DIR__.'/StreamLoop_UDP.class.php');

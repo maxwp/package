@@ -1,5 +1,5 @@
 <?php
-abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
+abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
 
     abstract protected function _setupConnection();
     abstract protected function _onReceive($tsSelect, $statusCode, $statusMessage, $headerArray, $body);
@@ -7,29 +7,11 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
     abstract protected function _onReady($tsSelect); // @todo надо переписановать onReady, потому что для SL это скорее on 1st ready @todo после StateMachines
 
     public function updateConnection($host, $port, $ip = false, $bindIP = false, $bindPort = false) {
-        // @todo возможно структура connection'a?
-        $this->_host = $host;
-        $this->_port = $port;
-        $this->_ip = $ip;
-
-        if ($bindIP) {
-            if (!Checker::CheckIP($bindIP)) {
-                throw new StreamLoop_Exception("Invalid Bind IP $bindIP");
-            }
-        } else {
-            $bindIP = '0.0.0.0'; // any ip
-        }
-
-        if ($bindPort) {
-            if (!Checker::CheckPort($bindPort)) {
-                throw new StreamLoop_Exception("Invalid Port $bindPort");
-            }
-        } else {
-            $bindPort = 0; // any port
-        }
-
-        $this->_bindIP = $bindIP;
-        $this->_bindPort = $bindPort;
+        $this->_updateDestinationHost($host);
+        $this->_updateDestinationPort($port);
+        $this->_updateDestinationIP($ip);
+        $this->_updateSourceIP($bindIP);
+        $this->_updateSourcePort($bindPort);
     }
 
     public function write($method, $path, $body, $headerArray, $timeout = 10) {
@@ -96,7 +78,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         $context = stream_context_create([
             'socket' => [
                 'tcp_nodelay' => true,  // no Nagle algorithm
-                'bindto' => "{$this->_bindIP}:{$this->_bindPort}",
+                'bindto' => "{$this->_sourceIP}:{$this->_sourcePort}",
             ],
         ]);
 
@@ -489,15 +471,6 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_Handler_Abstract {
         return $this->_state;
     }
 
-    protected function _getHost() {
-        return $this->_host;
-    }
-
-    protected function _getIP() {
-        return $this->_ip;
-    }
-
-    private $_host, $_port, $_ip, $_bindIP, $_bindPort;
     private $_buffer = '';
     private $_headerArray = [];
     private $_statusCode = 0;

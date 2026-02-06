@@ -7,7 +7,7 @@
  * Такой подход делает меньше вызовов selectTimeout и позволяет держать сильно больше WebSocket-handler-ов внутри одного StreamLoop,
  * но timer не будет синхронизирован с last event от websocket. Хотя он и в C_WS может быть не синхронизирован из-за app-layer & iframe-layer ping-pong.
  */
-abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract {
+abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
     abstract protected function _setupConnection();
     abstract protected function _onInit(); // @todo rename to _onConnect
@@ -15,39 +15,20 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
     abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
     abstract protected function _onReady($tsSelect);
 
-    // @todo возможно вернуть EE Events чтобы красиво бросать события, бо якась хуйня повторяется везде
-
     // @todo как слепить в кучу websocket over https?
     // @todo сначала надо придумать как сделать StateMachine, чтобы я мог помещать команду с событиями onXXX,
     // и затем handshake и switching protocol снанут этими командами
 
     public function updateConnection($host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindIP = false, $bindPort = false) {
-        // @todo возможно структура connection'a?
-        $this->_host = $host;
-        $this->_port = $port;
+        $this->_updateDestinationHost($host);
+        $this->_updateDestinationPort($port);
+        $this->_updateDestinationIP($ip);
+        $this->_updateSourceIP($bindIP);
+        $this->_updateSourcePort($bindPort);
+
         $this->_path = $path;
         $this->_writeArray = $writeArray;
         $this->_headerArray = $headerArray;
-        $this->_ip = $ip;
-
-        if ($bindIP) {
-            if (!Checker::CheckIP($bindIP)) {
-                throw new StreamLoop_Exception("Invalid Bind IP $bindIP");
-            }
-        } else {
-            $bindIP = '0.0.0.0'; // any ip
-        }
-
-        if ($bindPort) {
-            if (!Checker::CheckPort($bindPort)) {
-                throw new StreamLoop_Exception("Invalid Port $bindPort");
-            }
-        } else {
-            $bindPort = 0; // any port
-        }
-
-        $this->_bindIP = $bindIP;
-        $this->_bindPort = $bindPort;
     }
 
     public function connect() {
@@ -68,7 +49,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         $context = stream_context_create([
             'socket' => [
                 'tcp_nodelay' => true,  // no Nagle algorithm
-                'bindto' => "{$this->_bindIP}:{$this->_bindPort}",
+                'bindto' => "{$this->_sourceIP}:{$this->_sourcePort}",
             ],
         ]);
 
@@ -542,17 +523,9 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_Handler_Abstract
         $this->_chr127 = chr(0x80 | 127);
     }
 
-    protected function _getHost() {
-        return $this->_host;
-    }
-
-    protected function _getIP() {
-        return $this->_ip;
-    }
-
-    private $_host, $_port, $_path, $_ip, $_bindIP, $_bindPort;
     private $_writeArray = [];
     private $_headerArray = [];
+    private $_path = ''; // string
     private $_buffer = ''; // string
     private $_bufferLength = 0; // int
     private $_bufferOffset = 0; // cursor: сколько байт уже "съели" из _buffer
