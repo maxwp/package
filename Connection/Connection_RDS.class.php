@@ -12,7 +12,7 @@
 class Connection_RDS
 implements Connection_IDatabaseAdapter {
 
-    public function __construct($hostname, $username, $password, $database = false, $encoding = 'utf8', $port = false) {
+    public function __construct($hostname, $username, $password, $database, $encoding = 'utf8', $port = 3306, $timezone = false) {
         if (!class_exists('mysqli')) {
             throw new Connection_Exception("PHP extension 'mysqli' not available");
         }
@@ -23,6 +23,7 @@ implements Connection_IDatabaseAdapter {
         $this->_database = $database;
         $this->_encoding = $encoding;
         $this->_port = $port;
+        $this->_timezone = $timezone;
     }
 
     public function connect() {
@@ -64,6 +65,10 @@ implements Connection_IDatabaseAdapter {
 
         // Специальный fix для MySQL 5.7, отключает STRICT MODE
         $this->query('SET sql_mode = ""');
+
+        if ($this->_timezone) {
+            $this->query('SET time_zone = "'.$this->_timezone.'"');
+        }
     }
 
     /**
@@ -249,7 +254,7 @@ implements Connection_IDatabaseAdapter {
         if (!$this->_linkConnected) {
             $this->connect();
         }
-        return @mysqli_real_escape_string($this->_link, $string);
+        return $this->_link->real_escape_string($string);
     }
 
     public function getLastInsertID() {
@@ -261,22 +266,18 @@ implements Connection_IDatabaseAdapter {
     }
 
     private $_hostname;
-
     private $_username;
-
     private $_password;
-
     private $_database;
-
     private $_port;
-
     private $_encoding;
-
+    private $_timezone;
+    /**
+     * @var mysqli
+     */
     private $_link = null;
     private $_linkConnected = false;
-
     private $_transactionCount = 0;
-
     private $_transactionRequested = false; // @todo поменять на started/inited
 
 }
