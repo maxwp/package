@@ -4,7 +4,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     abstract protected function _setupConnection();
     abstract protected function _onReceive($tsSelect, $statusCode, $statusMessage, $headerArray, $body);
     abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
-    abstract protected function _onReady($tsSelect); // @todo надо переписановать onReady, потому что для SL это скорее on 1st ready @todo после StateMachines
+    abstract protected function _onReady($tsSelect); // @todo надо переименовать во что-то типа onReady1st, потому что для SL это скорее on 1st ready @todo после StateMachines
 
     public function updateConnection($host, $port, $ip = false, $bindIP = false, $bindPort = false) {
         $this->_updateDestinationHost($host);
@@ -43,11 +43,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
 
         $n = fwrite($this->stream, $request);
         if ($n === false) {
-            // явно отключаесся
-            $this->disconnect();
-
-            // и кидаем ошибку
-            $this->_onError( // closed by server / reset by peer
+            $this->throwError( // closed by server / reset by peer
                 microtime(true), // tsSelect
                 StreamLoop_HTTPS_Const::ERROR_CLOSED_BY_SERVER, // http code 0
                 'Connection closed by server', // ясное сообщение
@@ -120,10 +116,10 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     }
 
     public function disconnect() {
-        // все сбрасываем
-        $this->_reset(); // reset in disconnect
+        $this->_reset(StreamLoop_HTTPS_Const::STATE_DISCONNECTED); // reset in disconnect
 
-        // сниммаем регистрацию
+        // дисконнект закрывает снимает регистрацию handler'a и закрывает stream.
+        // это приводит к тому, что SL временно забывает про handler и не ебет его
         $this->_loop->unregisterHandler($this);
 
         // бывают ситуации когда throwError два раза подряд и тогда disconnect два раза подряд
@@ -132,8 +128,6 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         }
         $this->streamID = 0;
         $this->stream = null;
-
-        $this->_state = StreamLoop_HTTPS_Const::STATE_DISCONNECTED;
     }
 
     public function readyRead($tsSelect) {
@@ -306,7 +300,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                             $statusMessage = $this->_statusMessage;
                             $body = $this->_bodyDecoded;
 
-                            $this->_reset();
+                            $this->_reset(); // chunked parser
 
                             $this->_onReceive(
                                 $tsSelect,
@@ -396,22 +390,30 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
 
         // важно: readySelectTimeout не может вызваться если timeout не настал, поэтому никаких проверок на timeout'ы тут просто делать не надо.
 
-        $this->disconnect();
-
-        $this->_onError( // timeout 408
+        $this->throwError( // timeout 408
             $tsSelect,
             StreamLoop_HTTPS_Const::ERROR_TIMEOUT,
             'timeout',
         );
     }
 
+    /**
+     * Disconnect + onError
+     *
+     * @param $tsSelect
+     * @param $message
+     * @param $errorMessage
+     * @return void
+     */
+    public function throwError($tsSelect, $errorCode, $errorMessage = false) {
+        $this->disconnect();
+        $this->_onError($tsSelect, $errorCode, $errorMessage);
+    }
+
     private function _checkEOF() {
         if (feof($this->stream)) {
-            // сначала отключаемся
-            $this->disconnect();
-
-            // затем кидаем ошибку (оно само переподключится если надо)
-            $this->_onError( // EOF
+            // затем кидаем ошибку
+            $this->throwError( // EOF
                 microtime(true),
                 StreamLoop_HTTPS_Const::ERROR_EOF, // http code 0
                 'Connection closed by server', // ясное сообщение
@@ -419,6 +421,8 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
 
             return true;
         }
+
+        return false;
     }
 
     private function _checkHandshake($tsSelect) {
@@ -430,14 +434,12 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
 
         if ($return === true) {
             // я подключился
-            $this->_reset(); // reset чтобы очистить все
+            $this->_reset(); // reset in handshake
 
-            // бросам событие что я готов
+            // готов + бросам событие что я готов
             $this->_onReady($tsSelect);
         } elseif ($return === false) {
-            //throw new StreamLoop_Exception("Failed to setup SSL");
-            $this->disconnect();
-            $this->_onError( // handshake
+            $this->throwError( // handshake
                 $tsSelect,
                 StreamLoop_HTTPS_Const::ERROR_HANDSHAKE,
                 'Failed to setup SSL'
@@ -449,7 +451,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         $this->_checkEOF();
     }
 
-    private function _reset() {
+    private function _reset($state = StreamLoop_HTTPS_Const::STATE_READY) {
         // чистка всего перед новым запросом или отключением
         $this->_buffer = '';
         $this->_statusCode = 0;
@@ -462,7 +464,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         $this->_bodyDecoded = '';
 
         // обнуляем состояние в ready и стираем все таймеры
-        $this->_state = StreamLoop_HTTPS_Const::STATE_READY; // in reset
+        $this->_state = $state; // in reset
         $this->_loop->updateHandlerFlags($this, false, false, false);
         $this->_loop->updateHandlerTimeoutTo($this, 0); // стереть таймер
     }

@@ -99,7 +99,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         $this->_loop->unregisterHandler($this);
 
         // бывают ситуации когда throwError два раза подряд и тогда disconnect два раза подряд
-        // бывают ситуации когда throwError два раза подряд и тогда disconnect два раза подряд
         if (is_resource($this->stream)) {
             fclose($this->stream);
         }
