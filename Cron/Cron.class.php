@@ -1,41 +1,38 @@
 <?php
 /**
  * Eventic Packages
- * Copyright (C) 2007-2025 WebProduction
+ * Copyright (C) 2007-2026 WebProduction
  *
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
 /**
- * Cron supervisor
+ * Cron
  */
 class Cron extends Pattern_ASingleton {
 
-    // @todo to EE_AContent?
-
-    public function run($className, $argumentArray = [], $uniquePID = false, $logFile = false) {
+    public function add($className, $argumentArray = [], $uniquePID = false, $logFile = false) {
         if (!is_subclass_of($className, EE_AContent::class)) {
             throw new Exception("Class $className does not extend EE_AContent");
         }
 
-        $data = [];
-        $data['classname'] = $className;
-        $data['argumentArray'] = $argumentArray;
-        $data['pid'] = $uniquePID;
-        $data['logFile'] = $logFile;
+        $data = [
+            'classname' => $className,
+            'argumentArray' => $argumentArray,
+            'pid' => $uniquePID,
+            'logFile' => $logFile,
+        ];
 
-        $result = $this->_getRedisLocal()->sAdd('cron', json_encode($data));
-
-        $command = $this->_makeCommand($data);
+        $result = $this->_redis->sAdd('cron', json_encode($data));
 
         # debug:start
-        print "Added to cron: $command ($result)\n";
+        $command = $this->_makeCommand($data);
+        Cli::Print_n("Cron: add $command ($result)");
         # debug:end
     }
 
-    public function process($dirpath) {
-        $redisLocal = $this->_getRedisLocal();
-        while ($file = $redisLocal->sPop('cron')) {
+    public function run($dirpath) {
+        while ($file = $this->_redis->sPop('cron')) {
             $data = json_decode($file, true);
 
             $pid = $data['pid'];
@@ -58,9 +55,11 @@ class Cron extends Pattern_ASingleton {
             }
 
             $path = "/usr/bin/flock -n $dirpath/pid/$pid /usr/bin/php $dirpath/$command $logString";
+
             # debug:start
-            print "Run: ".$path . "\n";
+            Cli::Print_n("Cron: run $path");
             # debug:end
+
             exec($path);
         }
     }
@@ -72,42 +71,32 @@ class Cron extends Pattern_ASingleton {
         if ($argumentArray) {
             ksort($argumentArray);
         }
+
         $a = [];
         foreach ($argumentArray as $key => $value) {
             if (is_array($value)) {
                 foreach ($value as $v) {
-                    $a[] = "--$key=$v";
+                    $a[] = "$key=$v";
                 }
             } elseif ($value === true) {
-                $a[] = "--$key";
+                $a[] = $key;
             } else {
-                $a[] = "--$key=$value";
+                $a[] = "$key=$value";
             }
         }
         $argumentString = implode(' ', $a);
         unset($a);
 
-        $command = "ee-run.php $className $argumentString";
-        return $command;
+        return "ee-run.php $className $argumentString";
     }
 
-    /**
-     * @return Redis
-     */
-    private function _getRedisLocal() {
-        if ($this->_redis) {
-            return $this->_redis;
-        }
-
+    public function __construct() {
+        // именно локальный redis
         $this->_redis = new Redis();
         $this->_redis->connect('127.0.0.1');
         return $this->_redis;
     }
 
     private $_redis;
-
-    public function __construct() {
-
-    }
 
 }
