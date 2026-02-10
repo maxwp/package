@@ -75,9 +75,7 @@ class Cron extends Pattern_ASingleton {
         $a = [];
         foreach ($argumentArray as $key => $value) {
             if (is_array($value)) {
-                foreach ($value as $v) {
-                    $a[] = "$key=$v";
-                }
+                $a[] = $key.'=['.implode(',', $value).']';
             } elseif ($value === true) {
                 $a[] = $key;
             } else {
