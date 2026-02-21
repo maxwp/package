@@ -8,8 +8,6 @@
 
 /**
  * Content for CLI
- *
- * @todo возможно в нем больше нет смысла, ведь можно перейти на cli
  */
 abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
 
@@ -47,6 +45,26 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
 
     public function print_f($s, $format, $eol = ' ', $color = false) {
         Cli::Print_f($s, $format, $eol, $color);
+    }
+
+    public function print_error(Throwable $e) {
+        $this->print_failure($e->getMessage());
+    }
+
+    public function print_exception(Exception $e) {
+        $this->print_failure(get_class($e).': '.$e->getMessage());
+    }
+
+    public function print_success($s) {
+        $this->printSGRStart(Cli::FG_GREEN_BRIGHT);
+        $this->print_n($s);
+        $this->printSGREnd();
+    }
+
+    public function print_failure($s) {
+        $this->printSGRStart(Cli::FG_RED_BRIGHT);
+        $this->print_n($s);
+        $this->printSGREnd();
     }
 
 }
