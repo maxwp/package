@@ -35,7 +35,7 @@ class Connection extends Pattern_ARegistrySingleton {
      * @return Connection_RDS
      * @throws Connection_Exception
      */
-    public static function getRDS(string $key = 'rds') {
+    public static function GetRDS(string $key = 'rds') {
         return self::_Get($key);
     }
 
