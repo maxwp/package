@@ -462,31 +462,54 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     }
 
     public function write($data, $opcode = 1) {
-        $length = strlen($data);
+        try {
+            fwrite(
+                $this->stream,
+                $this->_encodeMessage($data, $opcode)
+            );
+        } catch (Throwable $te) {
+            $this->throwError(
+                microtime(true),
+                StreamLoop_WebSocket_Const::ERROR_EOF,
+                $te->getMessage()
+            );
+        }
+    }
+
+    public function writeMulti($dataArray, $opcode = 1) {
+        $s = '';
+        foreach ($dataArray as $data) {
+            $s .= $this->_encodeMessage($data, $opcode);
+        }
 
         try {
-            if ($length <= 125) {
-                fwrite(
-                    $this->stream,
-                    chr(0x80 | $opcode) . chr(0x80 | $length)."\x00\x00\x00\x00".$data
-                );
-            } elseif ($length <= 1024) {
-                fwrite(
-                    $this->stream,
-                    chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length)."\x00\x00\x00\x00".$data
-                );
-            } else {
-                if ($length <= 0xFFFF) {
-                    $frame = chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length)."\x00\x00\x00\x00".$data;
-                } else {
-                    // 64-bit length (network order)
-                    $frame = chr(0x80 | $opcode). $this->_chr127 . pack('J', $length)."\x00\x00\x00\x00".$data;
-                }
-
-                fwrite($this->stream, $frame);
-            }
+            fwrite(
+                $this->stream,
+                $s
+            );
         } catch (Throwable $te) {
-            $this->throwError(microtime(true), StreamLoop_WebSocket_Const::ERROR_EOF, $te->getMessage());
+            $this->throwError(
+                microtime(true),
+                StreamLoop_WebSocket_Const::ERROR_EOF,
+                $te->getMessage()
+            );
+        }
+    }
+
+    private function _encodeMessage($data, $opcode = 1) {
+        $length = strlen($data);
+
+        if ($length <= 125) {
+            return chr(0x80 | $opcode) . chr(0x80 | $length)."\x00\x00\x00\x00".$data;
+        } elseif ($length <= 1024) {
+            return chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length)."\x00\x00\x00\x00".$data;
+        } else {
+            if ($length <= 0xFFFF) {
+                return chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length)."\x00\x00\x00\x00".$data;
+            } else {
+                // 64-bit length (network order)
+                return chr(0x80 | $opcode). $this->_chr127 . pack('J', $length)."\x00\x00\x00\x00".$data;
+            }
         }
     }
 
