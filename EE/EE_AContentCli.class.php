@@ -47,21 +47,21 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
         Cli::Print_f($s, $format, $eol, $color);
     }
 
-    public function print_error(Throwable $e) {
-        $this->print_failure($e->getMessage());
+    public function print_n_error(Throwable $e) {
+        $this->print_n_failure($e->getMessage());
     }
 
-    public function print_exception(Exception $e) {
-        $this->print_failure(get_class($e).': '.$e->getMessage());
+    public function print_n_exception(Exception $e) {
+        $this->print_n_failure(get_class($e).': '.$e->getMessage());
     }
 
-    public function print_success($s) {
+    public function print_n_success($s) {
         $this->printSGRStart(Cli::FG_GREEN_BRIGHT);
         $this->print_n($s);
         $this->printSGREnd();
     }
 
-    public function print_failure($s) {
+    public function print_n_failure($s) {
         $this->printSGRStart(Cli::FG_RED_BRIGHT);
         $this->print_n($s);
         $this->printSGREnd();
