@@ -176,8 +176,16 @@ class Checker {
             // если есть цифры - болт
             return false;
         }
-        return ((bool) preg_match('/^(.+?)\s+(.+?)\s+(.+?)$/ius', $name) ||
-                (bool) preg_match('/^(.+?)\s+(.+?)\.\s*(.+?)\.$/ius', $name));
+
+        if (preg_match('/^(.+?)\s+(.+?)\s+(.+?)$/ius', $name)) {
+            return true;
+        }
+
+        if (preg_match('/^(.+?)\s+(.+?)\.\s*(.+?)\.$/ius', $name)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -195,8 +203,9 @@ class Checker {
         }
 
         $length = strlen(preg_replace('/\D/', '', $phone));
-        if ($length < 2 || $length > 13)
+        if ($length < 2 || $length > 13) {
             return false;
+        }
 
         return true;
     }
