@@ -136,6 +136,9 @@ class Array_Object extends ArrayObject {
     }
 
     public function quantile(float $percentile) {
+        if (!$this->count()) {
+            return 0;
+        }
         $array = $this->getArrayCopy();
         sort($array);
         $index = ($percentile / 100) * (count($array) - 1);
