@@ -135,7 +135,7 @@ class Array_Object extends ArrayObject {
         return sqrt($this->variance());
     }
 
-    public function quantile(float $percentile) {
+    public function quantile($percentile) {
         if (!$this->count()) {
             return 0;
         }
@@ -151,13 +151,43 @@ class Array_Object extends ArrayObject {
         }
     }
 
+    public function tailCount($percentile) {
+        if (!$this->count()) {
+            return 0;
+        }
+
+        $array = $this->getArrayCopy();
+        sort($array);
+
+        // 1. находим значение квантиля
+        $index = ($percentile / 100) * (count($array) - 1);
+        $lower = floor($index);
+        $upper = ceil($index);
+
+        if ($lower == $upper) {
+            $quantileValue = $array[$lower];
+        } else {
+            $quantileValue = $array[$lower] + ($array[$upper] - $array[$lower]) * ($index - $lower);
+        }
+
+        // 2. считаем хвост (>= квантиля)
+        $count = 0;
+        foreach ($array as $value) {
+            if ($value >= $quantileValue) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
     /**
      * Фильтрация выбросов (удаляет экстремальные значения)
      *
-     * @param $threshold
+     * @param float $threshold
      * @return array
      */
-    public function filterOutliers(float $threshold) {
+    public function filterOutliers($threshold) {
         $array = $this->getArrayCopy();
         $cnt = count($array);
         if (!$cnt) {

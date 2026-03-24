@@ -8,12 +8,6 @@
 
 class Array_Static {
 
-    // @todo внутрь одного метода можно сразу запихнуть подсчет min/max/avg/med/var
-    // и обнулять статистику только при изменении массива
-    // это особенно актуально для Array_Static, потому что он сука static
-
-    // @todo rename Med to Media, Avg to Average
-
     public static function Max($a) {
         $a = new Array_Object($a);
         return $a->max();
@@ -52,13 +46,17 @@ class Array_Static {
         return $a->sum();
     }
 
-    public static function Quantile(array $a, float $percentile) {
+    public static function Quantile($a, $percentile) {
         $a = new Array_Object($a);
         return $a->quantile($percentile);
     }
 
-    public static function FilterOutliers(array $a, float $threshold) {
-        // @todo возможно переносить внутрь не имело смысла
+    public static function TailCount($a, $percentile) {
+        $a = new Array_Object($a);
+        return $a->tailCount($percentile);
+    }
+
+    public static function FilterOutliers($a, $threshold) {
         $a = new Array_Object($a);
         return $a->filterOutliers($threshold);
     }
