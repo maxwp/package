@@ -152,29 +152,13 @@ class Array_Object extends ArrayObject {
     }
 
     public function tailCount($percentile) {
-        if (!$this->count()) {
-            return 0;
-        }
+        $quantileValue = $this->quantile($percentile);
 
-        $array = $this->getArrayCopy();
-        sort($array);
-
-        // 1. находим значение квантиля
-        $index = ($percentile / 100) * (count($array) - 1);
-        $lower = floor($index);
-        $upper = ceil($index);
-
-        if ($lower == $upper) {
-            $quantileValue = $array[$lower];
-        } else {
-            $quantileValue = $array[$lower] + ($array[$upper] - $array[$lower]) * ($index - $lower);
-        }
-
-        // 2. считаем хвост (>= квантиля)
+        // считаем хвост (>= квантиля)
         $count = 0;
-        foreach ($array as $value) {
+        foreach ($this as $value) {
             if ($value >= $quantileValue) {
-                $count++;
+                $count ++;
             }
         }
 
