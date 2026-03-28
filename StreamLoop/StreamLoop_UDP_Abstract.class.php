@@ -2,7 +2,7 @@
 abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
 
     abstract protected function _setupConnection();
-    abstract protected function _onReceive($tsSelect, $message, $messageSize, $fromAddress, $fromPort);
+    abstract protected function _onReceive($tsSelect, $message, $messageSize, $fromAddress);
 
     abstract protected function _onError($tsSelect, $errorCode);
 
@@ -75,12 +75,12 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
 
         // редко бывают ситуации когда bytes === 0 - данных нет, но это валидно
         if ($bytes > 0) {
-            $this->_onReceive($tsSelect, $buffer, $bytes, $fromAddress, $fromPort);
+            $this->_onReceive($tsSelect, $buffer, $bytes, $fromAddress);
         } else {
             $err = socket_last_error($socket);
 
             // в Linux EAGAIN == EWOULDBLOCK (11), достаточно одного сравнения
-            if ($err != SOCKET_EAGAIN /* || $err === SOCKET_EWOULDBLOCK */) {
+            if ($err != SOCKET_EAGAIN) { // || $err === SOCKET_EWOULDBLOCK
                 $this->_onError($tsSelect, $err);
             }
         }

@@ -22,7 +22,7 @@ abstract class StreamLoop_UDP_DrainForward_Abstract extends StreamLoop_UDP_Abstr
             );
 
             if ($bytes > 0) {
-                $this->_onReceive($tsSelect, $buffer, $bytes, $fromAddress, $fromPort);
+                $this->_onReceive($tsSelect, $buffer, $bytes, $fromAddress);
             } else {
                 // внимание! я не делаю тут проверки на ошибки, потому что эта штука занимает 0..1.1 us
                 // stop drain
