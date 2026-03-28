@@ -185,14 +185,14 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                                 $maskKey = substr($buffer, $offset + $maskOffset, 4);
 
                                 // повторяем маску до длины payload и XOR'им строкой
-                                $mask = str_repeat($maskKey, ($payloadLength + 3) >> 2);
-                                $payload ^= substr($mask, 0, $payloadLength);
+                                //$mask = str_repeat($maskKey, ($payloadLength + 3) >> 2);
+                                //$payload ^= substr($mask, 0, $payloadLength);
+                                // XOR возьмет только strlen($payload) байт из правого операнда автоматически
+                                $payload ^= str_repeat($maskKey, ($payloadLength >> 2) + 1);
                             }
 
                             // Обработка опкодов
-                            if ($opcode == 0x1) { // FRAME PAYLOAD text
-                                $this->_onReceive($tsSelect, $payload, $opcode);
-                            } elseif ($opcode == 0x2) { // FRAME PAYLOAD binary
+                            if ($opcode <= 0x2) { // // 0x1 (text) или 0x2 (binary)
                                 $this->_onReceive($tsSelect, $payload, $opcode);
                             } elseif ($opcode == 0xA) { // FRAME PONG
                                 # debug:start
@@ -227,7 +227,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                             $bufLen = 0;
                             $offset = 0;
                         } elseif ($offset > 65536) {
-                            // редкое "сжатие" буфера
+                            // редкое "сжатие" буфера: чаще всего фреймы летят целые, поэтому обрабатывается предыдущее условие
                             $buffer = substr($buffer, $offset);
                             $bufLen -= $offset;
                             $offset = 0;
@@ -501,15 +501,11 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
         if ($length <= 125) {
             return chr(0x80 | $opcode) . chr(0x80 | $length)."\x00\x00\x00\x00".$data;
-        } elseif ($length <= 1024) {
+        } elseif ($length <= 0xFFFF) {
             return chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length)."\x00\x00\x00\x00".$data;
         } else {
-            if ($length <= 0xFFFF) {
-                return chr(0x80 | $opcode) . $this->_chr126 . chr($length >> 8) . chr($length)."\x00\x00\x00\x00".$data;
-            } else {
-                // 64-bit length (network order)
-                return chr(0x80 | $opcode). $this->_chr127 . pack('J', $length)."\x00\x00\x00\x00".$data;
-            }
+            // 64-bit length (network order)
+            return chr(0x80 | $opcode). $this->_chr127 . pack('J', $length)."\x00\x00\x00\x00".$data;
         }
     }
 
