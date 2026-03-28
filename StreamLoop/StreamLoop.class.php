@@ -17,7 +17,7 @@ class StreamLoop {
             $e = $this->_selectExceptArray;
 
             // вот тут определить сколько us до ближайшего timeout'a
-            $timeoutMin = $this->_selectTimeoutToMin;
+            $timeoutMin = $this->_selectTimeoutToMin; // нельзя переносить внутрь if'a, будет +1 ns
             if ($timeoutMin) {
                 $timeoutS = 0;
                 $timeoutUS = ($timeoutMin - $tsSelect) * 1_000_000;
@@ -79,7 +79,8 @@ class StreamLoop {
                 }
             }
 
-            // эта проверка должна быть в самом конце
+            // эта проверка должна быть в самом конце: она срабатывает редко, и если ее поставить сразу после select
+            // то будет бесполезная задержка на проверку if===false перед вызовом логики, которая в 99.99999% не оправдана
             if ($result === false) {
                 throw new StreamLoop_Exception('stream_select failed');
             }
@@ -109,14 +110,26 @@ class StreamLoop {
         // важно: этот метод надо вызывать ДО fclose, пока есть streamID
         $streamID = $handler->streamID;
         if ($streamID) {
-            unset($this->_handlerArray[$streamID]);
-            unset($this->_selectReadArray[$streamID]);
-            unset($this->_selectWriteArray[$streamID]);
-            unset($this->_selectExceptArray[$streamID]);
-            unset($this->_selectTimeoutToArray[$streamID]);
+            unset(
+                $this->_handlerArray[$streamID],
+                $this->_selectReadArray[$streamID],
+                $this->_selectWriteArray[$streamID],
+                $this->_selectExceptArray[$streamID],
+                $this->_selectTimeoutToArray[$streamID]
+            );
         }
 
-        $this->_rweFlag = ($this->_selectReadArray || $this->_selectWriteArray || $this->_selectExceptArray);
+        // обновляем rwe флаг
+        // хитрожопая if-tree optimization: чаще всего есть что-то в read и нет смысла делать OR-конструкцию
+        if ($this->_selectReadArray) {
+            $this->_rweFlag = true;
+        } elseif ($this->_selectWriteArray) {
+            $this->_rweFlag = true;
+        } elseif ($this->_selectExceptArray) {
+            $this->_rweFlag = true;
+        } else {
+            $this->_rweFlag = false;
+        }
     }
 
     public function updateHandlerFlags(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite, $flagExcept) {
@@ -147,7 +160,16 @@ class StreamLoop {
         }
 
         // обновляем rwe флаг
-        $this->_rweFlag = ($this->_selectReadArray || $this->_selectWriteArray || $this->_selectExceptArray);
+        // хитрожопая if-tree optimization: чаще всего есть что-то в read и нет смысла делать OR-конструкцию
+        if ($this->_selectReadArray) {
+            $this->_rweFlag = true;
+        } elseif ($this->_selectWriteArray) {
+            $this->_rweFlag = true;
+        } elseif ($this->_selectExceptArray) {
+            $this->_rweFlag = true;
+        } else {
+            $this->_rweFlag = false;
+        }
     }
 
     /**
