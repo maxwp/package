@@ -70,7 +70,12 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
     // experimental cache, maybe move to other class or inherit in other layer
     protected function _cacheLoad($cacheFile) {
         // cache - это попытка считать из кеша и сформировать его если его нет
-        $cache = $this->getArgumentSecure('cache', EE_Typing::TYPE_BOOL);
+        $cache = $this->getArgumentSecure('cache', EE_Typing::TYPE_STRING);
+
+        // если сказано строит новый cache - то не используем старый
+        if ($cache == 'new') {
+            return false;
+        }
 
         if ($cache) {
             try {
@@ -90,7 +95,7 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
 
     protected function _cacheSave($cacheFile, $data) {
         // cache - это попытка считать из кеша и сформировать его если его нет
-        $cache = $this->getArgumentSecure('cache', EE_Typing::TYPE_BOOL);
+        $cache = $this->getArgumentSecure('cache', EE_Typing::TYPE_STRING);
 
         if ($cache) {
             file_put_contents(
