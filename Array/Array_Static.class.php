@@ -26,9 +26,23 @@ class Array_Static {
         return count($a);
     }
 
-    public static function Avg($a, $countLimit = false) {
+    public static function Avg($a, $countLimit = false) { // @todo drop count
         $a = new Array_Object($a);
         return $a->avg($countLimit);
+    }
+
+    public static function WAvg($a, $w) {
+        $sum = 0;
+        $weight = 0;
+        foreach ($a as $key => $value) {
+            $sum += $value * $w[$key];
+            $weight += $w[$key];
+        }
+        if ($weight != 0) {
+            return $sum / $weight;
+        } else {
+            return 0;
+        }
     }
 
     public static function Variance($a) {

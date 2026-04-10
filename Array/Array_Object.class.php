@@ -35,7 +35,7 @@ class Array_Object extends ArrayObject {
         return $min;
     }
 
-    public function avg($countLimit = false) {
+    public function avg($countLimit = false) { // @todo drop count
         $cnt = $this->count();
         if (!$cnt) {
             return 0;
