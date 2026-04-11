@@ -35,27 +35,15 @@ class Array_Object extends ArrayObject {
         return $min;
     }
 
-    public function avg($countLimit = false) { // @todo drop count
+    public function avg() {
         $cnt = $this->count();
         if (!$cnt) {
             return 0;
         }
 
-        $a = $this;
-
-        // если в массиве элементов меньше чем нужно - добавляем нулей,
-        // чтобы правильно расчитать медиану
-        if ($countLimit > 0 && $countLimit > $cnt) {
-            $diff = $countLimit - $cnt;
-
-            for ($j = 1; $j <= $diff; $j++) {
-                $a[] = 0;
-            }
-        }
-
         $cnt = 0;
         $sum = 0;
-        foreach ($a as $x) {
+        foreach ($this as $x) {
             $sum += $x;
             $cnt ++;
         }
@@ -79,25 +67,14 @@ class Array_Object extends ArrayObject {
         return $sum;
     }
 
-    public function median($countLimit = false) {
+    public function median() {
         $cnt = $this->count();
 
         if (!$cnt) {
             return 0;
         }
 
-        $a = array_values($this->getArrayCopy());
-
-        // если в массиве элементов меньше чем нужно - добавляем нулей,
-        // чтобы правильно расчитать медиану
-        if ($countLimit > 0 && $countLimit > $cnt) {
-            $diff = $countLimit - $cnt;
-
-            for ($j = 1; $j <= $diff; $j++) {
-                $a[] = 0;
-            }
-        }
-
+        $a = array_values($this->getArrayCopy()); // @todo wtf?
         $count = count($a);
 
         if (!$count) {

@@ -26,9 +26,9 @@ class Array_Static {
         return count($a);
     }
 
-    public static function Avg($a, $countLimit = false) { // @todo drop count
+    public static function Avg($a) {
         $a = new Array_Object($a);
-        return $a->avg($countLimit);
+        return $a->avg();
     }
 
     public static function WAvg($a, $w) {
@@ -81,9 +81,9 @@ class Array_Static {
      * @param $a
      * @return float
      */
-    public static function Med($a, $countLimit = false) {
+    public static function Med($a) {
         $a = new Array_Object($a);
-        return $a->median($countLimit);
+        return $a->median();
     }
 
 }
