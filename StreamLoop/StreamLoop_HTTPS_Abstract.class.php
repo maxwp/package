@@ -62,13 +62,14 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         // перед connect надо вызвать setupConnection чтобы он поправил все параметры соединения
         $this->_setupConnection();
 
-        # debug:start
-        Cli::Print_n(__CLASS__." connecting to {$this->_host} ip={$this->_ip} port={$this->_port}");
-        # debug:end
-
         $this->_active = true; // ставим флаг что я активен (потому что подключаюсь)
 
-        $ip = $this->_ip ? $this->_ip : $this->_host;
+        // @todo тут общий кусок кода со StreamLoop_WebSocket_Abstract
+        # debug:start
+        Cli::Print_n(__CLASS__." connecting to {$this->_host} ip={$this->_ip} port={$this->_port} bind={$this->_sourceIP}:{$this->_sourcePort}");
+        # debug:end
+
+        $ip = $this->_ip ?: $this->_host;
 
         // супер важно: надо создавать контекст без ssl-опций!
         $context = stream_context_create([

@@ -35,15 +35,16 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         // перед connect я вызываю setupConnection чтобы он поправил все что надо
         $this->_setupConnection();
 
-        # debug:start
-        Cli::Print_n(__CLASS__." connecting to {$this->_host} ip={$this->_ip} port={$this->_port}");
-        # debug:end
-
         $this->_buffer = '';
         $this->_bufferLength = 0;
         $this->_bufferOffset = 0;
 
-        $ip = $this->_ip ? $this->_ip : $this->_host;
+        // @todo тут общий кусок кода со StreamLoop_HTTPS_Abstract
+        # debug:start
+        Cli::Print_n(__CLASS__." connecting to {$this->_host} ip={$this->_ip} port={$this->_port} bind={$this->_sourceIP}:{$this->_sourcePort}");
+        # debug:end
+
+        $ip = $this->_ip ?: $this->_host;
 
         // супер важно: надо создавать контекст без ssl-опций!
         $context = stream_context_create([
@@ -59,7 +60,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
             $errstr,
             0, // timeout = 0, чтобы мгновенно вернулось
             STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT,
-            $context, // @todo возможно надо будет таки перенести контекст из Connection_WebSocket
+            $context,
         );
         if (!$stream) {
             // критическая ошибка — завершаем
