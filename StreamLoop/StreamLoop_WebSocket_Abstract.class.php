@@ -370,6 +370,10 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
             if ($line == "\r\n" || $line == "\n") {
                 // @todo not not
                 if (!str_contains($this->_buffer, '101 Switching Protocols')) {
+                    # debug:start
+                    Cli::Print_n(__CLASS__.": invalid upgrade response: ".$this->_buffer);
+                    # debug:end
+
                     $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_HANDSHAKE, false);
                     return;
                 }
