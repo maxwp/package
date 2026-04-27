@@ -8,7 +8,7 @@
 
 class Array_Object extends ArrayObject {
 
-    public function __construct($a = array()) {
+    public function __construct($a = []) {
         if (!$a) {
             $a = [];
         }
@@ -35,6 +35,11 @@ class Array_Object extends ArrayObject {
         return $min;
     }
 
+    /**
+     * Average (mean)
+     *
+     * @return float|int
+     */
     public function average() {
         $sum = $this->sum();
         if (!$sum) {
@@ -49,7 +54,13 @@ class Array_Object extends ArrayObject {
         return $sum / $cnt;
     }
 
+    /**
+     * Sum
+     *
+     * @return int|float
+     */
     public function sum() {
+        // если элементов нет - то перебирать ничего не нужно
         if (!$this->count()) {
             return 0;
         }
@@ -155,13 +166,13 @@ class Array_Object extends ArrayObject {
      * @return int
      */
     public function tailCount($quantileValue) {
-        $count = 0;
+        $cnt = 0;
         foreach ($this as $value) {
             if ($value >= $quantileValue) {
-                $count ++;
+                $cnt ++;
             }
         }
-        return $count;
+        return $cnt;
     }
 
     /**
@@ -189,17 +200,14 @@ class Array_Object extends ArrayObject {
      * @return array
      */
     public function filterOutliers($threshold) {
-        $array = $this->getArrayCopy();
-        $cnt = count($array);
-        if (!$cnt) {
+        if (!$this->count()) {
             return [];
         }
 
-        $mean = array_sum($array) / $cnt;
-        $variance = array_sum(array_map(fn($x) => pow($x - $mean, 2), $array)) / $cnt;
-        $std_dev = sqrt($variance);
+        $mean = $this->average();
+        $stddev = $this->stdDeviation();
 
-        return array_filter($array, fn($x) => abs($x - $mean) < $threshold * $std_dev);
+        return array_filter($this->getArrayCopy(), fn($x) => abs($x - $mean) < $threshold * $stddev);
     }
 
     private function _getArrayCopySorted() {
