@@ -163,6 +163,24 @@ class Array_Object extends ArrayObject {
     }
 
     /**
+     * Coefficient of Variation (CV = stddev / mean)
+     *
+     *  CV < 0.5 - почти ровный поток
+     *  0.5 – 1 - норм
+     *  >1 - уже нестабильный
+     *  >2 - трэш / burst
+     *
+     * @return float
+     */
+    public function cv() {
+        $avg = $this->avg();
+        if (!$avg) {
+            return false;
+        }
+        return $this->stdDeviation() / $avg;
+    }
+
+    /**
      * Фильтрация выбросов (удаляет экстремальные значения)
      *
      * @param float $threshold
