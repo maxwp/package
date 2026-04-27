@@ -6,6 +6,10 @@
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
+/**
+ * Статическая обретка над Array_Object;
+ * для производительности лучше использовать сам Array_Object
+ */
 class Array_Static {
 
     public static function Max($a) {
@@ -28,7 +32,7 @@ class Array_Static {
 
     public static function Avg($a) {
         $a = new Array_Object($a);
-        return $a->avg();
+        return $a->average();
     }
 
     public static function WAvg($a, $w) {

@@ -35,17 +35,15 @@ class Array_Object extends ArrayObject {
         return $min;
     }
 
-    public function avg() {
-        $cnt = $this->count();
-        if (!$cnt) {
+    public function average() {
+        $sum = $this->sum();
+        if (!$sum) {
             return 0;
         }
 
-        $cnt = 0;
-        $sum = 0;
-        foreach ($this as $x) {
-            $sum += $x;
-            $cnt ++;
+        $cnt = $this->count();
+        if (!$cnt) {
+            return 0;
         }
 
         return $sum / $cnt;
@@ -56,9 +54,6 @@ class Array_Object extends ArrayObject {
             return 0;
         }
 
-        // быстрее в 5 раз, но есть косяки с типизацией строк
-        //return array_sum($this->getArrayCopy());
-
         $sum = 0;
         foreach ($this as $x) {
             $sum += $x;
@@ -67,23 +62,21 @@ class Array_Object extends ArrayObject {
         return $sum;
     }
 
+    /**
+     * Медиана (p50)
+     *
+     * @return float|int|mixed
+     */
     public function median() {
         $cnt = $this->count();
         if (!$cnt) {
             return 0;
         }
 
-        $a = array_values($this->getArrayCopy()); // @todo wtf?
-        $count = count($a);
+        $a = $this->_getArrayCopySorted();
 
-        if (!$count) {
-            return null;
-        }
-
-        sort($a);
-
-        $half = floor($count / 2);
-        if ($count % 2) {
+        $half = intdiv($cnt, 2);
+        if ($cnt % 2) {
             return $a[$half];
         } else {
             return ($a[$half - 1] + $a[$half]) / 2;
@@ -91,39 +84,49 @@ class Array_Object extends ArrayObject {
     }
 
     public function variance() {
-        $n = $this->count();
-        if ($n === 0) {
+        $cnt = $this->count();
+        if (!$cnt) {
             return 0;
         }
 
-        $mean = $this->avg(); // Среднее значение
-        $sumOfSquares = 0;
+        $mean = $this->average(); // Среднее значение
 
-        $a = $this->getArrayCopy();
-        foreach ($a as $num) {
+        $sumOfSquares = 0; // сумма квадратов разностей
+        foreach ($this as $num) {
             $sumOfSquares += pow($num - $mean, 2); // Квадраты разностей
         }
 
-        return $sumOfSquares / $n; // Дисперсия
+        return $sumOfSquares / $cnt; // дисперсия
     }
 
+    /**
+     * Std. Deviation
+     *
+     * @return float
+     */
     public function stdDeviation() {
         return sqrt($this->variance());
     }
 
+    /**
+     * Quantille
+     *
+     * @param $percentile
+     * @return float|int|mixed
+     */
     public function quantile($percentile) {
-        if (!$this->count()) {
+        $cnt = $this->count();
+        if (!$cnt) {
             return 0;
         }
-        $array = $this->getArrayCopy();
-        sort($array);
-        $index = ($percentile / 100) * (count($array) - 1);
+        $a = $this->_getArrayCopySorted();
+        $index = ($percentile / 100) * ($cnt - 1);
         $lower = floor($index);
         $upper = ceil($index);
         if ($lower == $upper) {
-            return $array[$lower];
+            return $a[$lower];
         } else {
-            return $array[$lower] + ($array[$upper] - $array[$lower]) * ($index - $lower);
+            return $a[$lower] + ($a[$upper] - $a[$lower]) * ($index - $lower);
         }
     }
 
@@ -164,15 +167,15 @@ class Array_Object extends ArrayObject {
     /**
      * Coefficient of Variation (CV = stddev / mean)
      *
-     *  CV < 0.5 - почти ровный поток
-     *  0.5 – 1 - норм
-     *  >1 - уже нестабильный
-     *  >2 - трэш / burst
+     * CV < 0.5 - почти ровный поток
+     * 0.5 – 1 - норм
+     * >1 - уже нестабильный
+     * >2 - трэш / burst
      *
      * @return float
      */
     public function cv() {
-        $avg = $this->avg();
+        $avg = $this->average();
         if (!$avg) {
             return false;
         }
@@ -197,6 +200,12 @@ class Array_Object extends ArrayObject {
         $std_dev = sqrt($variance);
 
         return array_filter($array, fn($x) => abs($x - $mean) < $threshold * $std_dev);
+    }
+
+    private function _getArrayCopySorted() {
+        $a = $this->getArrayCopy();
+        sort($a);
+        return $a;
     }
 
 }
