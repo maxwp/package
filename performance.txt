@@ -1801,6 +1801,12 @@ $data = simdjson_decode($payload, true); // 455 ms, simdjson_plus
 
 ==============================================================
 
+$half = intdiv(rand(), 2); // 24 ns/call
+$half = floor(rand() / 2); // 35 ns/call, плюс floor какого-то хера возвращает float вместо int
+$half = (int) (rand() / 2); // 29 ns/call
+
+==============================================================
+
 int vs float
 
 //$aInt = rand();
