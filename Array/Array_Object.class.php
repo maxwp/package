@@ -86,7 +86,7 @@ class Array_Object extends ArrayObject {
 
         $a = $this->_getArrayCopySorted();
 
-        $half = intdiv($cnt, 2);
+        $half = $cnt >> 1; // хитрожопое супер быстрое деление на 2
         if ($cnt % 2) {
             return $a[$half];
         } else {

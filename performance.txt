@@ -1801,9 +1801,12 @@ $data = simdjson_decode($payload, true); // 455 ms, simdjson_plus
 
 ==============================================================
 
-$half = intdiv(rand(), 2); // 24 ns/call
-$half = floor(rand() / 2); // 35 ns/call, плюс floor какого-то хера возвращает float вместо int
-$half = (int) (rand() / 2); // 29 ns/call
+$half = intdiv(rand(), 2); // 10 ns/call
+$half = floor(rand() / 2); // 21 ns/call, плюс floor какого-то хера возвращает float вместо int
+$half = (int) (rand() / 2); // 15 ns/call
+$half = (rand()) >> 1; // 1/ns call, самый быстрый способ, но только для /2 и положительных чисел
+
+(эти замеры уже исключают rand и присвоение, который занимает 13..14 ns/call)
 
 ==============================================================
 
