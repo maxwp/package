@@ -128,17 +128,37 @@ class Array_Object extends ArrayObject {
         }
     }
 
-    public function tailCount($percentile) {
-        $quantileValue = $this->quantile($percentile);
+    /**
+     * сумма элементов в хвосте хвост (>= квантиля)
+     * сюда надо передавать сразу значение квантиля
+     *
+     * @param $quantileValue
+     * @return int
+     */
+    public function tailSum($quantileValue) {
+        $sum = 0;
+        foreach ($this as $value) {
+            if ($value >= $quantileValue) {
+                $sum += $value;
+            }
+        }
+        return $sum;
+    }
 
-        // считаем хвост (>= квантиля)
+    /**
+     * количество элементов в хвосте хвост (>= квантиля)
+     * сюда надо передавать сразу значение квантиля
+     *
+     * @param $quantileValue
+     * @return int
+     */
+    public function tailCount($quantileValue) {
         $count = 0;
         foreach ($this as $value) {
             if ($value >= $quantileValue) {
                 $count ++;
             }
         }
-
         return $count;
     }
 

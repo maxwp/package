@@ -65,11 +65,6 @@ class Array_Static {
         return $a->quantile($percentile);
     }
 
-    public static function TailCount($a, $percentile) {
-        $a = new Array_Object($a);
-        return $a->tailCount($percentile);
-    }
-
     public static function FilterOutliers($a, $threshold) {
         $a = new Array_Object($a);
         return $a->filterOutliers($threshold);
