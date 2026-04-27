@@ -69,7 +69,6 @@ class Array_Object extends ArrayObject {
 
     public function median() {
         $cnt = $this->count();
-
         if (!$cnt) {
             return 0;
         }
