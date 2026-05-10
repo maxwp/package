@@ -30,9 +30,7 @@ class Events extends Pattern_ASingleton {
      * Получить событие
      *
      * @param string $name
-     *
      * @return Events_Event
-     *
      * @throws Events_Exception
      */
     public function getEvent($name) {
@@ -45,7 +43,7 @@ class Events extends Pattern_ASingleton {
             $classname = $this->_eventArray[$name];
             // @todo отказаться от clone, потому что в php8 оно только усложняет ситуцию.
             // Это имело бы смысл, если бы внутри события Event был конструктор с кучей говна.
-            $this->_eventArray[$name] = $this->_cloneEvent($classname);
+            $this->_eventArray[$name] = new $classname();
 
             // вешаем на него все обработчики, если они есть
             // @todo массовый link observer-ов
@@ -67,7 +65,6 @@ class Events extends Pattern_ASingleton {
      * и работает БЫСТРЕЕ, что очень важно для производительности системы.
      *
      * @param string $name
-     *
      * @return bool
      */
     public function hasEvent($name) {
@@ -96,7 +93,6 @@ class Events extends Pattern_ASingleton {
      * ООП-паттерн: Prototype
      *
      * @param string $name
-     *
      * @return Events_Event
      * @throws Events_Exception
      */
@@ -111,7 +107,6 @@ class Events extends Pattern_ASingleton {
      * @param string $eventName
      * @param mixed $observer
      * @param string $parameter
-     *
      * @throws Events_Exception
      */
     public function observe($eventName, $observer, $parameter = false) {
@@ -147,41 +142,18 @@ class Events extends Pattern_ASingleton {
      * Получить все события.
      * Метод вернет ассоциативный массив eventName:eventObject|eventClass.
      *
-     * @return array
+     * @return array<Events_Event>
      */
     public function getEventArray() {
         return $this->_eventArray;
     }
 
     /**
-     * Создать событие с таким классом.
-     * Так как clone быстрее чем new, то мы кешируем.
-     *
-     * @param string $classname
-     *
-     * @return Events_Event
-     */
-    private function _cloneEvent($classname) {
-        if (!isset($this->_eventCloneArray[$classname])) {
-            $this->_eventCloneArray[$classname] = new $classname();
-        }
-
-        return clone $this->_eventCloneArray[$classname];
-    }
-
-    /**
      * Массив существущих событий
      *
-     * @var array
+     * @var array<Events_Event>
      */
     private $_eventArray = [];
-
-    /**
-     * Кеш оригинальных Events_Event объектов, из которых мы будем клонировать.
-     *
-     * @var Events_Event[] $_eventCloneArray
-     */
-    private $_eventCloneArray = [];
 
     /**
      * Кеш наблюдателей, еще до того как вообще событие вызовется.
