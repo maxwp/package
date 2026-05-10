@@ -16,8 +16,6 @@ class ClassLoader extends Pattern_ASingleton {
 
         spl_autoload_register(array($this, 'loadClass'));
 
-        // автоматическое определение я режиме debug или нет?
-        // (в debug==false будет выполняться компиляция классов)
         for ($j = 1; $j <= 100; $j++) {
             $arg = @$argv[$j];
             if (!$arg) {
@@ -26,15 +24,21 @@ class ClassLoader extends Pattern_ASingleton {
 
             $arg = preg_replace('/^--/', '', $arg);
 
+            // автоматическое определение я режиме debug или нет?
+            // (в debug==false будет выполняться компиляция классов)
             // дебажим все
             if ($arg == 'debug') {
                 $this->_debugAll = true;
-                break;
             }
 
             // дебажим конкретные классы
             if (preg_match("/^debug:(.+?)$/ius", $arg, $r)) {
                 $this->_debugArray[$r[1]] = true;
+            }
+
+            // установка custom memory limit
+            if (preg_match("/^memory:(.+?)$/ius", $arg, $r)) {
+                ini_set('memory_limit', $r[1]);
             }
         }
     }
