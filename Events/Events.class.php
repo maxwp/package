@@ -97,6 +97,7 @@ class Events extends Pattern_ASingleton {
      * @throws Events_Exception
      */
     public function generateEvent($name) {
+        // @todo clone хероса
         return clone $this->getEvent($name);
     }
 
