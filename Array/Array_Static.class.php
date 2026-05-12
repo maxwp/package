@@ -75,6 +75,21 @@ class Array_Static {
     }
 
     /**
+     * Coefficient of Variation (CV = stddev / mean)
+     *
+     * CV < 0.5 - почти ровный поток
+     * 0.5 – 1 - норм
+     * >1 - уже нестабильный
+     * >2 - трэш / burst
+     *
+     * @return float
+     */
+    public static function CV($a) {
+        $a = new Array_Object($a);
+        return $a->cv();
+    }
+
+    /**
      * Calculate array median
      *
      * @param $a
