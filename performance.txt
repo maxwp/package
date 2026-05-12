@@ -885,6 +885,60 @@ $a = array( // 40 ms / jit 37 ms
 
 ==============================================================
 
+new vs clone
+
+<?php
+class MyClass {
+
+    /*public function __construct() {
+        $this->_c = $this->_a + $this->_b;
+    }*/
+
+    private $_a = 1;
+    private $_b = 2;
+    private $_c;
+
+}
+
+// with constructor
+$x = new MyClass(); // 52 ns
+$x = clone $this->_x; // 44 ns
+
+// without constructor
+$x = new MyClass(); // 27 ns
+$x = clone $this->_x; // 44 ns
+
+Итого: если есть повторяемая логика в конструкторе - лучше clone. Если нет - лучше new.
+
+==============================================================
+
+class MyClass {
+
+    /*public function __construct($a, $b, $c) {
+        $this->a = $a;
+        $this->b = $b;
+        $this->c = $c;
+    }*/
+
+    public $a;
+    public $b;
+    public $c;
+
+}
+
+// 66 ns
+$x = new MyClass(1, 2, 3);
+
+// 41 ns
+$x = new MyClass();
+$x->a = 1;
+$x->b = 2;
+$x->c = 3;
+
+Итого: присвоение полей с наружи быстрее, хотя код говно.
+
+==============================================================
+
 call:
 
 просто вызов любого метода $this->_method1() // 16 ms // 0 ms
