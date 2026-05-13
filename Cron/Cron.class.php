@@ -88,6 +88,10 @@ class Cron extends Pattern_ASingleton {
         return "ee-run.php $className $argumentString";
     }
 
+    public function clear() {
+        $this->_redis->del('cron');
+    }
+
     public function __construct() {
         // именно локальный redis
         $this->_redis = new Redis();
