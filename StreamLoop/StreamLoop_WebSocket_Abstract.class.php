@@ -19,6 +19,9 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     // @todo сначала надо придумать как сделать StateMachine, чтобы я мог помещать команду с событиями onXXX,
     // и затем handshake и switching protocol снанут этими командами
 
+    /**
+     * @throws StreamLoop_Exception
+     */
     public function updateConnection($host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindIP = false, $bindPort = false) {
         $this->_updateDestinationHost($host);
         $this->_updateDestinationPort($port);
