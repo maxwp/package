@@ -42,9 +42,10 @@ class DateTime_Object {
      * @return string
      */
     public function __toString() {
-        $this->_classformat->setDate($this->_timestamp);
-        $this->_classformat->setFormat($this->_format);
-        return $this->_classformat->__toString();
+        $cf = $this->_classformat;
+        $cf->setDate($this->_timestamp);
+        $cf->setFormat($this->_format);
+        return $cf->__toString();
     }
 
     public function setDate($date) {
@@ -141,10 +142,6 @@ class DateTime_Object {
      */
     public function getTimestamp() {
         return $this->_timestamp;
-    }
-
-    public function preview($format = 'Y-m-d H:i:s') {
-        return date($format, $this->_timestamp);
     }
 
     /**
