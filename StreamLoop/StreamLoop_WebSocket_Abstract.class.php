@@ -42,51 +42,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         $this->_bufferLength = 0;
         $this->_bufferOffset = 0;
 
-        // @todo тут общий кусок кода со StreamLoop_HTTPS_Abstract
-        # debug:start
-        Cli::Print_n(__CLASS__." connecting to {$this->_host} ip={$this->_ip} port={$this->_port} bind={$this->_sourceIP}:{$this->_sourcePort}");
-        # debug:end
-
-        $ip = $this->_ip ?: $this->_host;
-
-        // супер важно: надо создавать контекст без ssl-опций!
-        $context = stream_context_create([
-            'socket' => [
-                'tcp_nodelay' => true,  // no Nagle algorithm
-                'bindto' => "{$this->_sourceIP}:{$this->_sourcePort}",
-            ],
-        ]);
-
-        $stream = stream_socket_client(
-            "tcp://{$ip}:{$this->_port}",
-            $errno,
-            $errstr,
-            0, // timeout = 0, чтобы мгновенно вернулось
-            STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT,
-            $context,
-        );
-        if (!$stream) {
-            // критическая ошибка — завершаем
-            throw new StreamLoop_Exception("TCP connect failed immediately: $errstr ($errno)");
-        }
-
-        $this->stream = $stream;
-        $this->streamID = (int) $stream;
-
-        $this->_loop->registerHandler($this);
-
-        // Устанавливаем буфер до начала SSL
-        $socket = new Connection_SocketStream($stream);
-        $socket->setBufferSizeRead(10 * 1024 * 1024);
-        $socket->setBufferSizeWrite(2 * 1024 * 1024);
-        $socket->setKeepAlive();
-        $socket->setQuickACK(1);
-
-        stream_set_blocking($stream, false);
-
-        // отключаем буферизацию php
-        stream_set_read_buffer($stream, 0);
-        stream_set_write_buffer($stream, 0);
+        $this->_createAndConnectTCP();
 
         $this->_state = StreamLoop_WebSocket_Const::STATE_CONNECTING;
         $this->_loop->updateHandlerFlags($this, false, true, true);
