@@ -45,7 +45,7 @@ class StreamLoop {
             $tsSelect = microtime(true);
 
             $handlerArray = $this->_handlerArray; // to locals
-            $timeoutArray = $this->_selectTimeoutToArray;
+            $timeoutArray = $this->_selectTimeoutToArray; // этот to locals занимает много времени, надо заменить на обратный
 
             foreach ($r as $streamID => $stream) {
                 $handlerArray[$streamID]->readyRead($tsSelect);
@@ -207,10 +207,10 @@ class StreamLoop {
      */
     private $_handlerArray = [];
     private $_rweFlag = false; // bool
-    private array $_selectReadArray = [];
-    private array $_selectWriteArray = [];
-    private array $_selectExceptArray = [];
-    private array $_selectTimeoutToArray = [];
-    private $_selectTimeoutToMin = 0.0;
+    private $_selectReadArray = [];
+    private $_selectWriteArray = [];
+    private $_selectExceptArray = [];
+    private $_selectTimeoutToArray = [];
+    private $_selectTimeoutToMin = 0.0; // float
 
 }
