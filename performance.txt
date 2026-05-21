@@ -398,6 +398,153 @@ $pc->amountTick;
 
 ==============================================================
 
+to locals:
+во всех случаях step = 0.5 float:
+private $_step = 0.5;
+private $_a = ['key' => 0.5];
+private $_b = [1 => 0.5];
+
+$this->_step; // 4 ns
+$step = $this->_step; // 5 ns, 4 доступ + 1 ns запись в локальную переменную
+
+// 9 ns
+$step = $this->_step;
+$step * $step;
+
+// 8 ns
+$this->_step * $this->_step;
+
+// 11 ns
+$step = $this->_step;
+$step * $step * $step;
+
+// 12 ns
+$this->_step * $this->_step * $this->_step;
+
+// 12 ns
+$step = $this->_step;
+$step * $step * $step * $step;
+
+// 16
+$this->_step * $this->_step * $this->_step * $this->_step;
+
+// 14
+$step = $this->_step; // 5
+$step * $step * $step * $step * $step;
+
+// 19
+$this->_step * $this->_step * $this->_step * $this->_step * $this->_step;
+
+Итого:
+если переменная это float/int/string (не массив и не объект) - то вытягивать ее to locals выгодно начиная с 4х использований и больше.
+Пока использований 3 или меньше - то выгоднее $this->_step.
+При 4х использований появляется выгода to locals, на 3х - одинаково, на 2х - лучше не делать to locals.
+Но это только для float/int/string.
+
+$x = $this->_step; // 5
+$x = $this->_a; // 8 ns - массив вытянуть в to locals сложнее
+$x = $this->_b; // 8
+
+$x = $this->_a['key']; // 15 = 8 + 7
+$x = $this->_b[1]; // 12 = 8 + 5, int-ключ в массиве быстрее на 2 ns/call
+
+// 17 = 8 + 9
+$x = $this->_a; // 8
+$y = $x['key']; // 9
+(этот тест показал что выгоднее сразу делать to locals без промежуточной переменной)
+
+// 14 = 8 + 6
+$x = $this->_b; // 8
+$y = $x[1]; // 6
+(с int-ключами тоже быстрее)
+
+А вот в случае с массивами делать to-locals trick надо всегда:
+
+$this->_a['key'] * $this->_a['key']; // 26
+$this->_a['key'] * $this->_a['key'] * $this->_a['key']; // 38
+$this->_a['key'] * $this->_a['key'] * $this->_a['key'] * $this->_a['key']; // 50
+
+$x = $this->_a['key']; // 15
+$x * $x; // 19
+$x * $x * $x; // 20
+$x * $x * $x * $x; // 21
+
+==============================================================
+
+Работа с массивами - всегда остой.
+Сильно лучше держать отдельные int/float/string свойства.
+Массивы тяжелее вытягивать, тяжалее присваивать, тяжелее доставать.
+
+На примере 3х свойств:
+записать свойства 11-12 ns
+прочитать все свойства и перенести в локальные переменные 15 ns,
+только прочитать - 12 ns
+
+А вот с массивами записать 34-37 ns, прочитать - в лучшем случае 27 ns.
+И это int-ключи, со строковыми будет еще дольше.
+
+class Tool2 implements Benchmark_Interface {
+
+    public function process() {
+        // 29 ns fixed
+        $x = rand() / rand();
+
+        // 63-29 = 34 ns
+        $this->_a = [
+            0 => $x,
+            1 => $x,
+            2 => $x,
+        ];
+
+        // 66-29 = 37 ns
+        $a[0] = $x;
+        $a[1] = $x;
+        $a[2] = $x;
+
+        // 34 ns
+        $x = $this->_a[0];
+        $y = $this->_a[1];
+        $z = $this->_a[2];
+
+        // 27 ns
+        $a = $this->_a;
+        $x = $a[0];
+        $y = $a[1];
+        $z = $a[2];
+
+        // 40-29=11 ns
+        $this->_x = $x;
+        $this->_y = $x;
+        $this->_z = $x;
+
+        // 15 ns
+        $x = $this->_x;
+        $y = $this->_y;
+        $z = $this->_z;
+    }
+
+    public function __construct() {
+        $this->_x = 1;
+        $this->_y = 2;
+        $this->_z = 3;
+
+        $this->_a = [
+            0 => 1,
+            1 => 2,
+            2 => 3,
+        ];
+    }
+
+    private $_a;
+
+    private $_x;
+    private $_y;
+    private $_z;
+
+}
+
+==============================================================
+
 Динамическая типизация в if-ах
 
 if ($x) {} // если $x = null; то 5.5 ms
