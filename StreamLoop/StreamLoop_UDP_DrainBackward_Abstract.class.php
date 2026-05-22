@@ -82,7 +82,7 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Drai
         }
 
         // emit latest-first: newest datagram first
-        // @todo а не быстрее ли foreach тут?
+        // тут нельзя foreach, потому что бегу по элементам в обратном порядке
         for ($j = $found - 1; $j >= 0; $j--) {
             $this->_onReceive(
                 $tsSelect,
