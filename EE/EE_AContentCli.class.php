@@ -61,6 +61,12 @@ abstract class EE_AContentCli extends EE_AContent implements EE_IContent {
         $this->printSGREnd();
     }
 
+    public function print_n_warning($s) {
+        $this->printSGRStart(Cli::FG_YELLOW_BRIGHT);
+        $this->print_n($s);
+        $this->printSGREnd();
+    }
+
     public function print_n_failure($s) {
         $this->printSGRStart(Cli::FG_RED_BRIGHT);
         $this->print_n($s);
