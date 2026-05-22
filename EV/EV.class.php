@@ -1,4 +1,9 @@
 <?php
+/**
+ * @deprecated не правильное имя EV
+ * @todo лучше отрефакторить Event pkg
+ * @todo и повесить на него SL events
+ */
 class EV extends Pattern_ARegistrySingleton {
 
     /**

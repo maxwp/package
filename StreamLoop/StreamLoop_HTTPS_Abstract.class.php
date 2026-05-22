@@ -88,10 +88,8 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     }
 
     public function readyRead($tsSelect) {
-        $state = $this->_state; // to locals
-
         // if-tree optimization
-        if ($state == StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS) {
+        if ($this->_state == StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS) {
             // drain read headers
             while (1) {
                 $line = fgets($this->stream, 4096); // я читаю через fgetS и врядли будет строка больше 4Kb
@@ -109,9 +107,8 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                     // $statusParts[1] = "200"
                     // $statusParts[2] = "OK"
 
-                    // @todo лажа
-                    $this->_statusCode = isset($statusParts[1]) ? (int) $statusParts[1] : 0;
-                    $this->_statusMessage = isset($statusParts[2]) ? (string) $statusParts[2] : null;
+                    $this->_statusCode = (int) $statusParts[1] ?? 0;
+                    $this->_statusMessage = $statusParts[2] ?? '';
 
                     $this->_headerArray = [];
                     foreach ($lines as $line) {
@@ -138,7 +135,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                     break; // break цикла
                 }
             }
-        } elseif ($state == StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_BODY) {
+        } elseif ($this->_state == StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_BODY) {
             // @todo как смержить wait for headers & body в кучу? Все равно у меня http 1.1
             $headerArray = $this->_headerArray;
 
@@ -294,18 +291,16 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
             } else {
                 throw new StreamLoop_Exception('Unsupported encoding');
             }
-        } elseif ($state == StreamLoop_HTTPS_Const::STATE_HANDSHAKING) {
+        } elseif ($this->_state == StreamLoop_HTTPS_Const::STATE_HANDSHAKING) {
             $this->_checkHandshake($tsSelect);
         }
     }
 
     public function readyWrite($tsSelect) {
-        $state = $this->_state; // to locals
-
         // if-tree optimization
-        if ($state == StreamLoop_HTTPS_Const::STATE_READY) {
+        if ($this->_state == StreamLoop_HTTPS_Const::STATE_READY) {
             $this->_active = false;
-        } elseif ($state == StreamLoop_HTTPS_Const::STATE_CONNECTING) {
+        } elseif ($this->_state == StreamLoop_HTTPS_Const::STATE_CONNECTING) {
             // коннект установился, я готов к записи
             $stream = $this->stream;
 
@@ -324,7 +319,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
 
             // и сразу же проверяем его, вдруг подключился
             $this->_checkHandshake($tsSelect);
-        } elseif ($state == StreamLoop_HTTPS_Const::STATE_HANDSHAKING) {
+        } elseif ($this->_state == StreamLoop_HTTPS_Const::STATE_HANDSHAKING) {
             $this->_checkHandshake($tsSelect);
         }
     }
@@ -430,13 +425,13 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         return $this->_state;
     }
 
-    private $_buffer = '';
+    private $_buffer = ''; // string
     private $_headerArray = [];
-    private $_statusCode = 0;
-    private $_statusMessage = '';
+    private $_statusCode = 0; // int
+    private $_statusMessage = ''; // string
     private $_active = false; // bool
-    protected $_state = 0; // int, 0 is STATE_DISCONNECTED, by default disconnected // @todo protected это лажа
+    protected $_state = 0; // int, 0 is STATE_DISCONNECTED, by default disconnected // @todo protected это лажа потому что нельзя менять с наружи, это пофиксим после перехода на FSM
     private $_chunkExpected = null; // int|null, сколько байт данных ждем в текущем чанке
-    private $_bodyDecoded = '';     // сюда складываем уже декодированное тело (без chunk-обвязки)
+    private $_bodyDecoded = ''; // сюда складываем уже декодированное тело (без chunk-обвязки)
 
 }

@@ -9,18 +9,19 @@
  */
 abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
+    // @todo как слепить в кучу websocket over https?
+    // @todo сначала надо придумать как сделать StateMachine, чтобы я мог помещать команду с событиями onXXX,
+    //       и затем handshake и switching protocol снанут этими командами
+
     abstract protected function _setupConnection();
-    abstract protected function _onInit(); // @todo rename to _onConnect
+    abstract protected function _onInit(); // @todo rename to _beforeConnect, и вообще надо явно Events before/after
     abstract protected function _onReceive($tsSelect, $payload, $opcode);
     abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
     abstract protected function _onReady($tsSelect);
 
-    // @todo как слепить в кучу websocket over https?
-    // @todo сначала надо придумать как сделать StateMachine, чтобы я мог помещать команду с событиями onXXX,
-    // и затем handshake и switching protocol снанут этими командами
-
     /**
      * @throws StreamLoop_Exception
+     * @todo нахер этот лишний метод? и зачем он public для abstract-класса?
      */
     public function updateConnection($host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindIP = false, $bindPort = false) {
         $this->_updateDestinationHost($host);
@@ -73,10 +74,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     }
 
     public function readyRead($tsSelect) {
-        $state = $this->_state; // to locals
-
         // if-tree optimization
-        if ($state == StreamLoop_WebSocket_Const::STATE_READY) {
+        if ($this->_state == StreamLoop_WebSocket_Const::STATE_READY) {
             $readFrameLength = $this->_readFrameLength;
             $readFrameDrain = $this->_readFrameDrain;
             $stream = $this->stream;
@@ -233,9 +232,9 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                 return;
             }
 
-        } elseif ($state == StreamLoop_WebSocket_Const::STATE_HANDSHAKING) {
+        } elseif ($this->_state == StreamLoop_WebSocket_Const::STATE_HANDSHAKING) {
             $this->_checkHandshake($tsSelect);
-        } elseif ($state == StreamLoop_WebSocket_Const::STATE_UPGRADING) {
+        } elseif ($this->_state == StreamLoop_WebSocket_Const::STATE_UPGRADING) {
             $this->_checkUpgrade($tsSelect);
         }
     }
@@ -324,7 +323,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         if ($line === false) {
             $this->_checkEOF($tsSelect); // in upgrade
         } else {
-            $this->_buffer .= $line; // @todo locals
+            $this->_buffer .= $line; // @todo locals?
             // пустая строка — конец блока заголовков
             if ($line == "\r\n" || $line == "\n") {
                 // @todo not not
@@ -484,19 +483,10 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         $this->_readFrameDrain = $drain;
     }
 
-    /**
-     * @deprecated
-     */
     public function getState() {
         return $this->_state;
     }
 
-    /**
-     * @deprecated
-     */
-    public function isState($state) {
-        return $this->_state == $state;
-    }
 
     public function __construct(StreamLoop $loop) {
         parent::__construct($loop);
@@ -511,7 +501,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     private $_buffer = ''; // string
     private $_bufferLength = 0; // int
     private $_bufferOffset = 0; // cursor: сколько байт уже "съели" из _buffer
-    protected $_state = 0; // 0 is a stop, by default // @todo protected это лажа
+    protected $_state = 0; // 0 is a stop, by default // @todo protected это лажа потому что нельзя менять с наружи, это пофиксим после перехода на FSM
     private $_active = false; // bool, см логику idle ping
     private $_readFrameLength = 4096; // 4Kb by default
     private $_readFrameDrain = 1;
