@@ -58,14 +58,11 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
         $fromAddress = '';
         $fromPort = 0;
 
-        // to locals
-        $socket = $this->_socketResource;
-
         // первое сообщене всегда, независимо от drain
         // так нужно сделать, потому что в 90% случаев сообщение в порту всего одно
         // и не надо тратиться на циклы с массивами
         $bytes = socket_recvfrom(
-            $socket,
+            $this->_socketResource,
             $buffer,
             1024,
             MSG_DONTWAIT,
@@ -77,7 +74,7 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
         if ($bytes > 0) {
             $this->_onReceive($tsSelect, $buffer, $bytes, $fromAddress);
         } else {
-            $err = socket_last_error($socket);
+            $err = socket_last_error($this->_socketResource);
 
             // в Linux EAGAIN == EWOULDBLOCK (11), достаточно одного сравнения
             if ($err != SOCKET_EAGAIN) { // || $err === SOCKET_EWOULDBLOCK

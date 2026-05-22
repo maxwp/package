@@ -1,19 +1,20 @@
 <?php
-abstract class StreamLoop_UDP_DrainForward_Abstract extends StreamLoop_UDP_Abstract {
+abstract class StreamLoop_UDP_DrainForward_Abstract extends StreamLoop_UDP_Drain_Abstract {
 
     public function readyRead($tsSelect) {
-        // to locals
-        $socket = $this->_socketResource;
-        $drainLimit = $this->_drainLimit; // как правило drain есть, поэтому я выношу всегда в locals
-
-        // в php init локальной переменной дешевле чем доступ к свойству
         $buffer = '';
         $fromAddress = '';
         $fromPort = 0;
 
+        $drainLimit = $this->_drainLimit; // это обязательно делать из-за for
+
+        // тут я не делаю socket to locals, потому что в 90% случаев будет одно чтение,
+        // в 7% случаев 2 чтения,
+        // и 3% случаев 3+ чтения,
+        // поэтому не выгодно выносить переменные в локальные
         for ($drainIndex = 1; $drainIndex <= $drainLimit; $drainIndex++) {
             $bytes = socket_recvfrom(
-                $socket,
+                $this->_socketResource,
                 $buffer,
                 1024,
                 MSG_DONTWAIT,
@@ -30,26 +31,5 @@ abstract class StreamLoop_UDP_DrainForward_Abstract extends StreamLoop_UDP_Abstr
             }
         }
     }
-
-    public function readyWrite($tsSelect) {
-        // nothing for UDP
-    }
-
-    public function readyExcept($tsSelect) {
-        // nothing for UDP
-    }
-
-    public function readySelectTimeout($tsSelect) {
-        // nothing for UDP
-    }
-
-    public function setDrain(int $limit) {
-        if ($limit <= 1) {
-            throw new StreamLoop_Exception("Drain limit can not be less than 2");
-        }
-        $this->_drainLimit = $limit;
-    }
-
-    private int $_drainLimit = 1;
 
 }

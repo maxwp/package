@@ -1,10 +1,11 @@
 <?php
-abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Abstract {
+abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_DrainForward_Abstract {
 
     public function readyRead($tsSelect) {
-        // to locals
-        $socket = $this->_socketResource;
-        $drainLimit = $this->_drainLimit; // как правило drain есть, поэтому я выношу всегда в locals
+        // тут я не делаю socket to locals, потому что в 90% случаев будет одно чтение,
+        // в 7% случаев 2 чтения,
+        // и 3% случаев 3+ чтения,
+        // поэтому не выгодно выносить переменные в локальные
 
         $buffer = '';
         $fromAddress = '';
@@ -12,7 +13,7 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Abst
 
         // --- recv #1 (must exist if select says readable) ---
         $bytes1 = socket_recvfrom(
-            $socket,
+            $this->_socketResource,
             $buffer,
             1024,
             MSG_DONTWAIT,
@@ -32,7 +33,7 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Abst
 
         // --- recv #2 (single extra recv to detect batching) ---
         $bytes2 = socket_recvfrom(
-            $socket,
+            $this->_socketResource,
             $buffer,
             1024,
             MSG_DONTWAIT,
@@ -56,11 +57,12 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Abst
 
         $found = 2;
 
-        // drain up to limit
+        // drain up to limit:
         // start from 3 because we already have 2
+        $drainLimit = $this->_drainLimit; // это обязательно делать из-за for
         for ($drainIndex = 3; $drainIndex <= $drainLimit; $drainIndex++) {
             $bytes = socket_recvfrom(
-                $socket,
+                $this->_socketResource,
                 $buffer,
                 1024,
                 MSG_DONTWAIT,
@@ -80,6 +82,7 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Abst
         }
 
         // emit latest-first: newest datagram first
+        // @todo а не быстрее ли foreach тут?
         for ($j = $found - 1; $j >= 0; $j--) {
             $this->_onReceive(
                 $tsSelect,
@@ -89,26 +92,5 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Abst
             );
         }
     }
-
-    public function readyWrite($tsSelect) {
-        // nothing for UDP
-    }
-
-    public function readyExcept($tsSelect) {
-        // nothing for UDP
-    }
-
-    public function readySelectTimeout($tsSelect) {
-        // nothing for UDP
-    }
-
-    public function setDrain(int $limit) {
-        if ($limit <= 1) {
-            throw new StreamLoop_Exception("Drain limit can not be less than 2");
-        }
-        $this->_drainLimit = $limit;
-    }
-
-    private int $_drainLimit = 3; // нет никакого смысла в drain=1
 
 }
