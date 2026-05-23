@@ -53,21 +53,32 @@ class ClassLoader extends Pattern_ASingleton {
         // если класс уже зарегистрирован - подключаем его
         if (!empty($this->_classArray[$className])) {
             if ($this->_debugAll) {
-                // @todo lock read
                 include_once $this->_classArray[$className];
             } elseif (isset($this->_debugArray[$className])) {
-                // @todo lock read
                 include_once $this->_classArray[$className];
             } else {
                 // делаем компиляцию
                 $file = $this->_classArray[$className];
                 $fileCompiled = $file.'.compiled';
 
+                //clearstatcache(true, $fileCompiled);
+
                 if (@filemtime($file) > @filemtime($fileCompiled)) {
                     $data = file_get_contents($file);
                     $data = str_replace('# debug:start', '/* debug:start', $data);
                     $data = str_replace('# debug:end', 'debug:end */', $data);
-                    file_put_contents($fileCompiled, $data, LOCK_EX);
+
+                    $tmpFile = $fileCompiled . '.' . bin2hex(random_bytes(6)) . '.tmp';
+
+                    file_put_contents($tmpFile, $data, LOCK_EX);
+
+                    // atomic replace
+                    rename($tmpFile, $fileCompiled);
+
+                    // костыляка для opcache
+                    if (function_exists('opcache_invalidate')) {
+                        opcache_invalidate($fileCompiled, true);
+                    }
                 }
 
                 include_once $fileCompiled;
