@@ -90,6 +90,7 @@ class ClassLoader extends Pattern_ASingleton {
         $hash = str_replace('.interface.php', '', $hash);
         $hash = str_replace('.trait.php', '', $hash);
         $hash = str_replace('.php', '', $hash);
+
         $this->_classArray[$hash] = $file;
     }
 
@@ -123,13 +124,13 @@ class ClassLoader extends Pattern_ASingleton {
 
         // сканируем директорию
         $a = $this->_scandir($dir);
-
         foreach ($a as $x) {
-            if (str_contains($x, '.class.php')
-            || str_contains($x, '.interface.php')
-            || str_contains($x, '.trait.php')
-            ) {
-                if (!str_contains($x, '.compiled')) {
+            if (!str_contains($x, '.compiled')) {
+                if (str_contains($x, '.class.php')) {
+                    $this->registerClass($x);
+                } elseif (str_contains($x, '.interface.php')) {
+                    $this->registerClass($x);
+                } elseif (str_contains($x, '.trait.php')) {
                     $this->registerClass($x);
                 }
             }
@@ -148,19 +149,14 @@ class ClassLoader extends Pattern_ASingleton {
         while ($name = readdir($d)) {
             if ($name == '.') {
                 continue;
-            }
-            if ($name == '..') {
+            } elseif ($name == '..') {
                 continue;
             }
 
-            if (strpos($name, '.php')) {
+            if (str_contains($name, '.php')) { // так быстрее чем is_file
                 $a[] = $dir.'/'.$name;
-            }
-
-            if (is_dir($dir.'/'.$name)) {
-                $tmp = $this->_scandir($dir.'/'.$name);
-                $a = array_merge($a, $tmp);
-                unset($tmp);
+            } elseif (is_dir($dir.'/'.$name)) {
+                $a = array_merge($a, $this->_scandir($dir.'/'.$name));
             }
         }
         closedir($d);
@@ -174,7 +170,7 @@ class ClassLoader extends Pattern_ASingleton {
      * @var array<string>
      */
     private $_classArray = [];
-    private $_debugAll = false;
+    private $_debugAll = false; // bool
     private $_debugArray = [];
 
 }
