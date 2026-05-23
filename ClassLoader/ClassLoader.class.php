@@ -118,9 +118,9 @@ class ClassLoader extends Pattern_ASingleton {
      * @param string $dir
      * @param int $allowCache
      */
-    public function registerDirectory($dir, $allowCache = false) {
+    public function registerDirectory($dir, $allowCache = 0) {
         if ($allowCache > 0) {
-            $cacheFile = dirname(__FILE__).'/cache/'.hash('fnv1a64', $dir);
+            $cacheFile = $dir.'/ClassLoader.cache';
             $mtime = @filemtime($cacheFile);
             if ($mtime && $mtime >= time() - $allowCache) {
                 $a = file($cacheFile);
@@ -149,8 +149,10 @@ class ClassLoader extends Pattern_ASingleton {
 
         // записываем cache
         if ($allowCache > 0) {
-            $cacheFile = dirname(__FILE__).'/cache/'.hash('fnv1a64', $dir);
+            // тут переменная cacheFile уже есть точно
+            $tmpFile = $dir.'/'.bin2hex(random_bytes(6)) . '.tmp';
             file_put_contents($cacheFile, implode("\n", $a), LOCK_EX);
+            rename($tmpFile, $cacheFile);
         }
     }
 
