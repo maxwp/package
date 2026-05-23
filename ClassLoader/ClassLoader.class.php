@@ -14,7 +14,7 @@ class ClassLoader extends Pattern_ASingleton {
     protected function __construct() {
         global $argv;
 
-        spl_autoload_register(array($this, 'loadClass'));
+        spl_autoload_register([$this, 'loadClass']);
 
         for ($j = 1; $j <= 100; $j++) {
             $arg = @$argv[$j];
@@ -52,19 +52,18 @@ class ClassLoader extends Pattern_ASingleton {
     public function loadClass($className) {
         // если класс уже зарегистрирован - подключаем его
         if (!empty($this->_classArray[$className])) {
-            $file = $this->_classArray[$className];
-
             if ($this->_debugAll) {
-                include_once $file;
+                // @todo lock read
+                include_once $this->_classArray[$className];
             } elseif (isset($this->_debugArray[$className])) {
-                include_once $file;
+                // @todo lock read
+                include_once $this->_classArray[$className];
             } else {
                 // делаем компиляцию
+                $file = $this->_classArray[$className];
                 $fileCompiled = $file.'.compiled';
 
-                $mtimeOriginal = @filemtime($file);
-                $mtimeCompiled = @filemtime($fileCompiled);
-                if ($mtimeOriginal > $mtimeCompiled) {
+                if (@filemtime($file) > @filemtime($fileCompiled)) {
                     $data = file_get_contents($file);
                     $data = str_replace('# debug:start', '/* debug:start', $data);
                     $data = str_replace('# debug:end', 'debug:end */', $data);
@@ -77,15 +76,6 @@ class ClassLoader extends Pattern_ASingleton {
     }
 
     /**
-     * Получить загруженные классы
-     *
-     * @return array<string>
-     */
-    public function getClassArray() {
-        return $this->_classArray;
-    }
-
-    /**
      * Зарегистрировать PHP-класс, чтобы ClassLoader
      * мог его загружать и знал где он физически находится
      *
@@ -94,6 +84,7 @@ class ClassLoader extends Pattern_ASingleton {
     public function registerClass($file) {
         $file = str_replace('//', '/', $file);
 
+        // @todo low optimizations
         $hash = basename($file);
         $hash = str_replace('.class.php', '', $hash);
         $hash = str_replace('.interface.php', '', $hash);
