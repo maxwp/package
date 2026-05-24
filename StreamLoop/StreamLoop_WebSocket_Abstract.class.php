@@ -396,22 +396,25 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         // тут нужны ===, потому что если вернется int 0 - то надо пробовать еще раз
         if ($return === true) {
             // handshake случился - делаем websocket upgrade
-            $key = base64_encode(random_bytes(16)); // Уникальный ключ для Handshake
 
             $customHeaderString = '';
-            foreach ($this->_headerArray as $key => $value) {
-                $customHeaderString .= $key . ': ' . $value . "\r\n";
+            if ($this->_headerArray) {
+                foreach ($this->_headerArray as $key => $value) {
+                    $customHeaderString .= $key . ': ' . $value . "\r\n";
+                }
             }
 
-            $headers = "GET {$this->_path} HTTP/1.1\r\n"
+            fwrite(
+                $this->stream,
+                "GET {$this->_path} HTTP/1.1\r\n"
                 . "Host: {$this->_host}\r\n"
                 . "Upgrade: websocket\r\n"
                 . "Connection: Upgrade\r\n"
-                . "Sec-WebSocket-Key: $key\r\n"
+                . "Sec-WebSocket-Key: ".base64_encode(random_bytes(16))."\r\n"
                 . "Sec-WebSocket-Version: 13\r\n"
                 . $customHeaderString
-                . "\r\n";
-            fwrite($this->stream, $headers);
+                . "\r\n"
+            );
 
             $this->_state = StreamLoop_WebSocket_Const::STATE_UPGRADING;
             $this->_loop->updateHandlerFlags($this, true, false, false);
