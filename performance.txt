@@ -2239,6 +2239,77 @@ unpack("atype/dts_push/Npair_id/dts_event/Nsequence/Nsuffix/dask/dask_size/dask_
 
 ==============================================================
 
+Вариации pack + unpack:
+1. unpack с короткими ключами быстрее;
+2. unpack с именоваными ключами быстрее, но я получаю массив где доступ к элементам сложнее
+3. самый быстрый способ это короткие именованные ключи, а затем переписать to locals или передавать дальше этот массив целиком
+
+<?php
+class Tool2 implements Benchmark_Interface {
+
+    public function process() {
+        // 207 ns
+        //$x = unpack('e10', $this->_message);
+
+        // 148 ns
+        //$x = unpack('ea/eb/ec/ed/ee/ef/eg/eh/ei/ej', $this->_message);
+
+        // 228 ns
+        /*$x = unpack('ea/eb/ec/ed/ee/ef/eg/eh/ei/ej', $this->_message);
+        $a = $x['a'];
+        $b = $x['b'];
+        $c = $x['c'];
+        $d = $x['d'];
+        $e = $x['e'];
+        $f = $x['f'];
+        $g = $x['g'];
+        $h = $x['h'];
+        $i = $x['i'];
+        $j = $x['j'];*/
+
+        // 186 ns
+        //$x = array_values(unpack('ea/eb/ec/ed/ee/ef/eg/eh/ei/ej', $this->_message));
+
+        // 248
+        /*$x = array_values(unpack('ea/eb/ec/ed/ee/ef/eg/eh/ei/ej', $this->_message));
+        $a = $x[0];
+        $b = $x[1];
+        $c = $x[2];
+        $d = $x[3];
+        $e = $x[4];
+        $f = $x[5];
+        $g = $x[6];
+        $h = $x[7];
+        $i = $x[8];
+        $j = $x[9];*/
+
+        // 255
+        //[$a, $b, $c, $d, $e, $f, $g, $h, $i, $j] = array_values(unpack('ea/eb/ec/ed/ee/ef/eg/eh/ei/ej', $this->_message));
+    }
+
+    public function __construct() {
+        // 108 ns
+        $this->_message = pack(
+            'eeeeeeeeee',
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+        );
+    }
+
+    private $_message;
+
+}
+
+==============================================================
+
 Сравнение производительности hash-функций
 Тестировалось вызовом hash('murmur3a', microtime(true)+rand())
 Результаты на 100_000 вызовов в секундах
