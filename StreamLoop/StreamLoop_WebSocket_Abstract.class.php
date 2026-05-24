@@ -504,7 +504,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     private $_buffer = ''; // string
     private $_bufferLength = 0; // int
     private $_bufferOffset = 0; // cursor: сколько байт уже "съели" из _buffer
-    protected $_state = 0; // 0 is a stop, by default // @todo protected это лажа потому что нельзя менять с наружи, это пофиксим после перехода на FSM
+    private $_state = 0; // 0 is a stop, by default
     private $_active = false; // bool, см логику idle ping
     private $_readFrameLength = 4096; // 4Kb by default
     private $_readFrameDrain = 1;

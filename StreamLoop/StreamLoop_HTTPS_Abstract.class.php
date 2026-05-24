@@ -430,7 +430,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     private $_statusCode = 0; // int
     private $_statusMessage = ''; // string
     private $_active = false; // bool
-    protected $_state = 0; // int, 0 is STATE_DISCONNECTED, by default disconnected // @todo protected это лажа потому что нельзя менять с наружи, это пофиксим после перехода на FSM
+    private $_state = 0; // int, 0 is STATE_DISCONNECTED, by default disconnected
     private $_chunkExpected = null; // int|null, сколько байт данных ждем в текущем чанке
     private $_bodyDecoded = ''; // сюда складываем уже декодированное тело (без chunk-обвязки)
 
