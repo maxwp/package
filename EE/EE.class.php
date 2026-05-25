@@ -20,7 +20,7 @@ class EE extends Pattern_ASingleton {
      * Передаем параметр $request, получаем $response
      */
     public function execute(EE_IRequest $request, EE_IResponse $response) {
-        EV::GetInternal()->notify('EE:execute:before');
+        EE_Events::Get()->notify('EE:execute:before');
 
         // сохраняем request в себе
         // это нужно чтобы в процессе работы движка любой контент мог получить доступ к Request
@@ -31,7 +31,7 @@ class EE extends Pattern_ASingleton {
         $this->_response = $response;
 
         // до того как сработал роутинг
-        EV::GetInternal()->notify('EE:routing:before');
+        EE_Events::Get()->notify('EE:routing:before');
 
         // получаем систему роутинга
         // она должна быть инициирована заранее
@@ -57,7 +57,7 @@ class EE extends Pattern_ASingleton {
         }
 
         // после того как сработал роутинг
-        EV::GetInternal()->notify('EE:routing:after');
+        EE_Events::Get()->notify('EE:routing:after');
 
         // формируем ответ
         try {
@@ -70,12 +70,12 @@ class EE extends Pattern_ASingleton {
             // что-то пошло не так
             $this->getResponse()->setCode(500);
 
-            EV::GetInternal()->notify('EE:execute:exception', $ex500);
+            EE_Events::Get()->notify('EE:execute:exception', $ex500);
 
             throw $ex500;
         }
 
-        EV::GetInternal()->notify('EE:execute:after');
+        EE_Events::Get()->notify('EE:execute:after');
 
         // очищаем все контенты,
         // это нужно следующего запуска движка в режиме non-stop

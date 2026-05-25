@@ -131,13 +131,13 @@ class EE_AContentSmarty extends EE_AContent implements EE_IContent {
         }
 
         // рендерим контент
-        EV::GetInternal()->notify('EE:content.render:before', $this, '');
+        EE_Events::Get()->notify('EE:content.render:before', $this);
 
         // получаем все параметры, которые надо передать в smarty
         $html = EE_Smarty::Get()->fetch($file, $this->getValueArray());
 
         // генерируем событие afterRender
-        EV::GetInternal()->notify('EE:content.render:after', $this, $html);
+        EE_Events::Get()->notify('EE:content.render:after', $this, $html);
 
         // достаем новый html из события
         // @todo
