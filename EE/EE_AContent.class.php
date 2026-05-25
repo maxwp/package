@@ -78,7 +78,7 @@ abstract class EE_AContent implements EE_IContent {
     public function getArgumentSecure($key, $type = false, $source = false) {
         try {
             return $this->getArgument($key, $type, $source);
-        } catch (Exception $exception) {
+        } catch (Exception) {
             if ($type) {
                 return EE_Typing::TypeString(false, $type);
             } else {
@@ -105,11 +105,11 @@ abstract class EE_AContent implements EE_IContent {
      * @throws EE_Exception
      */
     public function setArgument($key, $value) {
-        if (!$key) {
+        if ($key) {
+            $this->_argumentArray[$key] = $value;
+        } else {
             throw new EE_Exception("Invalid argument key");
         }
-
-        $this->_argumentArray[$key] = $value;
     }
 
     public function unsetArgument($key) {
@@ -129,12 +129,11 @@ abstract class EE_AContent implements EE_IContent {
      */
     public function setValue($key, $value) {
         // @todo скорее всего будет отрефакторено при разделении Smarty vs Content based on EE_DataBus
-
-        if (!$key) {
+        if ($key) {
+            $this->_valueArray[$key] = $value;
+        } else {
             throw new EE_Exception("Empty key name. Nothing to set");
         }
-
-        $this->_valueArray[$key] = $value;
     }
 
     public function unsetValue($key) {
@@ -152,12 +151,12 @@ abstract class EE_AContent implements EE_IContent {
      * @return mixed
      */
     public function getValue($key) {
-        if (!$key) {
-            throw new EE_Exception('Empty key name');
-        }
-
         if (isset($this->_valueArray[$key])) {
             return $this->_valueArray[$key];
+        }
+
+        if (!$key) {
+            throw new EE_Exception('Empty key name');
         }
 
         return false;
