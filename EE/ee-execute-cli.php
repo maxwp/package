@@ -1,6 +1,4 @@
 <?php
-require __DIR__ . '/include.php';
-
 $tsStart = microtime(true);
 
 $routing = new EE_RoutingCLI();
