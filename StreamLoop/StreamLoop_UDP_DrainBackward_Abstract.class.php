@@ -1,5 +1,5 @@
 <?php
-abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_DrainForward_Abstract {
+abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Drain_Abstract {
 
     public function readyRead($tsSelect) {
         // тут я не делаю socket to locals, потому что в 90% случаев будет одно чтение,
@@ -59,7 +59,7 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Drai
 
         // drain up to limit:
         // start from 3 because we already have 2
-        $drainLimit = $this->_drainLimit;
+        $drainLimit = $this->_drainLimit - 2;
 
         do {
             $bytes = socket_recvfrom(
