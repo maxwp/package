@@ -44,9 +44,13 @@ class StreamLoop {
             // меряем время select'a
             $tsSelect = microtime(true);
 
-            $handlerArray = $this->_handlerArray; // to locals
-            $timeoutArray = $this->_selectTimeoutToArray; // этот to locals занимает много времени, надо заменить на обратный
+            $handlerArray = $this->_handlerArray; // to locals @todo возможно не стоит делать to locals?
+            // @todo этот to locals занимает много времени, надо заменить на обратный: сборка массива быстрее unset? или лучше dynamic-int-flag?
+            // @todo возможно идея с dynamic-properties быстрее чем массив handler
+            $timeoutArray = $this->_selectTimeoutToArray;
+            // @todo можно ли timeout сделать обязательным, чтобы вызывать его всегда независимо от rwe
 
+            // тут if не нужен, потому что чаще всего нужен read
             foreach ($r as $streamID => $stream) {
                 $handlerArray[$streamID]->readyRead($tsSelect);
                 unset($timeoutArray[$streamID]);
@@ -73,7 +77,7 @@ class StreamLoop {
             // = то надо вызвать readySelectTimeout
             if ($timeoutArray) {
                 foreach ($timeoutArray as $streamID => $timeoutTo) {
-                    if ($timeoutTo > 0 && $timeoutTo <= $tsSelect) {
+                    if ($timeoutTo > 0 && $timeoutTo <= $tsSelect) { // @todo можно ставить бесконечность и избавиться от if'a
                         $handlerArray[$streamID]->readySelectTimeout($tsSelect);
                     }
                 }
@@ -81,6 +85,7 @@ class StreamLoop {
 
             // эта проверка должна быть в самом конце: она срабатывает редко, и если ее поставить сразу после select
             // то будет бесполезная задержка на проверку if===false перед вызовом логики, которая в 99.99999% не оправдана
+            // @todo возможно отказаться вообще или сделать отдельный флаг: а что произойдет при stream_select failed?
             if ($result === false) {
                 throw new StreamLoop_Exception('stream_select failed');
             }
