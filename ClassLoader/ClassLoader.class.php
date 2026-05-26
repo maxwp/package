@@ -93,16 +93,14 @@ class ClassLoader extends Pattern_ASingleton {
      * @param string $file
      */
     public function registerClass($file) {
-        $file = str_replace('//', '/', $file);
-
-        // @todo low optimizations
+        // @todo low optimizations: а как быстрее?
         $hash = basename($file);
         $hash = str_replace('.class.php', '', $hash);
         $hash = str_replace('.interface.php', '', $hash);
         $hash = str_replace('.trait.php', '', $hash);
         $hash = str_replace('.php', '', $hash);
 
-        $this->_classArray[$hash] = $file;
+        $this->_classArray[$hash] = str_replace('//', '/', $file);
     }
 
     /**
@@ -113,21 +111,20 @@ class ClassLoader extends Pattern_ASingleton {
      * Так как не соблюдается порядок подключения, рекомендуется
      * использовать registerClass()
      *
-     * $cache - сколько времени держать кеш (по умолчанию без кеша)
+     * $cacheTTL - сколько времени держать кеш (по умолчанию без кеша)
      *
      * @param string $dir
-     * @param int $allowCache
+     * @param int $cacheTTL
      */
-    public function registerDirectory($dir, $allowCache = 0) {
-        if ($allowCache > 0) {
+    public function registerDirectory($dir, $cacheTTL = 0) {
+        if ($cacheTTL > 0) {
+            // cachefile один и он в корне этой директории
             $cacheFile = $dir.'/ClassLoader.cache';
-            $mtime = @filemtime($cacheFile);
-            if ($mtime && $mtime >= time() - $allowCache) {
+            if (@filemtime($cacheFile) >= time() - $cacheTTL) {
                 $a = file($cacheFile);
-                if ($a) {
-                    foreach ($a as $x) {
-                        $this->registerClass(trim($x));
-                    }
+                // даже если cache-файл пустой, то там не должно быть битых путей, поэтому никаких trim & if не надо
+                foreach ($a as $x) {
+                    $this->registerClass($x);
                 }
                 return;
             }
@@ -147,15 +144,20 @@ class ClassLoader extends Pattern_ASingleton {
             }
         }
 
+        // @todo надо в cache оставлять только подходящие файлы, а не все.
+        // @todo и фильтровать прямо на этапе _scandir
+
         // записываем cache
-        if ($allowCache > 0) {
+        if ($cacheTTL > 0) {
             // тут переменная cacheFile уже есть точно
+            // @todo универсальный atomic write
             $tmpFile = $dir.'/'.bin2hex(random_bytes(6)) . '.tmp';
             file_put_contents($cacheFile, implode("\n", $a), LOCK_EX);
             rename($tmpFile, $cacheFile);
         }
     }
 
+    // @todo maybe File pkg Dir?
     private function _scandir($dir) {
         $a = [];
         $d = opendir($dir);
