@@ -8,6 +8,8 @@
 
 class Connection_SocketUDS extends Connection_Socket_Abstract {
 
+    // @todo возможно отказаться в пользу StreamLoop
+
     /*
      * В ядре Linux для каждого UDS-сокета с типом datagram есть ограничение длины очереди (max_dgram_qlen),
      * которое по умолчанию равно 10 датаграмм. При поступлении очередной датаграммы,
@@ -55,6 +57,8 @@ class Connection_SocketUDS extends Connection_Socket_Abstract {
             throw new Connection_Exception($message.' sockfile='.$this->_socketFile);
         }
 
+        // инициализация переменных ДО цикла,
+        // все равно socket_recvfrom() их перетирает, ему нужен только указатель
         $buffer = '';
         $fromAddress = '';
         $fromPort = 0;
@@ -69,25 +73,21 @@ class Connection_SocketUDS extends Connection_Socket_Abstract {
                 $fromPort
             );
 
-            // меряем время сразу после получения
-            $tsReceived = microtime(true);
-
-            if ($bytes > 0) {
-                // я сюда не дойду если $buffer пустой
-                if ($receiver->onReceive($tsReceived, $buffer, $fromAddress, $fromPort)) {
-                    // если есть какой-то результат - на выход
-                    break;
-                }
-            } else {
-                // тут более правильно проверять на === false,
-                // но в реальности пустой дата-граммы быть не может
-                // и чтобы не делать внизу проверку на if ($buffer) с типизацией string $buffer to bool
-                // я прямо тут проверяю не пустые ли байты, тем более что чаще всего $bytes это int
-                $message = $this->_getSocketError(); // message надо получить ДО disconnect, бо поменяется
-                $this->disconnect();
-                throw new Connection_Exception($message);
+            // нужно быть готовым что если bytes == 0 - то я все равно один раз дерну onReceive,
+            // но зато в коде нет if-ов
+            if ($receiver->onReceive(microtime(true), $buffer, $fromAddress, $fromPort)) {
+                // если есть какой-то результат - на выход
+                break;
             }
-        } while (1);
+        } while ($bytes > 0);
+
+        // тут более правильно проверять на === false,
+        // но в реальности пустой дата-граммы быть не может
+        // и чтобы не делать внизу проверку на if ($buffer) с типизацией string $buffer to bool
+        // я прямо тут проверяю не пустые ли байты, тем более что чаще всего $bytes это int
+        $message = $this->_getSocketError(); // message надо получить ДО disconnect, бо поменяется
+        $this->disconnect();
+        throw new Connection_Exception($message);
     }
 
     private $_socketFile;

@@ -62,12 +62,9 @@ class Connection_SocketUDP extends Connection_Socket_Abstract {
                 $fromPort
             );
 
-            // меряем время сразу после получения
-            $tsReceived = microtime(true);
-
             // нужно быть готовым что если bytes == 0 - то я все равно один раз дерну onReceive,
             // но зато в коде нет if-ов
-            if ($receiver->onReceive($tsReceived, $buffer, $fromAddress, $fromPort)) {
+            if ($receiver->onReceive(microtime(true), $buffer, $fromAddress, $fromPort)) {
                 // если есть какой-то результат - на выход
                 break;
             }
