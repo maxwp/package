@@ -98,6 +98,21 @@ class ClassLoader extends Pattern_ASingleton {
     }
 
     /**
+     * За один вызов зарегистрировать кучу классов.
+     * Это экономит ::Get()->call на каждом пуке.
+     *
+     * @param array<string> $fileArray
+     * @return void
+     */
+    public function registerClassArray($fileArray) {
+        // я использую массив для того чтобы можно было дернуть этот метод из registerDirectory & cache
+        foreach ($fileArray as $file) {
+            // @todo если отказаться от суффиксов .class/.interface/.trait то станет 58 ns и это x2 по скорости
+            $this->_classArray[str_replace(['.class', '.interface', '.trait'], '', basename($file, '.php'))] = $file;
+        }
+    }
+
+    /**
      * Зарегистрировать директорию с php-классами.
      * Не рекомендуется к использованию, так как порядок
      * подключения может быть абсолютно рандомный.
