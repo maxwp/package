@@ -48,9 +48,7 @@ class Connection_SocketUDS extends Connection_Socket_Abstract {
             unlink($this->_socketFile);
         }
 
-        $socket = $this->_socket;
-
-        $result = socket_bind($socket, $this->_socketFile);
+        $result = socket_bind($this->_socket, $this->_socketFile);
         if ($result === false) {
             $message = $this->_getSocketError();
             $this->disconnect();
@@ -61,9 +59,9 @@ class Connection_SocketUDS extends Connection_Socket_Abstract {
         $fromAddress = '';
         $fromPort = 0;
 
-        while (1) {
+        do {
             $bytes = socket_recvfrom(
-                $socket,
+                $this->_socket,
                 $buffer,
                 $length,
                 0,
@@ -72,11 +70,11 @@ class Connection_SocketUDS extends Connection_Socket_Abstract {
             );
 
             // меряем время сразу после получения
-            $ts = microtime(true);
+            $tsReceived = microtime(true);
 
             if ($bytes > 0) {
                 // я сюда не дойду если $buffer пустой
-                if ($receiver->onReceive($ts, $buffer, $fromAddress, $fromPort)) {
+                if ($receiver->onReceive($tsReceived, $buffer, $fromAddress, $fromPort)) {
                     // если есть какой-то результат - на выход
                     break;
                 }
@@ -89,7 +87,7 @@ class Connection_SocketUDS extends Connection_Socket_Abstract {
                 $this->disconnect();
                 throw new Connection_Exception($message);
             }
-        }
+        } while (1);
     }
 
     private $_socketFile;

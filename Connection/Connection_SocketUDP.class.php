@@ -61,11 +61,11 @@ class Connection_SocketUDP extends Connection_Socket_Abstract {
             );
 
             // меряем время сразу после получения
-            $ts = microtime(true);
+            $tsReceived = microtime(true);
 
             if ($bytes > 0) {
                 // я сюда не дойду если $buffer пустой
-                if ($receiver->onReceive($ts, $buffer, $fromAddress, $fromPort)) {
+                if ($receiver->onReceive($tsReceived, $buffer, $fromAddress, $fromPort)) {
                     // если есть какой-то результат - на выход
                     break;
                 }
