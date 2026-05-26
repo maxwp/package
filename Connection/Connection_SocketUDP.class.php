@@ -8,6 +8,8 @@
 
 class Connection_SocketUDP extends Connection_Socket_Abstract {
 
+    // @todo возможно отказаться в пользу StreamLoop
+
     public function __construct() {
         parent::__construct(socket_create(AF_INET, SOCK_DGRAM, SOL_UDP));
     }
@@ -49,7 +51,7 @@ class Connection_SocketUDP extends Connection_Socket_Abstract {
         $fromAddress = '';
         $fromPort = 0;
 
-        while (1) {
+        do {
             // читаем в блок режиме
             $bytes = socket_recvfrom(
                 $socket,
@@ -63,22 +65,21 @@ class Connection_SocketUDP extends Connection_Socket_Abstract {
             // меряем время сразу после получения
             $tsReceived = microtime(true);
 
-            if ($bytes > 0) {
-                // я сюда не дойду если $buffer пустой
-                if ($receiver->onReceive($tsReceived, $buffer, $fromAddress, $fromPort)) {
-                    // если есть какой-то результат - на выход
-                    break;
-                }
-            } else {
-                // тут более правильно проверять на === false,
-                // но в реальности пустой дата-граммы быть не может
-                // и чтобы не делать внизу проверку на if ($buffer) с типизацией string $buffer to bool
-                // я прямо тут проверяю не пустые ли байты, тем более что чаще всего $bytes это int
-                $message = $this->_getSocketError(); // message надо получить ДО disconnect, бо поменяется
-                $this->disconnect();
-                throw new Connection_Exception($message);
+            // нужно быть готовым что если bytes == 0 - то я все равно один раз дерну onReceive,
+            // но зато в коде нет if-ов
+            if ($receiver->onReceive($tsReceived, $buffer, $fromAddress, $fromPort)) {
+                // если есть какой-то результат - на выход
+                break;
             }
-        }
+        } while ($bytes > 0);
+
+        // тут более правильно проверять на === false,
+        // но в реальности пустой дата-граммы быть не может
+        // и чтобы не делать внизу проверку на if ($buffer) с типизацией string $buffer to bool
+        // я прямо тут проверяю не пустые ли байты, тем более что чаще всего $bytes это int
+        $message = $this->_getSocketError(); // message надо получить ДО disconnect, бо поменяется
+        $this->disconnect();
+        throw new Connection_Exception($message);
     }
 
 }
