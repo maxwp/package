@@ -92,7 +92,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                 // Надо стараться делать меньше fread (syscall overhead), но если все-таки данных много - то лучше читать
                 // еще раз, чтобы не ждать нового круга stream_select(). Но опять-таки, это сильно зависит от количество
                 // потоков внутри всего StreamLoop и насколько я могу затупить на одном handler'e.
-                for ($drainIndex = 1; $drainIndex <= $readFrameDrain; $drainIndex++) {
+                do {
                     $data = fread($stream, $readFrameLength);
                     $length = strlen($data);
 
@@ -213,7 +213,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                         //$errorString = error_get_last()['message'];
                         throw new StreamLoop_Exception(StreamLoop_WebSocket_Const::ERROR_RESET_BY_PEER);
                     }
-                }
+                } while (--$readFrameDrain);
 
                 $this->_buffer = $buffer;
                 $this->_bufferLength = $bufLen;
