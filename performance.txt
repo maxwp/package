@@ -1182,17 +1182,236 @@ $x->b = 1;
 в php8 появилась возможность делать вот так:
 public function ppp1(...$args) {}
 
-так вот, вызов
-// 44 ms
-$this->ppp1(1,2,3);
+Для array<int> это капельку быстрее чем передавать массив: потому что массив еще надо склеить.
+Для array<string> выгоднее делать отдельные calls.
+Но если array<string> условно статический - то лучше использовать multi args - это быстрее на несколько ns.
 
-// 38 ms
-$this->ppp2(1);
-$this->ppp2(2);
-$this->ppp2(3);
+// 121 ns
+class Tool_Benchmark implements Benchmark_Interface {
 
-походе что множественные аргументы передаются как хитро-выебанный массив, ну их нахуй,
-call стоит дороже.
+    public function process() {
+        $this->_call(1,2,3,4,5,6,7,8,9,10);
+    }
+
+    private function _call(...$args) {
+        foreach ($args as $arg) {
+
+        }
+    }
+
+}
+
+// 138 - 14 = 124 ns
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        $x = rand(); // 14 ns
+
+        $this->_call($x,$x,$x,$x,$x,$x,$x,$x,$x,$x);
+    }
+
+    private function _call(...$args) {
+        foreach ($args as $arg) {
+
+        }
+    }
+
+}
+
+// 71 ns, но это статический массив
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        $this->_call([1,2,3,4,5,6,7,8,9,10]);
+    }
+
+    private function _call($args) {
+        foreach ($args as $arg) {
+
+        }
+    }
+
+}
+
+// 148 - 14 = 134 ns, тут динамический массив
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        $x = rand(); // 14 ns
+
+        $this->_call([$x,$x,$x,$x,$x,$x,$x,$x,$x,$x]);
+    }
+
+    private function _call($args) {
+        foreach ($args as $arg) {
+
+        }
+    }
+
+}
+
+// 127 ns, отдельные call
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        $this->_call(1);
+        $this->_call(2);
+        $this->_call(3);
+        $this->_call(4);
+        $this->_call(5);
+        $this->_call(6);
+        $this->_call(7);
+        $this->_call(8);
+        $this->_call(9);
+        $this->_call(10);
+    }
+
+    private function _call($a) {
+
+    }
+
+}
+
+// 142 - 14 = 128 ns
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        $x = rand(); // 14 ns
+
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+    }
+
+    private function _call($a) {
+
+    }
+
+}
+
+// 211 - 42 = 179 ns, это тест со строками
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        $x = (string) rand(); // 42 ns
+
+        $this->_call($x,$x,$x,$x,$x,$x,$x,$x,$x,$x);
+    }
+
+    private function _call(...$args) {
+        foreach ($args as $arg) {
+
+        }
+    }
+
+}
+
+// 179 - 42 = 137 ns, это тест со строковым массивом
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        $x = (string) rand(); // 42 ns
+
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+    }
+
+    private function _call($a) {
+
+    }
+
+}
+
+// 196 - 42 = 154 ns, это тест со строковым массивом
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        $x = (string) rand(); // 42 ns
+
+        $this->_call([$x,$x,$x,$x,$x,$x,$x,$x,$x,$x]);
+    }
+
+    private function _call($args) {
+        foreach ($args as $arg) {
+
+        }
+    }
+
+}
+
+// 137 - 2 = 135 ns
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        $x = __DIR__.'string'; // 2 ns
+
+        $this->_call([$x,$x,$x,$x,$x,$x,$x,$x,$x,$x]);
+    }
+
+    private function _call($args) {
+        foreach ($args as $arg) {
+
+        }
+    }
+
+}
+
+// 133 - 2 = 131 ns
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        $x = __DIR__.'string'; // 2 ns
+
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+        $this->_call($x);
+    }
+
+    private function _call($a) {
+
+    }
+
+}
+
+// 129 - 2 = 127 ns
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        $x = __DIR__.'string'; // 2 ns
+
+        $this->_call($x,$x,$x,$x,$x,$x,$x,$x,$x,$x);
+    }
+
+    private function _call(...$args) {
+        foreach ($args as $arg) {
+
+        }
+    }
+
+}
+
 
 ==============================================================
 
