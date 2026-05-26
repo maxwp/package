@@ -10,7 +10,7 @@ class StreamLoop {
         $tsSelect = microtime(true);
 
         // event loop
-        while (1) {
+        do {
             // копирование массивов, в них уже задано что нужно для stream_select
             $r = $this->_selectReadArray;
             $w = $this->_selectWriteArray;
@@ -44,9 +44,8 @@ class StreamLoop {
             // меряем время select'a
             $tsSelect = microtime(true);
 
-            $handlerArray = $this->_handlerArray; // to locals @todo возможно не стоит делать to locals?
+            $handlerArray = $this->_handlerArray; // to locals @todo возможно не стоит делать to locals? в моменте всегда кто-то один
             // @todo этот to locals занимает много времени, надо заменить на обратный: сборка массива быстрее unset? или лучше dynamic-int-flag?
-            // @todo возможно идея с dynamic-properties быстрее чем массив handler
             $timeoutArray = $this->_selectTimeoutToArray;
             // @todo можно ли timeout сделать обязательным, чтобы вызывать его всегда независимо от rwe
 
@@ -83,13 +82,12 @@ class StreamLoop {
                 }
             }
 
-            // эта проверка должна быть в самом конце: она срабатывает редко, и если ее поставить сразу после select
-            // то будет бесполезная задержка на проверку if===false перед вызовом логики, которая в 99.99999% не оправдана
-            // @todo возможно отказаться вообще или сделать отдельный флаг: а что произойдет при stream_select failed?
-            if ($result === false) {
-                throw new StreamLoop_Exception('stream_select failed');
-            }
-        }
+            // ВАЖНО: при stream_select=false мы всё равно один раз обработаем r/w/e,
+            // потому что ложный ready* для нас безопасен.
+            // После этого loop упадет через do-while.
+        } while ($result !== false);
+
+        throw new StreamLoop_Exception('stream_select failed');
     }
 
     /**
