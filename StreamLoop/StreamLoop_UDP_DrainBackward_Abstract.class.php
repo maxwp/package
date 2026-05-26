@@ -59,8 +59,9 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Drai
 
         // drain up to limit:
         // start from 3 because we already have 2
-        $drainLimit = $this->_drainLimit; // это обязательно делать из-за for
-        for ($drainIndex = 3; $drainIndex <= $drainLimit; $drainIndex++) {
+        $drainLimit = $this->_drainLimit;
+
+        do {
             $bytes = socket_recvfrom(
                 $this->_socketResource,
                 $buffer,
@@ -79,18 +80,20 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Drai
                 // end of drain
                 break;
             }
-        }
+        } while (--$drainLimit);
 
         // emit latest-first: newest datagram first
         // тут нельзя foreach, потому что бегу по элементам в обратном порядке
-        for ($j = $found - 1; $j >= 0; $j--) {
+        do {
+            --$found;
+
             $this->_onReceive(
                 $tsSelect,
-                $bufferArray[$j],
-                $bytesArray[$j],
-                $fromAddressArray[$j]
+                $bufferArray[$found],
+                $bytesArray[$found],
+                $fromAddressArray[$found]
             );
-        }
+        } while ($found);
     }
 
 }

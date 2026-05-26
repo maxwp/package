@@ -6,13 +6,13 @@ abstract class StreamLoop_UDP_DrainForward_Abstract extends StreamLoop_UDP_Drain
         $fromAddress = '';
         $fromPort = 0;
 
-        $drainLimit = $this->_drainLimit; // это обязательно делать из-за for
+        $drainLimit = $this->_drainLimit;
 
         // тут я не делаю socket to locals, потому что в 90% случаев будет одно чтение,
         // в 7% случаев 2 чтения,
         // и 3% случаев 3+ чтения,
         // поэтому не выгодно выносить переменные в локальные
-        for ($drainIndex = 1; $drainIndex <= $drainLimit; $drainIndex++) {
+        do {
             $bytes = socket_recvfrom(
                 $this->_socketResource,
                 $buffer,
@@ -22,6 +22,7 @@ abstract class StreamLoop_UDP_DrainForward_Abstract extends StreamLoop_UDP_Drain
                 $fromPort
             );
 
+            // if-tree optimization
             if ($bytes > 0) {
                 $this->_onReceive($tsSelect, $buffer, $bytes, $fromAddress);
             } else {
@@ -29,7 +30,7 @@ abstract class StreamLoop_UDP_DrainForward_Abstract extends StreamLoop_UDP_Drain
                 // stop drain
                 return;
             }
-        }
+        } while (--$drainLimit);
     }
 
 }
