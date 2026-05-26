@@ -12,6 +12,7 @@ class StreamLoop {
         // event loop
         do {
             // копирование массивов, в них уже задано что нужно для stream_select
+            // @todo перенести в if rweFlag
             $r = $this->_selectReadArray;
             $w = $this->_selectWriteArray;
             $e = $this->_selectExceptArray;
@@ -46,8 +47,8 @@ class StreamLoop {
 
             $handlerArray = $this->_handlerArray; // to locals @todo возможно не стоит делать to locals? в моменте всегда кто-то один
             // @todo этот to locals занимает много времени, надо заменить на обратный: сборка массива быстрее unset? или лучше dynamic-int-flag?
-            $timeoutArray = $this->_selectTimeoutToArray;
             // @todo можно ли timeout сделать обязательным, чтобы вызывать его всегда независимо от rwe
+            $timeoutArray = $this->_selectTimeoutToArray;
 
             // тут if не нужен, потому что чаще всего нужен read
             foreach ($r as $streamID => $stream) {
