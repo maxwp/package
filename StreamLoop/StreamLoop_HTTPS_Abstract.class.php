@@ -91,7 +91,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         // if-tree optimization
         if ($this->_state == StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS) {
             // drain read headers
-            while (1) {
+            do {
                 $line = fgets($this->stream, 4096); // я читаю через fgetS и врядли будет строка больше 4Kb
 
                 $this->_buffer .= $line;
@@ -113,13 +113,12 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                     $this->_headerArray = [];
                     foreach ($lines as $line) {
                         // Пропускаем пустые строки (например, если что-то пошло не так)
-                        if (!$line) {
-                            continue;
-                        }
-                        // Разделяем заголовок на имя и значение
-                        $x = explode(':', $line, 2);
-                        if (count($x) == 2) {
-                            $this->_headerArray[strtolower(trim($x[0]))] = trim($x[1]);
+                        if ($line) {
+                            // Разделяем заголовок на имя и значение
+                            $x = explode(':', $line, 2);
+                            if (count($x) == 2) {
+                                $this->_headerArray[strtolower(trim($x[0]))] = trim($x[1]);
+                            }
                         }
                     }
 
@@ -134,7 +133,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                     $this->_checkEOF();
                     break; // break цикла
                 }
-            }
+            } while (true);
         } elseif ($this->_state == StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_BODY) {
             // @todo как смержить wait for headers & body в кучу? Все равно у меня http 1.1
             $headerArray = $this->_headerArray;
@@ -144,12 +143,13 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                 $length = (int) $headerArray['content-length'];
 
                 // to locals
-                $stream = $this->stream;
+                // @todo возможно не стоит делать to locals так как в 99% случаев чтение одно
                 $buffer = $this->_buffer;
 
                 // dynamic drain read
-                for ($drainIndex = 1; $drainIndex <= 10; $drainIndex++) {
-                    $chunk = fread($stream, 4096);
+                $drainIndex = 10;
+                do {
+                    $chunk = fread($this->stream, 4096);
 
                     // дописываемся всегда: так быстрее, потому что как правило $chunk это string или empty string.
                     // И даже если он false - то дальше сработао проверка
@@ -160,7 +160,8 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                         // а только потом вызывать onResponce,
                         // потому что в onResponce я могу вызвать request снова, а там проверка на activeRequest
                         $statusCode = $this->_statusCode; // запоминаем перед очисткой
-                        $statusMessage = $this->_statusMessage;
+                        $statusMessage = $this->_statusMessage; // запоминаем перед очисткой
+
                         $this->_reset(); // reset in wait for body
 
                         $this->_onReceive(
@@ -185,16 +186,15 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                         $this->_checkEOF();
                         break;
                     }
-                }
+                } while (--$drainIndex);
 
                 $this->_buffer = $buffer;
             } elseif (isset($headerArray['transfer-encoding']) && stripos($headerArray['transfer-encoding'], 'chunked') !== false) {
                 // ---- chunked ----
-                $stream = $this->stream;
-
                 // докачиваем сырой поток chunked-данных в _buffer
-                for ($drainIndex = 1; $drainIndex <= 10; $drainIndex++) {
-                    $chunk = fread($stream, 4096);
+                $drainIndex = 10;
+                do {
+                    $chunk = fread($this->stream, 4096);
                     if ($chunk === '') {
                         break;
                     } elseif ($chunk === false) {
@@ -202,10 +202,10 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                         break;
                     }
                     $this->_buffer .= $chunk;
-                }
+                } while (--$drainIndex);
 
                 // пытаемся распарсить то, что уже есть в _buffer
-                while (true) {
+                do {
                     // 1) если не знаем размер текущего чанка — читаем строку размера
                     if ($this->_chunkExpected === null) {
                         $pos = strpos($this->_buffer, "\r\n");
@@ -287,7 +287,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
 
                     // ждём следующий chunk-size
                     $this->_chunkExpected = null;
-                }
+                } while (true);
             } else {
                 throw new StreamLoop_Exception('Unsupported encoding');
             }
