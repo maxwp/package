@@ -93,14 +93,8 @@ class ClassLoader extends Pattern_ASingleton {
      * @param string $file
      */
     public function registerClass($file) {
-        // @todo low optimizations: а как быстрее?
-        $hash = basename($file);
-        $hash = str_replace('.class.php', '', $hash);
-        $hash = str_replace('.interface.php', '', $hash);
-        $hash = str_replace('.trait.php', '', $hash);
-        $hash = str_replace('.php', '', $hash);
-
-        $this->_classArray[$hash] = str_replace('//', '/', $file);
+        // @todo если отказаться от суффиксов .class/.interface/.trait то станет 58 ns и это x2 по скорости
+        $this->_classArray[str_replace(['.class', '.interface', '.trait'], '', basename($file, '.php'))] = $file;
     }
 
     /**
