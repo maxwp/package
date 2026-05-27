@@ -11,13 +11,11 @@ class StreamLoop {
 
         // event loop
         do {
+            // @todo что изменится если я заставлю каждый handler иметь тайм-аут принудительно
             // вот тут определить сколько us до ближайшего timeout'a
-            $timeoutMin = $this->_selectTimeoutToMin; // нельзя переносить внутрь if'a, будет +1 ns
-            // @todo вроде не нужно делать tolocals ради потенциально двух вызоврв
-            // @todo и скорее всего я всегда буду иметь timeoutto
-            if ($timeoutMin) {
+            if ($this->_selectTimeoutToMin) {
                 $timeoutS = 0;
-                $timeoutUS = ($timeoutMin - $tsSelect) * 1_000_000;
+                $timeoutUS = ($this->_selectTimeoutToMin - $tsSelect) * 1_000_000;
                 if ($timeoutUS <= 0) {
                     $timeoutUS = 0; // если <=0 - то это просто разовая проверка флагов rwe, значит какой-то таймаут уже близко
                 }
