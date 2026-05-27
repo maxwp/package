@@ -119,25 +119,25 @@ class StreamLoop {
                 $this->_selectExceptArray[$streamID],
                 $this->_selectTimeoutToArray[$streamID]
             );
-        }
 
-        // пересчитываем _selectTimeoutToMin
-        if ($this->_selectTimeoutToArray) {
-            $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
-        } else {
-            $this->_selectTimeoutToMin = 0;
-        }
+            // пересчитываем _selectTimeoutToMin
+            if ($this->_selectTimeoutToArray) {
+                $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
+            } else {
+                $this->_selectTimeoutToMin = 0;
+            }
 
-        // обновляем rwe флаг
-        // хитрожопая if-tree optimization: чаще всего есть что-то в read и нет смысла делать OR-конструкцию
-        if ($this->_selectReadArray) {
-            $this->_rweFlag = true;
-        } elseif ($this->_selectWriteArray) {
-            $this->_rweFlag = true;
-        } elseif ($this->_selectExceptArray) {
-            $this->_rweFlag = true;
-        } else {
-            $this->_rweFlag = false;
+            // обновляем rwe флаг
+            // хитрожопая if-tree optimization: чаще всего есть что-то в read и нет смысла делать OR-конструкцию
+            if ($this->_selectReadArray) {
+                $this->_rweFlag = true;
+            } elseif ($this->_selectWriteArray) {
+                $this->_rweFlag = true;
+            } elseif ($this->_selectExceptArray) {
+                $this->_rweFlag = true;
+            } else {
+                $this->_rweFlag = false;
+            }
         }
     }
 
