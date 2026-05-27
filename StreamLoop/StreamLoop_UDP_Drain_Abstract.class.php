@@ -9,7 +9,7 @@ abstract class StreamLoop_UDP_Drain_Abstract extends StreamLoop_UDP_Abstract {
         // nothing for UDP
     }
 
-    public function readySelectTimeout($tsSelect) {
+    public function readyTimeout($tsSelect) {
         // nothing for UDP
     }
 

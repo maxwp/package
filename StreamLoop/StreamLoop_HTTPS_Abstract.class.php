@@ -335,7 +335,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         }
     }
 
-    public function readySelectTimeout($tsSelect) {
+    public function readyTimeout($tsSelect) {
         // если прошел timeout - кидаем ошибку и отключаемся;
         // это касается любого типа timeout - request, connecting, handshaking.
         // потому что все равно соединению пизда

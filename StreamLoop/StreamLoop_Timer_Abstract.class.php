@@ -38,7 +38,7 @@ abstract class StreamLoop_Timer_Abstract extends StreamLoop_Handler_Abstract {
         // nothing
     }
 
-    public function readySelectTimeout($tsSelect) {
+    public function readyTimeout($tsSelect) {
         $this->_onTimer($tsSelect);
         $this->_loop->updateHandlerTimeoutTo($this, $tsSelect + $this->_timeout);
     }

@@ -281,7 +281,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         }
     }
 
-    public function readySelectTimeout($tsSelect) {
+    public function readyTimeout($tsSelect) {
         /*
          * idle ping logic:
          * - изначально после подключения ставится первый интервал в 10-15 sec (rand) updateHandlerTimeout(),

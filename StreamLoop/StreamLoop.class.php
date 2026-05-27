@@ -42,25 +42,20 @@ class StreamLoop {
                 throw new StreamLoop_Exception('No RWE and timeout is null');
             }
 
-            // меряем время select'a
+            // меряем время select'a сразу же
             $tsSelect = microtime(true);
 
-            $handlerArray = $this->_handlerArray; // to locals @todo возможно не стоит делать to locals? в моменте всегда кто-то один
-            // @todo этот to locals занимает много времени, надо заменить на обратный: сборка массива быстрее unset? или лучше dynamic-int-flag?
-            // @todo можно ли timeout сделать обязательным, чтобы вызывать его всегда независимо от rwe
-            $timeoutArray = $this->_selectTimeoutToArray;
+            $handlerArray = $this->_handlerArray; // to locals @todo возможно не стоит делать to locals? в моменте всегда кто-то один - раздебажим
 
-            // тут if не нужен, потому что чаще всего нужен read
+            // тут if не нужен, потому что чаще всего есть r
             foreach ($r as $streamID => $stream) {
                 $handlerArray[$streamID]->readyRead($tsSelect);
-                unset($timeoutArray[$streamID]);
             }
 
             // наличие if тут оправдано, потому что чаще массив пустой
             if ($w) {
                 foreach ($w as $streamID => $stream) {
                     $handlerArray[$streamID]->readyWrite($tsSelect);
-                    unset($timeoutArray[$streamID]);
                 }
             }
 
@@ -68,18 +63,12 @@ class StreamLoop {
             if ($e) {
                 foreach ($e as $streamID => $stream) {
                     $handlerArray[$streamID]->readyExcept($tsSelect);
-                    unset($timeoutArray[$streamID]);
                 }
             }
 
-            // если для handler не вызывался сейчас ни один ready*
-            // и при этом я перешел за timeout
-            // = то надо вызвать readySelectTimeout
-            if ($timeoutArray) {
-                foreach ($timeoutArray as $streamID => $timeoutTo) {
-                    if ($timeoutTo > 0 && $timeoutTo <= $tsSelect) { // @todo можно ставить бесконечность и избавиться от if'a
-                        $handlerArray[$streamID]->readySelectTimeout($tsSelect);
-                    }
+            foreach ($this->_selectTimeoutToArray as $streamID => $timeoutTo) {
+                if ($tsSelect >= $timeoutTo) {
+                    $handlerArray[$streamID]->readyTimeout($tsSelect);
                 }
             }
 
