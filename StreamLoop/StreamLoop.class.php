@@ -83,7 +83,7 @@ class StreamLoop {
     }
 
     public function updateHandler(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite, $flagExcept, $timeoutTo) {
-        // если streamID & что-то в RWET - регистрация, иначе снятие
+        // @todo сделать отдельный unregister чтобы не пришлось передавать все параметры и делать ебучие ifы
 
         // to locals
         $streamID = $handler->streamID;
@@ -105,7 +105,7 @@ class StreamLoop {
         }
         # debug:end
 
-        $register = false; // @todo можно отказаться от этого флага
+        $register = false;
 
         if ($flagRead) {
             $this->_selectReadArray[$streamID] = $stream;
@@ -131,8 +131,19 @@ class StreamLoop {
         if ($timeoutTo > 0) {
             $this->_selectTimeoutToArray[$streamID] = $timeoutTo;
             $register = true;
+
+            // если timeoutto меньше - то используем его;
+            // иначе пересчитываем
+            if ($timeoutTo <= $this->_selectTimeoutToMin) {
+                $this->_selectTimeoutToMin = $timeoutTo;
+            } else {
+                $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
+            }
         } else {
             unset($this->_selectTimeoutToArray[$streamID]);
+
+            // так как я удалил handler - надо точно пересчитывать timeout
+            $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
         }
 
         // регистрируем или снимаем
@@ -141,12 +152,6 @@ class StreamLoop {
         } else {
             unset($this->_handlerArray[$streamID]);
         }
-
-        // вычисляем min:
-        // он должен быть обязательно, не может быть ситуации чтобы не было handler-ов которые ничего не ждут,
-        // я тогда точно подвисну
-        // @todo упростить на if: потому что я обычно продлеваю
-        $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
 
         // обновляем rwe флаг
         // хитрожопая if-tree optimization: чаще всего есть что-то в read и нет смысла делать OR-конструкцию
