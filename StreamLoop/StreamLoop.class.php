@@ -11,10 +11,6 @@ class StreamLoop {
 
         // event loop
         do {
-            // копирование массивов, в них уже задано что нужно для stream_select
-            // @todo перенести в if rweFlag: но тогда логика разделится
-
-
             // вот тут определить сколько us до ближайшего timeout'a
             $timeoutMin = $this->_selectTimeoutToMin; // нельзя переносить внутрь if'a, будет +1 ns
             // @todo вроде не нужно делать tolocals ради потенциально двух вызоврв
