@@ -1975,6 +1975,32 @@ var_dump($t);
 
 ==============================================================
 
+== vs ===
+
+=== добавляет примерно +1+2 ns
+
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        //$x = rand(0, 1); // 22 ns
+        //if ($x == 1) {} // 28-22 = 6 ns
+        //if ($x === 1) {} // 29-22 = 7 ns
+
+        //$this->_x; // 3 ns
+        //if ($this->_x == 1) {} // 4 - 3 = 1 ns
+        //if ($this->_x === 1) {} // 6 - 3 = 3 ns
+    }
+
+    public function __construct() {
+        $this->_x = rand(0, 1);
+    }
+
+    private $_x;
+
+}
+
+==============================================================
+
 strings concatenations:
 
 самые большие проблемы это автоприведение типов, на втором месте конкатенация.
