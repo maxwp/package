@@ -82,9 +82,57 @@ class StreamLoop {
         } while (true);
     }
 
-    public function updateHandler(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite, $flagExcept, $timeoutTo) {
-        // @todo сделать отдельный unregister чтобы не пришлось передавать все параметры и делать ебучие ifы
+    /**
+     * Полное снятие handler'a
+     *
+     * @param StreamLoop_Handler_Abstract $handler
+     * @return void
+     * @throws StreamLoop_Exception
+     */
+    public function unregisterHandler(StreamLoop_Handler_Abstract $handler) {
+        $streamID = $handler->streamID;
 
+        # debug:start
+        if (!$streamID) {
+            throw new StreamLoop_Exception('Cannot unregister handler without streamID');
+        }
+        # debug:end
+
+        // multi-unset
+        unset(
+            $this->_handlerArray[$streamID],
+            $this->_selectReadArray[$streamID],
+            $this->_selectWriteArray[$streamID],
+            $this->_selectExceptArray[$streamID],
+            $this->_selectTimeoutToArray[$streamID]
+        );
+
+        // так как я дропнул handler - то надо точно пересчитывать ближайший тайм-аут
+        $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
+
+        if ($this->_selectReadArray) {
+            $this->_rweFlag = true;
+        } elseif ($this->_selectWriteArray) {
+            $this->_rweFlag = true;
+        } elseif ($this->_selectExceptArray) {
+            $this->_rweFlag = true;
+        } else {
+            $this->_rweFlag = false;
+        }
+    }
+
+    /**
+     * Регистрация: обязательно должен быть timeoutTo > 0
+     *
+     * @param StreamLoop_Handler_Abstract $handler
+     * @param $flagRead
+     * @param $flagWrite
+     * @param $flagExcept
+     * @param $timeoutTo
+     * @return void
+     * @throws StreamLoop_Exception
+     */
+    public function registerHandler(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite, $flagExcept, $timeoutTo) {
         // to locals
         $streamID = $handler->streamID;
         $stream = $handler->stream;
@@ -105,52 +153,34 @@ class StreamLoop {
         }
         # debug:end
 
-        $register = false;
+        $this->_handlerArray[$streamID] = $handler;
 
         if ($flagRead) {
             $this->_selectReadArray[$streamID] = $stream;
-            $register = true;
         } else {
             unset($this->_selectReadArray[$streamID]);
         }
 
         if ($flagWrite) {
             $this->_selectWriteArray[$streamID] = $stream;
-            $register = true;
         } else {
             unset($this->_selectWriteArray[$streamID]);
         }
 
         if ($flagExcept) {
             $this->_selectExceptArray[$streamID] = $stream;
-            $register = true;
         } else {
             unset($this->_selectExceptArray[$streamID]);
         }
 
-        if ($timeoutTo > 0) {
-            $this->_selectTimeoutToArray[$streamID] = $timeoutTo;
-            $register = true;
+        $this->_selectTimeoutToArray[$streamID] = $timeoutTo;
 
-            // если timeoutto меньше - то используем его;
-            // иначе пересчитываем
-            if ($timeoutTo <= $this->_selectTimeoutToMin) {
-                $this->_selectTimeoutToMin = $timeoutTo;
-            } else {
-                $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
-            }
+        // если timeoutto меньше - то используем его;
+        // иначе пересчитываем
+        if ($timeoutTo <= $this->_selectTimeoutToMin) {
+            $this->_selectTimeoutToMin = $timeoutTo;
         } else {
-            unset($this->_selectTimeoutToArray[$streamID]);
-
-            // так как я удалил handler - надо точно пересчитывать timeout
             $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
-        }
-
-        // регистрируем или снимаем
-        if ($register) {
-            $this->_handlerArray[$streamID] = $handler;
-        } else {
-            unset($this->_handlerArray[$streamID]);
         }
 
         // обновляем rwe флаг
@@ -176,6 +206,6 @@ class StreamLoop {
     private $_selectWriteArray = [];
     private $_selectExceptArray = [];
     private $_selectTimeoutToArray = [];
-    private $_selectTimeoutToMin = 0.0; // float
+    private $_selectTimeoutToMin = PHP_FLOAT_MAX; // float
 
 }

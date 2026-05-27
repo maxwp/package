@@ -47,7 +47,7 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
         // non-block-mode
         stream_set_blocking($this->stream, false);
 
-        $this->_loop->updateHandler($this, true, false, false, microtime(true) + 60);
+        $this->_loop->registerHandler($this, true, false, false, microtime(true) + 60);
     }
 
     public function readyRead($tsSelect) {
@@ -90,7 +90,7 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
     }
 
     public function readyTimeout($tsSelect) {
-        $this->_loop->updateHandler($this, true, false, false, $tsSelect + 60);
+        $this->_loop->registerHandler($this, true, false, false, $tsSelect + 60);
     }
 
     public Connection_SocketStream $socket;

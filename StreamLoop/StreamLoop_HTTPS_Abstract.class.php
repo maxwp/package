@@ -56,7 +56,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS; // new request
 
         $this->_timeoutTo = microtime(true) + $timeout;
-        $this->_loop->updateHandler($this, true, false, false, $this->_timeoutTo);
+        $this->_loop->registerHandler($this, true, false, false, $this->_timeoutTo);
     }
 
     public function connect() {
@@ -118,7 +118,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
 
                     $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_BODY; // in read
 
-                    $this->_loop->updateHandler($this, true, false, false, $this->_timeoutTo);
+                    $this->_loop->registerHandler($this, true, false, false, $this->_timeoutTo);
 
                     $this->_buffer = '';
 
@@ -309,7 +309,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
             $this->_state = StreamLoop_HTTPS_Const::STATE_HANDSHAKING; // handshake starting
 
             // NB! НЕ ставим write, потому что во время handshaking всегда идет write и просто зайобка
-            $this->_loop->updateHandler($this, true, false, true, $this->_timeoutTo);
+            $this->_loop->registerHandler($this, true, false, true, $this->_timeoutTo);
 
             // и сразу же проверяем его, вдруг подключился
             $this->_checkHandshake($tsSelect);
@@ -413,7 +413,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         $this->_state = $state; // in reset
 
         $this->_timeoutTo = 0;
-        $this->_loop->updateHandler($this, false, false, false, 0); // unregister
+        $this->_loop->unregisterHandler($this);
     }
 
     public function getState() {

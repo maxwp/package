@@ -1299,6 +1299,20 @@ foreach ($b as $k => $v) {
 
 ==============================================================
 
+unset vs multi unset
+
+multi unset - быстрее пропорционально
+
+unset(
+    $this->_handlerArray[$streamID],
+    $this->_selectReadArray[$streamID],
+    $this->_selectWriteArray[$streamID],
+    $this->_selectExceptArray[$streamID],
+    $this->_selectTimeoutToArray[$streamID]
+);
+
+==============================================================
+
 min/max для массива float-ов быстрее чем перебор массива
 
 $max = max($a); // 32 ns для массива в 5 элементов, 52 ns для 10 элементов
