@@ -13,9 +13,7 @@ class StreamLoop {
         do {
             // копирование массивов, в них уже задано что нужно для stream_select
             // @todo перенести в if rweFlag: но тогда логика разделится
-            $r = $this->_selectReadArray;
-            $w = $this->_selectWriteArray;
-            $e = $this->_selectExceptArray;
+
 
             // вот тут определить сколько us до ближайшего timeout'a
             $timeoutMin = $this->_selectTimeoutToMin; // нельзя переносить внутрь if'a, будет +1 ns
@@ -34,10 +32,21 @@ class StreamLoop {
             }
 
             if ($this->_rweFlag) {
+                $r = $this->_selectReadArray;
+                $w = $this->_selectWriteArray;
+                $e = $this->_selectExceptArray;
+
                 $result = stream_select($r, $w, $e, $timeoutS, $timeoutUS);
             } elseif ($timeoutUS !== null) {
-                usleep($timeoutUS);
+                // сюда пы попадаем только из-за timeout'a:
+
+                // я специально обнуляю все до sleep (потому что sleep отдаст контекст и я не хочу тратиться на очистку переменных после пробуждения)
+                $r = []; // тут нужен array из-за foreach
+                $w = false;
+                $e = false;
                 $result = 0;
+
+                usleep($timeoutUS);
             } else {
                 // тут может быть странная ситуация, что нет rwe, а timeout is null - то это явно бажина,
                 // потому что таймер должен был снять регистрацию handler'a
