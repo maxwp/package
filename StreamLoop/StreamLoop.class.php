@@ -185,8 +185,13 @@ class StreamLoop {
 
         // обновляем rwe флаг
         // хитрожопая if-tree optimization: чаще всего есть что-то в read и нет смысла делать OR-конструкцию
-        // @todo встроить выше
-        if ($this->_selectReadArray) {
+        if ($flagRead) {
+            $this->_rweFlag = true;
+        } elseif ($flagWrite) {
+            $this->_rweFlag = true;
+        } elseif ($flagExcept) {
+            $this->_rweFlag = true;
+        } elseif ($this->_selectReadArray) {
             $this->_rweFlag = true;
         } elseif ($this->_selectWriteArray) {
             $this->_rweFlag = true;
