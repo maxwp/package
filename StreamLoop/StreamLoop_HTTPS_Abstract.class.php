@@ -413,7 +413,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         $this->_state = $state; // in reset
 
         $this->_timeoutTo = 0;
-        $this->_loop->updateHandler($this, false, false, false, 0);
+        $this->_loop->updateHandler($this, false, false, false, 0); // unregister
     }
 
     public function getState() {

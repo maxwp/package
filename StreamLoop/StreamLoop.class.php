@@ -1,30 +1,30 @@
 <?php
 class StreamLoop {
 
-    // @todo тут есть проблема, что если все handler'ы снимутся - будет вечный loop и это никак не остановить;
-    //       но добавлять внутрь +1 проверку не охота;
-    // @todo возможно лучше проверять на result === false & timeoutArray/updateHandler
-    
+    // NB: некоторые проверки делаются только в debug-mode, так сделано специально чтобы hot-path получится
+    // extremely fucking fast
+
     public function run() {
         // первый раз меряем tsSelect до круга
         $tsSelect = microtime(true);
 
         // event loop из сами залуп
         do {
-            $timeoutUS = ($this->_selectTimeoutToMin - $tsSelect) * 1_000_000;
-            if ($timeoutUS < 0) {
-                $timeoutUS = 0; // если <=0 - значит какой-то таймаут уже близко, но все равно будет проверка флагов rwe,
-            }
-
             if ($this->_rweFlag) {
                 $r = $this->_selectReadArray;
-                $w = $this->_selectWriteArray;
-                $e = $this->_selectExceptArray;
+                $w = $this->_selectWriteArray; // @todo можно ли завернуть в if
+                $e = $this->_selectExceptArray; // @todo а есть except?
+
+                $timeoutUS = ($this->_selectTimeoutToMin - $tsSelect) * 1_000_000;
+                if ($timeoutUS < 0) { // эта проверка нужна только потому, что нельзя отправлять negative timeoutUS
+                    $timeoutUS = 0; // если <= 0 - значит какой-то таймаут уже близко, но все равно будет быстрая проверка флагов rwe
+                }
 
                 // stream_select() accepts values > 1000000 for microseconds and behaves correctly by normalizing internally.
-                $result = stream_select($r, $w, $e, 0, $timeoutUS);
+                stream_select($r, $w, $e, 0, $timeoutUS);
             } else {
                 // сюда пы попадаем если есть тайм-аут, но нет сокетов rwe
+                // (копец редкая ситуация)
 
                 // я специально обнуляю все до sleep:
                 // sleep отдаст контекст и я не хочу тратиться на очистку переменных после пробуждения,
@@ -32,25 +32,20 @@ class StreamLoop {
                 $r = []; // тут нужен array из-за foreach
                 $w = false;
                 $e = false;
-                $result = 0;
 
-                // Values larger than 1000000 may not be supported by the operating system.
-                if ($timeoutUS <= 1_000_000) {
-                    usleep($timeoutUS);
-                } else {
-                    sleep(intdiv($timeoutUS, 1_000_000));
-                    usleep($timeoutUS % 1_000_000);
-                }
+                time_sleep_until($this->_selectTimeoutToMin);
             }
 
             // меряем время select'a сразу же
             $tsSelect = microtime(true);
 
-            // тут я решил НЕ делать handlerArray to locals:
             // 1. в 93% случаев я имею один элемент в r/w/e, и нет смысла делать to locals,
             //    а остальные проценты распределы примерно также: и математически не выгодно делать to locals trick.
             // 2. handlerArray to locals создает редкую проблему: если на readyRead я дропну handler, а потом на
             //    readyWrite попытаюсь шото сделать - нет элемента в массиве, а я не хочу обкладывать все isset-ами.
+            // 3. так как я не делаю проверку result === false - то всегда надо быть готовым что readyXXX может вызваться
+            //    в случае result === false, и тогда будут холостые обработчики. Но это было 1 раз за год.
+            //    и было выгодно закосить эту проверку на result.
 
             // тут if не нужен, потому что чаще всего есть r
             foreach ($r as $streamID => $stream) {
@@ -77,83 +72,93 @@ class StreamLoop {
                 }
             }
 
-            // ВАЖНО: при stream_select=false мы всё равно один раз обработаем r/w/e,
-            // потому что ложный ready* для нас безопасен.
-            // После этого loop упадет через do-while.
-        } while ($result !== false);
+            // только в режиме debug проверяем что с handler-ами
+            # debug:start
+            if (!$this->_handlerArray) {
+                throw new StreamLoop_Exception('no handlers');
+            }
+            # debug:end
 
-        throw new StreamLoop_Exception('stream_select failed');
+        } while (true);
     }
 
     public function updateHandler(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite, $flagExcept, $timeoutTo) {
         // если streamID & что-то в RWET - регистрация, иначе снятие
 
+        // to locals
         $streamID = $handler->streamID;
-        if ($streamID) {
-            // to locals
-            $stream = $handler->stream;
+        $stream = $handler->stream;
 
-            $register = false;
+        # debug:start
+        if (!$streamID) {
+            throw new StreamLoop_Exception('Cannot update handler without streamID');
+        }
+        # debug:end
 
-            if ($flagRead) {
-                $this->_selectReadArray[$streamID] = $stream;
-                $register = true;
-            } else {
-                unset($this->_selectReadArray[$streamID]);
-            }
+        // нельзя ничего регистрировать с нулевым timeout:
+        // я это проверяю только в debug-mode, чтобы в hot-path не тратить на это время
+        # debug:start
+        if (($flagRead || $flagWrite || $flagExcept)
+            && $timeoutTo <= 0
+        ) {
+            throw new StreamLoop_Exception('Cannot register handler without timeout');
+        }
+        # debug:end
 
-            if ($flagWrite) {
-                $this->_selectWriteArray[$streamID] = $stream;
-                $register = true;
-            } else {
-                unset($this->_selectWriteArray[$streamID]);
-            }
+        $register = false; // @todo можно отказаться от этого флага
 
-            if ($flagExcept) {
-                $this->_selectExceptArray[$streamID] = $stream;
-                $register = true;
-            } else {
-                unset($this->_selectExceptArray[$streamID]);
-            }
+        if ($flagRead) {
+            $this->_selectReadArray[$streamID] = $stream;
+            $register = true;
+        } else {
+            unset($this->_selectReadArray[$streamID]);
+        }
 
-            if ($timeoutTo > 0) {
-                $this->_selectTimeoutToArray[$streamID] = $timeoutTo;
-                $register = true;
-            } else {
-                unset($this->_selectTimeoutToArray[$streamID]);
-            }
+        if ($flagWrite) {
+            $this->_selectWriteArray[$streamID] = $stream;
+            $register = true;
+        } else {
+            unset($this->_selectWriteArray[$streamID]);
+        }
 
-            # debug:start
-            if ($register && $timeoutTo <= 0) {
-                throw new StreamLoop_Exception('Cannot register handler without timeout');
-            }
-            # debug:end
+        if ($flagExcept) {
+            $this->_selectExceptArray[$streamID] = $stream;
+            $register = true;
+        } else {
+            unset($this->_selectExceptArray[$streamID]);
+        }
 
-            // регистрируем или снимаем
-            if ($register) {
-                $this->_handlerArray[$streamID] = $handler;
-            } else {
-                unset($this->_handlerArray[$streamID]);
-            }
+        if ($timeoutTo > 0) {
+            $this->_selectTimeoutToArray[$streamID] = $timeoutTo;
+            $register = true;
+        } else {
+            unset($this->_selectTimeoutToArray[$streamID]);
+        }
 
-            // вычисляем min:
-            // он должен быть обязательно, не может быть ситуации чтобы не было handler-ов которые ничего не ждут,
-            // я тогда точно подвисну
-            $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
+        // регистрируем или снимаем
+        if ($register) {
+            $this->_handlerArray[$streamID] = $handler;
+        } else {
+            unset($this->_handlerArray[$streamID]);
+        }
 
-            // обновляем rwe флаг
-            // хитрожопая if-tree optimization: чаще всего есть что-то в read и нет смысла делать OR-конструкцию
-            // @todo встроить выше
-            // @todo RWET flag?
-            if ($this->_selectReadArray) {
-                $this->_rweFlag = true;
-            } elseif ($this->_selectWriteArray) {
-                $this->_rweFlag = true;
-            } elseif ($this->_selectExceptArray) {
-                $this->_rweFlag = true;
-            } else {
-                $this->_rweFlag = false;
-            }
+        // вычисляем min:
+        // он должен быть обязательно, не может быть ситуации чтобы не было handler-ов которые ничего не ждут,
+        // я тогда точно подвисну
+        // @todo упростить на if: потому что я обычно продлеваю
+        $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
+
+        // обновляем rwe флаг
+        // хитрожопая if-tree optimization: чаще всего есть что-то в read и нет смысла делать OR-конструкцию
+        // @todo встроить выше
+        if ($this->_selectReadArray) {
+            $this->_rweFlag = true;
+        } elseif ($this->_selectWriteArray) {
+            $this->_rweFlag = true;
+        } elseif ($this->_selectExceptArray) {
+            $this->_rweFlag = true;
+        } else {
+            $this->_rweFlag = false;
         }
     }
 

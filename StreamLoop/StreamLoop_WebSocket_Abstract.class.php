@@ -56,7 +56,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         // дисконнект закрывает снимает регистрацию handler'a и закрывает stream.
         // это приводит к тому, что SL временно забывает про handler и не ебет его
         $this->_timeoutTo = 0;
-        $this->_loop->updateHandler($this, false, false, false, false);
+        $this->_loop->updateHandler($this, false, false, false, false); // unregister
 
         // бывают ситуации когда throwError два раза подряд и тогда disconnect два раза подряд
         if (is_resource($this->stream)) {
