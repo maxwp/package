@@ -4,9 +4,7 @@ class StreamLoop {
     // @todo тут есть проблема, что если все handler'ы снимутся - будет вечный loop и это никак не остановить;
     //       но добавлять внутрь +1 проверку не охота;
     // @todo возможно лучше проверять на result === false & timeoutArray/updateHandler
-
-    // @todo и еще стоит учест что timeout должен быть меньше 1_000_000, хотя почему-то это работает и с 10 sec
-
+    
     public function run() {
         // первый раз меряем tsSelect до круга
         $tsSelect = microtime(true);
@@ -22,7 +20,8 @@ class StreamLoop {
                 $r = $this->_selectReadArray;
                 $w = $this->_selectWriteArray;
                 $e = $this->_selectExceptArray;
-                
+
+                // stream_select() accepts values > 1000000 for microseconds and behaves correctly by normalizing internally.
                 $result = stream_select($r, $w, $e, 0, $timeoutUS);
             } else {
                 // сюда пы попадаем если есть тайм-аут, но нет сокетов rwe
@@ -35,7 +34,13 @@ class StreamLoop {
                 $e = false;
                 $result = 0;
 
-                usleep($timeoutUS);
+                // Values larger than 1000000 may not be supported by the operating system.
+                if ($timeoutUS <= 1_000_000) {
+                    usleep($timeoutUS);
+                } else {
+                    sleep(intdiv($timeoutUS, 1_000_000));
+                    usleep($timeoutUS % 1_000_000);
+                }
             }
 
             // меряем время select'a сразу же
