@@ -12,7 +12,7 @@ class StreamLoop {
         // event loop
         do {
             // копирование массивов, в них уже задано что нужно для stream_select
-            // @todo перенести в if rweFlag
+            // @todo перенести в if rweFlag: но тогда логика разделится
             $r = $this->_selectReadArray;
             $w = $this->_selectWriteArray;
             $e = $this->_selectExceptArray;
@@ -121,6 +121,13 @@ class StreamLoop {
                 $this->_selectExceptArray[$streamID],
                 $this->_selectTimeoutToArray[$streamID]
             );
+        }
+
+        // пересчитываем _selectTimeoutToMin
+        if ($this->_selectTimeoutToArray) {
+            $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
+        } else {
+            $this->_selectTimeoutToMin = 0;
         }
 
         // обновляем rwe флаг
