@@ -32,7 +32,9 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
         $this->stream = $stream;
         $this->streamID = (int) $stream;
 
-        $this->_loop->registerHandler($this);
+        // сразу 10 sec на connect .. ready
+        $this->_timeoutTo = microtime(true) + 10;
+        $this->_loop->updateHandler($this, false, true, true, $this->_timeoutTo);
 
         // Устанавливаем буфер до начала SSL
         $socket = new Connection_SocketStream($stream);
@@ -103,5 +105,6 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
     protected $_ip = false; // string
     protected $_sourceIP = '0.0.0.0'; // string, any ip by default
     protected $_sourcePort = 0; // int, any port by default
+    protected $_timeoutTo = 0.0; // float
 
 }

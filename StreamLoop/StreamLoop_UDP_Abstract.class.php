@@ -33,9 +33,6 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
         $this->stream = $stream;
         $this->streamID = (int) $stream;
 
-        // регистрация handler'a в loop'e
-        $this->_loop->registerHandler($this);
-
         $this->socket = new Connection_SocketStream($this->stream);
         $this->socket->setReuseAddr(0);
         //$this->socket->setBufferSizeRead(50 * 1024 * 1024);
@@ -47,9 +44,10 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
         stream_set_read_buffer($this->stream, 0);
         stream_set_write_buffer($this->stream, 0);
 
+        // non-block-mode
         stream_set_blocking($this->stream, false);
 
-        $this->_loop->updateHandlerFlags($this, true, false, false);
+        $this->_loop->updateHandler($this, true, false, false, microtime(true) + 60);
     }
 
     public function readyRead($tsSelect) {
@@ -92,7 +90,7 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
     }
 
     public function readyTimeout($tsSelect) {
-        // nothing for UDP
+        $this->_loop->updateHandler($this, true, false, false, $tsSelect + 60);
     }
 
     public Connection_SocketStream $socket;

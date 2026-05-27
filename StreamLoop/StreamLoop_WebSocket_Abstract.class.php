@@ -13,6 +13,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     // @todo сначала надо придумать как сделать StateMachine, чтобы я мог помещать команду с событиями onXXX,
     //       и затем handshake и switching protocol снанут этими командами
 
+    // @todo возможно в момент ready тоже пихать except=true?
+
     abstract protected function _setupConnection();
     abstract protected function _onInit(); // @todo rename to _beforeConnect, и вообще надо явно Events before/after
     abstract protected function _onReceive($tsSelect, $payload, $opcode);
@@ -43,13 +45,9 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         $this->_bufferLength = 0;
         $this->_bufferOffset = 0;
 
-        $this->_createAndConnectTCP();
-
         $this->_state = StreamLoop_WebSocket_Const::STATE_CONNECTING;
-        $this->_loop->updateHandlerFlags($this, false, true, true);
 
-        // устанавливаем timeout на connect + handshake + upgrade
-        $this->_loop->updateHandlerTimeoutTo($this, time() + 10);
+        $this->_createAndConnectTCP();
 
         $this->_onInit();
     }
@@ -57,7 +55,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     public function disconnect() {
         // дисконнект закрывает снимает регистрацию handler'a и закрывает stream.
         // это приводит к тому, что SL временно забывает про handler и не ебет его
-        $this->_loop->unregisterHandler($this);
+        $this->_timeoutTo = 0;
+        $this->_loop->updateHandler($this, false, false, false, false);
 
         // бывают ситуации когда throwError два раза подряд и тогда disconnect два раза подряд
         if (is_resource($this->stream)) {
@@ -253,7 +252,9 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                 ));
 
                 $this->_state = StreamLoop_WebSocket_Const::STATE_HANDSHAKING;
-                $this->_loop->updateHandlerFlags($this, true, false, true);
+
+                // NB! НЕ ставим write, потому что во время handshaking всегда идет write и просто зайобка
+                $this->_loop->updateHandler($this, true, false, true, $this->_timeoutTo);
 
                 $this->_checkHandshake($tsSelect);
                 return;
@@ -310,7 +311,9 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                 return;
             }
 
-            $this->_loop->updateHandlerTimeoutTo($this, $tsSelect + 10 + rand() % 5);
+            // @todo какая-то мутная логика ping-pong
+            $this->_timeoutTo = $tsSelect + 10 + rand() % 5;
+            $this->_loop->updateHandler($this, true, false, false, $this->_timeoutTo);
         } else {
             // во всех остальных случаях я нарвался на проблему что за timeout я не смог установить соединение и сделать handshake/upgrade
             // (то есть не успел аж до ready)
@@ -344,7 +347,10 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                 }
 
                 $this->_state = StreamLoop_WebSocket_Const::STATE_READY;
-                $this->_loop->updateHandlerFlags($this, true, false, false);
+
+                // таймер двигаем вперед на 10-15 сек
+                $this->_timeoutTo = $tsSelect + 10 + rand() % 5;
+                $this->_loop->updateHandler($this, true, false, false, $this->_timeoutTo);
 
                 $this->_buffer = '';
                 $this->_bufferLength = 0;
@@ -352,8 +358,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
                 // считаем соединение активно и с ни все ок
                 $this->_active = true;
-                // таймер двигаем вперед на 10-15 сек
-                $this->_loop->updateHandlerTimeoutTo($this, $tsSelect + 10 + rand() % 5);
 
                 $this->_onReady($tsSelect);
             }
@@ -417,7 +421,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
             );
 
             $this->_state = StreamLoop_WebSocket_Const::STATE_UPGRADING;
-            $this->_loop->updateHandlerFlags($this, true, false, false);
+            $this->_loop->updateHandler($this, true, false, false, $this->_timeoutTo);
 
             $this->_checkUpgrade($tsSelect);
 

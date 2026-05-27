@@ -2,10 +2,6 @@
 class StreamLoop {
 
     public function run() {
-        if (!$this->_handlerArray) {
-            throw new StreamLoop_Exception('No handler array');
-        }
-
         // первый раз меряем tsSelect до круга
         $tsSelect = microtime(true);
 
@@ -13,7 +9,7 @@ class StreamLoop {
         do {
             // @todo что изменится если я заставлю каждый handler иметь тайм-аут принудительно
             // вот тут определить сколько us до ближайшего timeout'a
-            if ($this->_selectTimeoutToMin) {
+            if ($this->_selectTimeoutToMin) { // @todo у меня всегда ж есть timeout?
                 $timeoutS = 0;
                 $timeoutUS = ($this->_selectTimeoutToMin - $tsSelect) * 1_000_000;
                 if ($timeoutUS <= 0) {
@@ -89,84 +85,63 @@ class StreamLoop {
         throw new StreamLoop_Exception('stream_select failed');
     }
 
-    /**
-     * Регистрация handler'a: в этот момент у меня уже должен быть stream & streamID,
-     * иначе его нельзя зарегистрировать.
-     *
-     * @param StreamLoop_Handler_Abstract $handler
-     * @return void
-     */
-    public function registerHandler(StreamLoop_Handler_Abstract $handler) {
-        // @todo тут есть прикол что регистрация handler'a заранее не нужна, как и его снятие.
-        // @todo достаточно оперировать только updateFlags и если что-то есть, то регистрировать handler на лету
+    public function updateHandler(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite, $flagExcept, $timeoutTo = false) {
+        // если streamID & что-то в RWET - регистрация, иначе снятие
 
-        // проверка чтобы я не натупил и не вызвал дублей
-        if (isset($this->_handlerArray[$handler->streamID])) {
-            throw new StreamLoop_Exception('stream_handler already registered');
-        }
-
-        $this->_handlerArray[$handler->streamID] = $handler;
-    }
-
-    public function unregisterHandler(StreamLoop_Handler_Abstract $handler) {
-        // важно: этот метод надо вызывать ДО fclose, пока есть streamID
-        $streamID = $handler->streamID;
-        if ($streamID) {
-            unset(
-                $this->_handlerArray[$streamID],
-                $this->_selectReadArray[$streamID],
-                $this->_selectWriteArray[$streamID],
-                $this->_selectExceptArray[$streamID],
-                $this->_selectTimeoutToArray[$streamID]
-            );
-
-            // пересчитываем _selectTimeoutToMin
-            if ($this->_selectTimeoutToArray) {
-                $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
-            } else {
-                $this->_selectTimeoutToMin = 0;
-            }
-
-            // обновляем rwe флаг
-            // хитрожопая if-tree optimization: чаще всего есть что-то в read и нет смысла делать OR-конструкцию
-            if ($this->_selectReadArray) {
-                $this->_rweFlag = true;
-            } elseif ($this->_selectWriteArray) {
-                $this->_rweFlag = true;
-            } elseif ($this->_selectExceptArray) {
-                $this->_rweFlag = true;
-            } else {
-                $this->_rweFlag = false;
-            }
-        }
-    }
-
-    public function updateHandlerFlags(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite, $flagExcept) {
         $streamID = $handler->streamID;
         if ($streamID) {
             // to locals
             $stream = $handler->stream;
 
+            $register = false;
+
             if ($flagRead) {
                 $this->_selectReadArray[$streamID] = $stream;
+                $register = true;
             } else {
                 unset($this->_selectReadArray[$streamID]);
             }
 
             if ($flagWrite) {
                 $this->_selectWriteArray[$streamID] = $stream;
+                $register = true;
             } else {
                 unset($this->_selectWriteArray[$streamID]);
             }
 
             if ($flagExcept) {
                 $this->_selectExceptArray[$streamID] = $stream;
+                $register = true;
             } else {
                 unset($this->_selectExceptArray[$streamID]);
             }
 
+            if ($timeoutTo > 0) {
+                $this->_selectTimeoutToArray[$streamID] = $timeoutTo;
+                $register = true;
+            } else {
+                unset($this->_selectTimeoutToArray[$streamID]);
+            }
+
+            // регистрируем или снимаем
+            if ($register) {
+                $this->_handlerArray[$streamID] = $handler;
+            } else {
+                unset($this->_handlerArray[$streamID]);
+            }
+
+            // вычисляем min
+            // @todo что делать если handler-оа просто нет?
+            if ($this->_selectTimeoutToArray) {
+                $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
+            } else {
+                $this->_selectTimeoutToMin = 0; // int-сравнение будет быстрее
+            }
+
             // обновляем rwe флаг
             // хитрожопая if-tree optimization: чаще всего есть что-то в read и нет смысла делать OR-конструкцию
+            // @todo встроить выше
+            // @todo RWET flag?
             if ($this->_selectReadArray) {
                 $this->_rweFlag = true;
             } elseif ($this->_selectWriteArray) {
@@ -176,36 +151,6 @@ class StreamLoop {
             } else {
                 $this->_rweFlag = false;
             }
-        }
-    }
-
-    /**
-     * Важно: таймер может сработать не супер точно, а с дрейфом на время обработки handler-ов.
-     * Это связано с тем, что я использую prev_tsSelect для расчета таймеров следуюего круга.
-     * Потому что запрос времени занимает 40 ns, и это реально 1/3 от всего event loop'a.
-     *
-     * @param StreamLoop_Handler_Abstract $handler
-     * @param $timeoutTo
-     * @return void
-     */
-    public function updateHandlerTimeoutTo(StreamLoop_Handler_Abstract $handler, $timeoutTo) {
-        // @todo слепить с updateHandlerFlags и переименовать в updateHandler(),
-        // @todo плюс updateHandler сам снимает регистрацию если что
-        // @todo upd: надо сделать updateHandler, updateHandlerFlags, updateHandlerTimeout(), потому что везде чуть разная логика и где-то менять флаги не надо.
-        // хотя насколько дороже вызов только timeout чем со всеми флагами?
-
-        if ($timeoutTo > 0) {
-            $this->_selectTimeoutToArray[$handler->streamID] = $timeoutTo;
-        } else {
-            unset($this->_selectTimeoutToArray[$handler->streamID]);
-        }
-
-        // вычисляем min
-        // @todo тут можно трошки подкрутить чтобы не вызывать min()
-        if ($this->_selectTimeoutToArray) {
-            $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
-        } else {
-            $this->_selectTimeoutToMin = 0; // int-сравнение будет быстрее
         }
     }
 
