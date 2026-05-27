@@ -19,6 +19,8 @@ class StreamLoop {
 
             // вот тут определить сколько us до ближайшего timeout'a
             $timeoutMin = $this->_selectTimeoutToMin; // нельзя переносить внутрь if'a, будет +1 ns
+            // @todo вроде не нужно делать tolocals ради потенциально двух вызоврв
+            // @todo и скорее всего я всегда буду иметь timeoutto
             if ($timeoutMin) {
                 $timeoutS = 0;
                 $timeoutUS = ($timeoutMin - $tsSelect) * 1_000_000;
@@ -45,30 +47,34 @@ class StreamLoop {
             // меряем время select'a сразу же
             $tsSelect = microtime(true);
 
-            $handlerArray = $this->_handlerArray; // to locals @todo возможно не стоит делать to locals? в моменте всегда кто-то один - раздебажим
+            // тут я решил НЕ делать handlerArray to locals:
+            // 1. в 93% случаев я имею один элемент в r/w/e, и нет смысла делать to locals,
+            //    а остальные проценты распределы примерно также: и математически не выгодно делать to locals trick.
+            // 2. handlerArray to locals создает редкую проблему: если на readyRead я дропну handler, а потом на
+            //    readyWrite попытаюсь шото сделать - нет элемента в массиве, а я не хочу обкладывать все isset-ами.
 
             // тут if не нужен, потому что чаще всего есть r
             foreach ($r as $streamID => $stream) {
-                $handlerArray[$streamID]->readyRead($tsSelect);
+                $this->_handlerArray[$streamID]->readyRead($tsSelect);
             }
 
             // наличие if тут оправдано, потому что чаще массив пустой
             if ($w) {
                 foreach ($w as $streamID => $stream) {
-                    $handlerArray[$streamID]->readyWrite($tsSelect);
+                    $this->_handlerArray[$streamID]->readyWrite($tsSelect);
                 }
             }
 
             // наличие if тут оправдано, потому что чаще массив пустой
             if ($e) {
                 foreach ($e as $streamID => $stream) {
-                    $handlerArray[$streamID]->readyExcept($tsSelect);
+                    $this->_handlerArray[$streamID]->readyExcept($tsSelect);
                 }
             }
 
             foreach ($this->_selectTimeoutToArray as $streamID => $timeoutTo) {
                 if ($tsSelect >= $timeoutTo) {
-                    $handlerArray[$streamID]->readyTimeout($tsSelect);
+                    $this->_handlerArray[$streamID]->readyTimeout($tsSelect);
                 }
             }
 
