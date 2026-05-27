@@ -5,7 +5,7 @@ class StreamLoop {
         // первый раз меряем tsSelect до круга
         $tsSelect = microtime(true);
 
-        // event loop
+        // event loop из сами залуп
         do {
             // @todo что изменится если я заставлю каждый handler иметь тайм-аут принудительно
             // вот тут определить сколько us до ближайшего timeout'a
