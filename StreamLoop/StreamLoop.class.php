@@ -144,42 +144,40 @@ class StreamLoop {
     }
 
     public function updateHandlerFlags(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite, $flagExcept) {
-        if (!$handler->streamID) {
-            return;
-        }
-
-        // to locals
-        $stream = $handler->stream;
         $streamID = $handler->streamID;
+        if ($streamID) {
+            // to locals
+            $stream = $handler->stream;
 
-        if ($flagRead) {
-            $this->_selectReadArray[$streamID] = $stream;
-        } else {
-            unset($this->_selectReadArray[$streamID]);
-        }
+            if ($flagRead) {
+                $this->_selectReadArray[$streamID] = $stream;
+            } else {
+                unset($this->_selectReadArray[$streamID]);
+            }
 
-        if ($flagWrite) {
-            $this->_selectWriteArray[$streamID] = $stream;
-        } else {
-            unset($this->_selectWriteArray[$streamID]);
-        }
+            if ($flagWrite) {
+                $this->_selectWriteArray[$streamID] = $stream;
+            } else {
+                unset($this->_selectWriteArray[$streamID]);
+            }
 
-        if ($flagExcept) {
-            $this->_selectExceptArray[$streamID] = $stream;
-        } else {
-            unset($this->_selectExceptArray[$streamID]);
-        }
+            if ($flagExcept) {
+                $this->_selectExceptArray[$streamID] = $stream;
+            } else {
+                unset($this->_selectExceptArray[$streamID]);
+            }
 
-        // обновляем rwe флаг
-        // хитрожопая if-tree optimization: чаще всего есть что-то в read и нет смысла делать OR-конструкцию
-        if ($this->_selectReadArray) {
-            $this->_rweFlag = true;
-        } elseif ($this->_selectWriteArray) {
-            $this->_rweFlag = true;
-        } elseif ($this->_selectExceptArray) {
-            $this->_rweFlag = true;
-        } else {
-            $this->_rweFlag = false;
+            // обновляем rwe флаг
+            // хитрожопая if-tree optimization: чаще всего есть что-то в read и нет смысла делать OR-конструкцию
+            if ($this->_selectReadArray) {
+                $this->_rweFlag = true;
+            } elseif ($this->_selectWriteArray) {
+                $this->_rweFlag = true;
+            } elseif ($this->_selectExceptArray) {
+                $this->_rweFlag = true;
+            } else {
+                $this->_rweFlag = false;
+            }
         }
     }
 
