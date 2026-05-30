@@ -190,8 +190,6 @@ ClassLoader::Get()->registerClassArray([
     __DIR__.'/ImageProcessor/ImageProcessor_ThumberStorage.class.php',
     __DIR__.'/ImageProcessor/ImageProcessor_Exception.class.php',
     __DIR__.'/ImageProcessor/ImageProcessor_ActionWatermarkPNG.class.php',
-
-    __DIR__.'/FSM/FSM.trait.php',
 ]);
 
 // default contents
