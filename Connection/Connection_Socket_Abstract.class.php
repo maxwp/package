@@ -84,7 +84,7 @@ abstract class Connection_Socket_Abstract implements Connection_IConnection {
         }
     }
 
-    protected function _getSocketError() {
+    public function getSocketError() {
         return socket_strerror(socket_last_error($this->_socket));
     }
 

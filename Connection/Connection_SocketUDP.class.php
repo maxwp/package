@@ -74,7 +74,7 @@ class Connection_SocketUDP extends Connection_Socket_Abstract {
         // но в реальности пустой дата-граммы быть не может
         // и чтобы не делать внизу проверку на if ($buffer) с типизацией string $buffer to bool
         // я прямо тут проверяю не пустые ли байты, тем более что чаще всего $bytes это int
-        $message = $this->_getSocketError(); // message надо получить ДО disconnect, бо поменяется
+        $message = $this->getSocketError(); // message надо получить ДО disconnect, бо поменяется
         $this->disconnect();
         throw new Connection_Exception($message);
     }

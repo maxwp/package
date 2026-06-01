@@ -11,6 +11,8 @@
  */
 class Connection_SocketUDPConnected extends Connection_SocketUDP {
 
+    // @todo override read() to socket_recv()
+
     public function __construct($host, int $port) {
         parent::__construct();
         $this->_host = $host;
@@ -18,7 +20,9 @@ class Connection_SocketUDPConnected extends Connection_SocketUDP {
     }
 
     public function connect() {
-        socket_connect($this->_socket, $this->_host, $this->_port);
+        if (socket_connect($this->_socket, $this->_host, $this->_port) == false) {
+            throw new Connection_Exception("Cannot UDP connect to $this->_host:$this->_port");
+        }
     }
 
     public function write($message, $messageSize) {
@@ -28,7 +32,7 @@ class Connection_SocketUDPConnected extends Connection_SocketUDP {
             $messageSize,
         ) != $messageSize) {
             // reconnect
-            socket_connect($this->_socket, $this->_host, $this->_port);
+            $this->connect();
 
             // повторная отправка
             return socket_write(
@@ -38,11 +42,9 @@ class Connection_SocketUDPConnected extends Connection_SocketUDP {
             ) == $messageSize;
         }
 
-        // я отправил
+        // я отправил успешно
         return true;
     }
-
-    // @todo override read() to socket_recv()
 
     private $_host;
     private $_port;
