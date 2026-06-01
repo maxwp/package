@@ -479,7 +479,10 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         }
     }
 
-    public function setReadFrame(int $length, int $drain) {
+    public function setReadFrame($length, $drain) {
+        $length = (int) $length;
+        $drain = (int) $drain;
+
         if ($length <= 0) {
             throw new StreamLoop_Exception("Length must be a positive integer");
         }
