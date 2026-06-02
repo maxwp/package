@@ -68,7 +68,9 @@ class StreamLoop {
 
             foreach ($this->_selectTimeoutToArray as $streamID => $timeoutTo) {
                 if ($tsSelect >= $timeoutTo) {
-                    $this->_handlerArray[$streamID]->readyTimeout($tsSelect);
+                    if (isset($this->_handlerArray[$streamID])) {
+                        $this->_handlerArray[$streamID]->readyTimeout($tsSelect);
+                    }
                 }
             }
 
