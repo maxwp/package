@@ -145,13 +145,10 @@ class StreamLoop {
 
         // нельзя ничего регистрировать с нулевым timeout:
         // я это проверяю только в debug-mode, чтобы в hot-path не тратить на это время
-        # debug:start
-        if (($flagRead || $flagWrite || $flagExcept)
-            && $timeoutTo <= 0
-        ) {
+        // @todo после того как багов не будет - завернуть в debug
+        if ($timeoutTo <= 0) {
             throw new StreamLoop_Exception('Cannot register handler without timeout');
         }
-        # debug:end
 
         $this->_handlerArray[$streamID] = $handler;
 
