@@ -46,7 +46,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         $this->_bufferOffset = 0;
 
         $this->_state = StreamLoop_WebSocket_Const::STATE_CONNECTING;
-
         $this->_createAndConnectTCP();
 
         $this->_onInit();
@@ -232,7 +231,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
             }
 
         } elseif ($this->_state == StreamLoop_WebSocket_Const::STATE_HANDSHAKING) {
-            $this->_checkHandshake($tsSelect);
+            $this->_processHandshake($tsSelect);
         } elseif ($this->_state == StreamLoop_WebSocket_Const::STATE_UPGRADING) {
             $this->_checkUpgrade($tsSelect);
         }
@@ -242,24 +241,26 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         switch ($this->_state) {
             case StreamLoop_WebSocket_Const::STATE_CONNECTING:
                 // коннект установился, я готов к записи
-                stream_context_set_option($this->stream, array(
+                stream_context_set_option($this->stream, [
                     'ssl' => [
+                        'SNI_enabled' => true,
+                        'SNI_server_name' => $this->_host,
                         'verify_peer' => false,
                         'verify_peer_name' => false,
                         'peer_name' => $this->_host, // так надо делать если я перебираю IPшники хоста
                         'allow_self_signed' => true,
                     ],
-                ));
+                ]);
 
                 $this->_state = StreamLoop_WebSocket_Const::STATE_HANDSHAKING;
 
                 // NB! НЕ ставим write, потому что во время handshaking всегда идет write и просто зайобка
                 $this->_loop->registerHandler($this, true, false, true, $this->_timeoutTo);
 
-                $this->_checkHandshake($tsSelect);
+                $this->_processHandshake($tsSelect);
                 return;
             case StreamLoop_WebSocket_Const::STATE_HANDSHAKING:
-                $this->_checkHandshake($tsSelect);
+                $this->_processHandshake($tsSelect);
                 return;
             case StreamLoop_WebSocket_Const::STATE_UPGRADING:
                 $this->_checkUpgrade($tsSelect);
@@ -268,13 +269,16 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     }
 
     public function readyExcept($tsSelect) {
+        // @todo тут надо отдельно ловить состояние EOF in not connecting,
+        //       потому что это битый IP и мне надо будет его дропнуть
+
         if ($this->_checkEOF($tsSelect)) { // in except
             return; // на выход
         }
 
         switch ($this->_state) {
             case StreamLoop_WebSocket_Const::STATE_HANDSHAKING:
-                $this->_checkHandshake($tsSelect);
+                $this->_processHandshake($tsSelect);
                 return;
             case StreamLoop_WebSocket_Const::STATE_UPGRADING:
                 $this->_checkUpgrade($tsSelect);
@@ -317,7 +321,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         } else {
             // во всех остальных случаях я нарвался на проблему что за timeout я не смог установить соединение и сделать handshake/upgrade
             // (то есть не успел аж до ready)
-            $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_TIMEOUT, false);
+            $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_TIMEOUT);
         }
     }
 
@@ -335,7 +339,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                     Cli::Print_n(__CLASS__.": invalid upgrade response: ".$this->_buffer);
                     # debug:end
 
-                    $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_HANDSHAKE, false);
+                    $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_UPGRADE);
                     return;
                 }
 
@@ -366,7 +370,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
     private function _checkEOF($tsSelect) {
         if (feof($this->stream)) {
-            $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_EOF, false);
+            $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_EOF);
             return true;
         }
 
@@ -386,7 +390,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         $this->_onError($tsSelect, $errorCode, $errorMessage);
     }
 
-    private function _checkHandshake($tsSelect) {
+    private function _processHandshake($tsSelect) {
         if ($this->_checkEOF($tsSelect)) { // in handshake
             return; // на выход потому что ошибка уже выкинута
         }
@@ -426,7 +430,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
             $this->_checkUpgrade($tsSelect);
 
         } elseif ($return === false) {
-            $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_SSL, false);
+            $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_HANDSHAKE);
             return;
         }
     }

@@ -287,7 +287,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                 throw new StreamLoop_Exception('Unsupported encoding');
             }
         } elseif ($this->_state == StreamLoop_HTTPS_Const::STATE_HANDSHAKING) {
-            $this->_checkHandshake($tsSelect);
+            $this->_processHandshake($tsSelect);
         }
     }
 
@@ -297,14 +297,16 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
             $this->_active = false;
         } elseif ($this->_state == StreamLoop_HTTPS_Const::STATE_CONNECTING) {
             // коннект установился, я готов к записи
-            stream_context_set_option($this->stream, array(
+            stream_context_set_option($this->stream, [
                 'ssl' => [
+                    'SNI_enabled' => true,
+                    'SNI_server_name' => $this->_host,
                     'verify_peer' => false,
                     'verify_peer_name' => false,
                     'peer_name' => $this->_host,
                     'allow_self_signed' => true,
                 ],
-            ));
+            ]);
 
             $this->_state = StreamLoop_HTTPS_Const::STATE_HANDSHAKING; // handshake starting
 
@@ -312,9 +314,9 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
             $this->_loop->registerHandler($this, true, false, true, $this->_timeoutTo);
 
             // и сразу же проверяем его, вдруг подключился
-            $this->_checkHandshake($tsSelect);
+            $this->_processHandshake($tsSelect);
         } elseif ($this->_state == StreamLoop_HTTPS_Const::STATE_HANDSHAKING) {
-            $this->_checkHandshake($tsSelect);
+            $this->_processHandshake($tsSelect);
         }
     }
 
@@ -324,7 +326,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         }
 
         if ($this->_state == StreamLoop_HTTPS_Const::STATE_HANDSHAKING) {
-            $this->_checkHandshake($tsSelect);
+            $this->_processHandshake($tsSelect);
             return;
         }
     }
@@ -371,7 +373,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         return false;
     }
 
-    private function _checkHandshake($tsSelect) {
+    private function _processHandshake($tsSelect) {
         $return = stream_socket_enable_crypto(
             $this->stream,
             true,
