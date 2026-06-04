@@ -3089,6 +3089,39 @@ class Tool_Benchmark implements Benchmark_Interface {
 
 ==============================================================
 
+Вызов метода и передача параметров:
+
+1. вызов метода без аргументов - 10 ns,
+2. каждый следующий аргрумент это 3-4 ns (3 int, 4 string)
+
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        $this->_call0(); // 10 ns
+
+        // 66 ns:
+        //$x = rand();
+        //$s = rand().'x';
+
+        //$this->_call1($x); // 78-66 = 12 ns
+        //$this->_call2($x, $x); // 81-66 = 15 ns
+        //$this->_call3($x, $x, $x); // 84-66 = 18 ns
+
+        //$this->_call1($s); // 78-66 = 12 ns
+        //$this->_call2($s, $s); // 82-66 = 16 ns
+        //$this->_call3($s, $s, $s); // 86-66 = 20 ns
+    }
+
+
+    public function _call0() {}
+    public function _call1($a) {}
+    public function _call2($a, $b) {}
+    public function _call3($a, $b, $c) {}
+
+}
+
+==============================================================
+
 Количество потоков
 
 Конечно это не всегда изи сделать, но если у вас есть 10 скриптов, которые суммарно зажирают 50% от 1 vcpu,
