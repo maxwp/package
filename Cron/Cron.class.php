@@ -31,7 +31,7 @@ class Cron extends Pattern_ASingleton {
         # debug:end
     }
 
-    public function run($dirpath) {
+    public function run($dirpath, $delayUS = false) {
         while ($file = $this->_redis->sPop('cron')) {
             $data = json_decode($file, true);
 
@@ -61,6 +61,10 @@ class Cron extends Pattern_ASingleton {
             # debug:end
 
             exec($path);
+
+            if ($delayUS) {
+                usleep($delayUS);
+            }
         }
     }
 
