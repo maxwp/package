@@ -430,7 +430,6 @@ class Tool_Benchmark implements Benchmark_Interface {
         $this->_callInt($int); // 67-45 = 22 ns
     }
 
-
     public function _callInt($x) {
         if ($x) {
 
@@ -438,12 +437,54 @@ class Tool_Benchmark implements Benchmark_Interface {
 
         }
     }
+
     public function _callBool($x) {
         if ($x) {
 
         } else {
 
         }
+    }
+
+}
+
+==============================================================
+
+Ключевой прикол call-stack:
+выгоднее сделать if a/b вместо передачи аргумента.
+
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        // 26:
+        $int = rand(0, 1);
+        $bool = (bool) $int;
+
+        // 45 - 26
+        //$this->_callIf($bool);
+
+        // 42 - 26
+        /*if ($bool) {
+            $this->_callA();
+        } else {
+            $this->_callB();
+        }*/
+    }
+
+    private function _callIf($x) {
+        if ($x) {
+
+        } else {
+
+        }
+    }
+
+    private function _callA() {
+
+    }
+
+    private function _callB() {
+
     }
 
 }
@@ -465,7 +506,7 @@ class Tool_Benchmark implements Benchmark_Interface {
         $bool = (bool) rand(0, 1);
         return $int;
     }
-    
+
     public function _returnBool() {
         $int = rand(0, 1);
         $bool = (bool) rand(0, 1);
