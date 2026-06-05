@@ -416,7 +416,68 @@ $pc->amountTick;
 
 ==============================================================
 
-to locals:
+bool vs int 0/1 in arguments:
+ну хоть тут логично шо bool быстрее.
+
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        // 45 ns:
+        $int = rand(0, 1);
+        $bool = (bool) rand(0, 1);
+
+        $this->_callBool($bool); // 64-45 = 19
+        $this->_callInt($int); // 67-45 = 22 ns
+    }
+
+
+    public function _callInt($x) {
+        if ($x) {
+
+        } else {
+
+        }
+    }
+    public function _callBool($x) {
+        if ($x) {
+
+        } else {
+
+        }
+    }
+
+}
+
+==============================================================
+
+return 0/1 vs bool:
+одинаково
+
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        $this->_returnInt(); // 57
+        $this->_returnBool(); // 57
+    }
+
+    public function _returnInt() {
+        $int = rand(0, 1);
+        $bool = (bool) rand(0, 1);
+        return $int;
+    }
+    
+    public function _returnBool() {
+        $int = rand(0, 1);
+        $bool = (bool) rand(0, 1);
+        return $bool;
+    }
+
+}
+
+==============================================================
+
+to locals trick:
+
 во всех случаях step = 0.5 float:
 private $_step = 0.5;
 private $_a = ['key' => 0.5];
