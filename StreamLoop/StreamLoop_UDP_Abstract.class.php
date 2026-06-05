@@ -35,7 +35,7 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
 
         $this->socket = new Connection_SocketStream($this->stream);
         $this->socket->setReuseAddr(0);
-        //$this->socket->setBufferSizeRead(50 * 1024 * 1024);
+        $this->socket->setBufferSizeRead(2 * 1024 * 1024);
         $this->socket->setNonBlocking();
         $this->socket->setKeepAlive();
         $this->_socketResource = $this->socket->getLink();
