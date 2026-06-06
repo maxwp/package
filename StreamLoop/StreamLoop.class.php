@@ -13,7 +13,7 @@ class StreamLoop {
             if ($this->_rweFlag) {
                 $r = $this->_selectReadArray;
                 $w = $this->_selectWriteArray; // @todo можно ли завернуть в if
-                $e = $this->_selectExceptArray; // @todo а есть except?
+                $e = $this->_selectExceptArray;
 
                 $timeoutUS = ($this->_selectTimeoutToMin - $tsSelect) * 1_000_000;
                 if ($timeoutUS < 0) { // эта проверка нужна только потому, что нельзя отправлять negative timeoutUS

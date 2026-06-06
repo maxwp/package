@@ -51,6 +51,6 @@ abstract class StreamLoop_Timer_Abstract extends StreamLoop_Handler_Abstract {
         return $this->_timeout;
     }
 
-    protected $_timeout = 0.0;
+    private $_timeout = 0.0;
 
 }
