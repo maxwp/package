@@ -34,7 +34,7 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
 
         // сразу 10 sec на connect .. ready
         $this->_timeoutTo = microtime(true) + 10;
-        $this->_loop->registerHandler($this, false, true, true, $this->_timeoutTo);
+        $this->_loop->registerHandler($this, false, true, true, $this->_timeoutTo); // 1st register
 
         // Устанавливаем буфер до начала SSL
         $socket = new Connection_SocketStream($stream);

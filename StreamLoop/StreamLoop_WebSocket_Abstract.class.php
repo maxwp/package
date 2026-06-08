@@ -55,7 +55,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         // дисконнект закрывает снимает регистрацию handler'a и закрывает stream.
         // это приводит к тому, что SL временно забывает про handler и не ебет его
         $this->_timeoutTo = 0;
-        $this->_loop->unregisterHandler($this);
+        $this->_loop->unregisterHandler($this); // on disconnect
 
         // бывают ситуации когда throwError два раза подряд и тогда disconnect два раза подряд
         if (is_resource($this->stream)) {
@@ -254,8 +254,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
                 $this->_state = StreamLoop_WebSocket_Const::STATE_HANDSHAKING;
 
-                // NB! НЕ ставим write, потому что во время handshaking всегда идет write и просто зайобка
-                $this->_loop->registerHandler($this, true, false, true, $this->_timeoutTo);
+                // NB! НЕ ставим write, потому что во время handshaking всегда идет write и просто зайобка CPU, я проверял
+                $this->_loop->registerHandler($this, true, false, true, $this->_timeoutTo); // handshaking
 
                 $this->_processHandshake($tsSelect);
                 return;
@@ -317,7 +317,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
             // @todo какая-то мутная логика ping-pong
             $this->_timeoutTo = $tsSelect + 10 + rand() % 5;
-            $this->_loop->registerHandler($this, true, false, false, $this->_timeoutTo);
+            $this->_loop->registerHandler($this, true, false, false, $this->_timeoutTo); // ready timeout: ping-pong
         } else {
             // во всех остальных случаях я нарвался на проблему что за timeout я не смог установить соединение и сделать handshake/upgrade
             // (то есть не успел аж до ready)
@@ -354,7 +354,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
                 // таймер двигаем вперед на 10-15 сек
                 $this->_timeoutTo = $tsSelect + 10 + rand() % 5;
-                $this->_loop->registerHandler($this, true, false, false, $this->_timeoutTo);
+                $this->_loop->registerHandler($this, true, false, false, $this->_timeoutTo); // upgrading done - ready
 
                 $this->_buffer = '';
                 $this->_bufferLength = 0;
@@ -425,7 +425,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
             );
 
             $this->_state = StreamLoop_WebSocket_Const::STATE_UPGRADING;
-            $this->_loop->registerHandler($this, true, false, false, $this->_timeoutTo);
+            $this->_loop->registerHandler($this, true, false, false, $this->_timeoutTo); // upgrading
 
             $this->_checkUpgrade($tsSelect);
 

@@ -22,7 +22,7 @@ abstract class StreamLoop_Timer_Abstract extends StreamLoop_Handler_Abstract {
         $this->streamID = -1 * (int) $timerID; // id нужен отрицательный чтобы не пересекся с настоящими stream
         $this->stream = null;
 
-        $this->_loop->registerHandler($this, false, false, false, microtime(true) + $timeout);
+        $this->_loop->registerHandler($this, false, false, false, microtime(true) + $timeout); // 1st register
     }
 
     public function readyRead($tsSelect) {
@@ -39,7 +39,7 @@ abstract class StreamLoop_Timer_Abstract extends StreamLoop_Handler_Abstract {
 
     public function readyTimeout($tsSelect) {
         // сначала меняем handler, а затем вызываем onTimer
-        $this->_loop->registerHandler($this, false, false, false, $tsSelect + $this->_timeout);
+        $this->_loop->registerHandler($this, false, false, false, $tsSelect + $this->_timeout); // timeout
         $this->_onTimer($tsSelect);
     }
 
