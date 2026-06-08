@@ -3,7 +3,6 @@ abstract class StreamLoop_Handler_Abstract {
 
     abstract public function readyRead($tsSelect);
     abstract public function readyWrite($tsSelect);
-    abstract public function readyExcept($tsSelect);
     abstract public function readyTimeout($tsSelect);
 
     public function __construct(StreamLoop $loop) {
@@ -15,7 +14,7 @@ abstract class StreamLoop_Handler_Abstract {
      */
     public $stream;
     /**
-     * @var positive-int
+     * @var int
      */
     public $streamID;
     /**

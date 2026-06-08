@@ -56,7 +56,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS; // new request
 
         $this->_timeoutTo = microtime(true) + $timeout;
-        $this->_loop->registerHandler($this, true, false, false, $this->_timeoutTo); // waiting for headers
+        $this->_loop->registerHandler($this, true, false, $this->_timeoutTo); // waiting for headers
     }
 
     public function connect() {
@@ -118,7 +118,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
 
                     $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_BODY; // in read
 
-                    $this->_loop->registerHandler($this, true, false, false, $this->_timeoutTo); // headers parsed, waiting for body
+                    $this->_loop->registerHandler($this, true, false, $this->_timeoutTo); // headers parsed, waiting for body
 
                     $this->_buffer = '';
 
@@ -311,23 +311,12 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
             $this->_state = StreamLoop_HTTPS_Const::STATE_HANDSHAKING; // handshake starting
 
             // NB! НЕ ставим write, потому что во время handshaking всегда идет write и просто зайобка
-            $this->_loop->registerHandler($this, true, false, true, $this->_timeoutTo); // connected, waiting for SSL handshake
+            $this->_loop->registerHandler($this, true, false, $this->_timeoutTo); // connected, waiting for SSL handshake
 
             // и сразу же проверяем его, вдруг подключился
             $this->_processHandshake($tsSelect);
         } elseif ($this->_state == StreamLoop_HTTPS_Const::STATE_HANDSHAKING) {
             $this->_processHandshake($tsSelect);
-        }
-    }
-
-    public function readyExcept($tsSelect) {
-        if ($this->_checkEOF()) {
-            return;
-        }
-
-        if ($this->_state == StreamLoop_HTTPS_Const::STATE_HANDSHAKING) {
-            $this->_processHandshake($tsSelect);
-            return;
         }
     }
 

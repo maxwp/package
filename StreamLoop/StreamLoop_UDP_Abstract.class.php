@@ -47,7 +47,7 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
         // non-block-mode
         stream_set_blocking($this->stream, false);
 
-        $this->_loop->registerHandler($this, true, false, false, microtime(true) + 60); // 1st register
+        $this->_loop->registerHandler($this, true, false, microtime(true) + 60); // 1st register
     }
 
     public function readyRead($tsSelect) {
@@ -85,13 +85,9 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
         // nothing for UDP
     }
 
-    public function readyExcept($tsSelect) {
-        // nothing for UDP
-    }
-
     public function readyTimeout($tsSelect) {
         // @todo а нахуя? я ж могу поставить таймаут условно 1 год
-        $this->_loop->registerHandler($this, true, false, false, $tsSelect + 60); // ready timeout
+        $this->_loop->registerHandler($this, true, false, $tsSelect + 60); // ready timeout
     }
 
     public Connection_SocketStream $socket;

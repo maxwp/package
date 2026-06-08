@@ -8,22 +8,24 @@ class StreamLoop {
         // первый раз меряем tsSelect до круга
         $tsSelect = microtime(true);
 
+        // фиксированно null всегда
+        $e = null;
+
         // event loop из сами залуп
         do {
-            if ($this->_rweFlag) {
+            if ($this->_rwFlag) {
                 $r = $this->_selectReadArray;
-                $w = $this->_selectWriteArray; // @todo можно ли завернуть в if
-                $e = $this->_selectExceptArray;
+                $w = $this->_selectWriteArray;
 
                 $timeoutUS = ($this->_selectTimeoutToMin - $tsSelect) * 1_000_000;
                 if ($timeoutUS < 0) { // эта проверка нужна только потому, что нельзя отправлять negative timeoutUS
-                    $timeoutUS = 0; // если <= 0 - значит какой-то таймаут уже близко, но все равно будет быстрая проверка флагов rwe
+                    $timeoutUS = 0; // если <= 0 - значит какой-то таймаут уже близко, но все равно будет быстрая проверка флагов rw
                 }
 
                 // stream_select() accepts values > 1000000 for microseconds and behaves correctly by normalizing internally.
                 stream_select($r, $w, $e, 0, $timeoutUS);
             } else {
-                // сюда пы попадаем если есть тайм-аут, но нет сокетов rwe
+                // сюда пы попадаем если есть тайм-аут, но нет сокетов rw
                 // (копец редкая ситуация)
 
                 // я специально обнуляю все до sleep:
@@ -31,7 +33,6 @@ class StreamLoop {
                 // лучше сразу обрабатывать логику
                 $r = []; // тут нужен array из-за foreach
                 $w = false;
-                $e = false;
 
                 time_sleep_until($this->_selectTimeoutToMin);
             }
@@ -56,13 +57,6 @@ class StreamLoop {
             if ($w) {
                 foreach ($w as $streamID => $stream) {
                     $this->_handlerArray[$streamID]->readyWrite($tsSelect);
-                }
-            }
-
-            // наличие if тут оправдано, потому что чаще массив пустой
-            if ($e) {
-                foreach ($e as $streamID => $stream) {
-                    $this->_handlerArray[$streamID]->readyExcept($tsSelect);
                 }
             }
 
@@ -105,7 +99,6 @@ class StreamLoop {
             $this->_handlerArray[$streamID],
             $this->_selectReadArray[$streamID],
             $this->_selectWriteArray[$streamID],
-            $this->_selectExceptArray[$streamID],
             $this->_selectTimeoutToArray[$streamID]
         );
 
@@ -113,13 +106,11 @@ class StreamLoop {
         $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
 
         if ($this->_selectReadArray) {
-            $this->_rweFlag = true;
+            $this->_rwFlag = true;
         } elseif ($this->_selectWriteArray) {
-            $this->_rweFlag = true;
-        } elseif ($this->_selectExceptArray) {
-            $this->_rweFlag = true;
+            $this->_rwFlag = true;
         } else {
-            $this->_rweFlag = false;
+            $this->_rwFlag = false;
         }
     }
 
@@ -129,12 +120,11 @@ class StreamLoop {
      * @param StreamLoop_Handler_Abstract $handler
      * @param $flagRead
      * @param $flagWrite
-     * @param $flagExcept
      * @param $timeoutTo
      * @return void
      * @throws StreamLoop_Exception
      */
-    public function registerHandler(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite, $flagExcept, $timeoutTo) {
+    public function registerHandler(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite, $timeoutTo) {
         // to locals
         $streamID = $handler->streamID;
         $stream = $handler->stream;
@@ -167,12 +157,6 @@ class StreamLoop {
             unset($this->_selectWriteArray[$streamID]);
         }
 
-        if ($flagExcept) {
-            $this->_selectExceptArray[$streamID] = $stream;
-        } else {
-            unset($this->_selectExceptArray[$streamID]);
-        }
-
         $this->_selectTimeoutToArray[$streamID] = $timeoutTo;
 
         // если timeoutto меньше - то используем его;
@@ -183,22 +167,18 @@ class StreamLoop {
             $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
         }
 
-        // обновляем rwe флаг
+        // обновляем rw флаг
         // хитрожопая if-tree optimization: чаще всего есть что-то в read и нет смысла делать OR-конструкцию
         if ($flagRead) {
-            $this->_rweFlag = true;
+            $this->_rwFlag = true;
         } elseif ($flagWrite) {
-            $this->_rweFlag = true;
-        } elseif ($flagExcept) {
-            $this->_rweFlag = true;
+            $this->_rwFlag = true;
         } elseif ($this->_selectReadArray) {
-            $this->_rweFlag = true;
+            $this->_rwFlag = true;
         } elseif ($this->_selectWriteArray) {
-            $this->_rweFlag = true;
-        } elseif ($this->_selectExceptArray) {
-            $this->_rweFlag = true;
+            $this->_rwFlag = true;
         } else {
-            $this->_rweFlag = false;
+            $this->_rwFlag = false;
         }
     }
 
@@ -206,11 +186,10 @@ class StreamLoop {
      * @var array<StreamLoop_Handler_Abstract>
      */
     private $_handlerArray = [];
-    private $_rweFlag = false; // bool
+    private $_rwFlag = false; // bool
     private $_selectReadArray = [];
     private $_selectWriteArray = [];
-    private $_selectExceptArray = [];
     private $_selectTimeoutToArray = [];
-    private $_selectTimeoutToMin = PHP_FLOAT_MAX; // float
+    private $_selectTimeoutToMin = PHP_FLOAT_MAX; // float @todo а нахера max?
 
 }
