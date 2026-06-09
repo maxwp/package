@@ -34,7 +34,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
         $this->_path = $path;
         $this->_writeArray = $writeArray;
-        $this->_headerArray = $headerArray;
+        $this->_headerArray = $headerArray; // @todo header сделать БЕЗ key=value
     }
 
     public function connect() {
@@ -77,7 +77,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
             $readFrameDrain = $this->_readFrameDrain;
             $stream = $this->stream;
 
-            // to locals
+            // to locals (оправдано)
             $buffer = $this->_buffer;
             $bufLen = $this->_bufferLength;
             $offset = $this->_bufferOffset;
@@ -90,6 +90,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                 // еще раз, чтобы не ждать нового круга stream_select(). Но опять-таки, это сильно зависит от количество
                 // потоков внутри всего StreamLoop и насколько я могу затупить на одном handler'e.
                 do {
+                    // @todo в большинстве случаев будет два read?
                     $data = fread($stream, $readFrameLength);
                     $length = strlen($data);
 
@@ -190,7 +191,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                         }
 
                         if ($length < $readFrameLength) {
-                            // Если fread вернул меньше, чем запрошено — дальше не дренируем
+                            // Если fread вернул меньше, чем запрошено - дальше не дренируем
                             break;
                         }
                     } elseif ($data === '') {
@@ -308,44 +309,43 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     }
 
     private function _checkUpgrade($tsSelect) {
+        // @todo тут построчный fgets, нужен drain если я хочу быстрый upgrade
         $line = fgets($this->stream, 4096);
-        if ($line === false) {
-            $this->_checkEOF($tsSelect); // in upgrade
-        } else {
-            $this->_buffer .= $line; // @todo locals?
-            // пустая строка — конец блока заголовков
+
+        if ($line) {
+            $this->_buffer .= $line; // to locals не нужен, меньше 4х использований
+            // пустая строка - конец блока заголовков
             if ($line == "\r\n" || $line == "\n") {
-                // @todo not not
-                if (!str_contains($this->_buffer, '101 Switching Protocols')) {
+                if (str_contains($this->_buffer, '101 Switching Protocols')) {
+                    // вот тут опционально ебашим writeArray если он передан, за один fwrite syscall
+                    if ($this->_writeArray) {
+                        $this->writeMulti($this->_writeArray);
+                    }
+
+                    $this->_state = StreamLoop_WebSocket_Const::STATE_READY;
+
+                    // таймер двигаем вперед на 10-15 сек
+                    $this->_loop->updateStreamTimeout($this->streamID, $tsSelect + 10 + rand() % 5); // upgrading done -> ready with iframe-layer ping-pong
+
+                    $this->_buffer = '';
+                    $this->_bufferLength = 0;
+                    $this->_bufferOffset = 0;
+
+                    // считаем соединение активно и с ни все ок
+                    $this->_active = true;
+
+                    $this->_onReady($tsSelect);
+                } else {
                     # debug:start
-                    Cli::Print_n(__CLASS__.": invalid upgrade response: ".$this->_buffer);
+                    Cli::Print_n(__CLASS__.': invalid upgrade response: '.$this->_buffer);
                     # debug:end
 
                     $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_UPGRADE);
                     return;
                 }
-
-                // вот тут опционально ебашим writeArray если он передан
-                if ($this->_writeArray) {
-                    foreach ($this->_writeArray as $msg) {
-                        $this->write($msg);
-                    }
-                }
-
-                $this->_state = StreamLoop_WebSocket_Const::STATE_READY;
-
-                // таймер двигаем вперед на 10-15 сек
-                $this->_loop->updateStreamTimeout($this->streamID, $tsSelect + 10 + rand() % 5); // upgrading done -> ready with iframe-layer ping-pong
-
-                $this->_buffer = '';
-                $this->_bufferLength = 0;
-                $this->_bufferOffset = 0;
-
-                // считаем соединение активно и с ни все ок
-                $this->_active = true;
-
-                $this->_onReady($tsSelect);
             }
+        } elseif ($line === false) {
+            $this->_checkEOF($tsSelect); // in upgrade
         }
     }
 
@@ -384,7 +384,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
         // тут нужны ===, потому что если вернется int 0 - то надо пробовать еще раз
         if ($return === true) {
-            // handshake случился - делаем websocket upgrade
+            // ssl handshake успешен - делаем websocket upgrade
 
             $customHeaderString = '';
             if ($this->_headerArray) {
@@ -418,6 +418,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
     public function write($data, $opcode = 1) {
         try {
+            // @todo не хватает проверки на результат записи
             fwrite(
                 $this->stream,
                 $this->_encodeMessage($data, $opcode)
@@ -432,6 +433,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     }
 
     public function writeMulti($dataArray, $opcode = 1) {
+        // важно: метод не проверяет массив на пустоту, это надо контроллировать снаружи
+
         $s = '';
         foreach ($dataArray as $data) {
             $s .= $this->_encodeMessage($data, $opcode);
