@@ -60,9 +60,10 @@ class StreamLoop {
                 }
             }
 
+            // теперь массив _selectTimeoutToArray никогда не пустой и в нем всегда есть элемент 0 => бесконечность
             foreach ($this->_selectTimeoutToArray as $streamID => $timeoutTo) {
                 if ($tsSelect >= $timeoutTo) {
-                    if (isset($this->_handlerArray[$streamID])) {
+                    if (isset($this->_handlerArray[$streamID])) { // @todo после перехода на updateState можно отказатся от этого isset?
                         $this->_handlerArray[$streamID]->readyTimeout($tsSelect);
                     }
                 }
