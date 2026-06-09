@@ -32,7 +32,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
         $this->_path = $path;
         $this->_writeArray = $writeArray;
-        $this->_headerArray = $headerArray; // @todo header сделать БЕЗ key=value
+        $this->_headerArray = $headerArray;
     }
 
     public function connect() {
@@ -384,26 +384,12 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
         // тут нужны ===, потому что если вернется int 0 - то надо пробовать еще раз
         if ($return === true) {
-            // ssl handshake успешен - делаем websocket upgrade
+            // ssl handshake успешен -> делаем websocket upgrade
 
-            // @todo implode
-            $customHeaderString = '';
-            if ($this->_headerArray) {
-                foreach ($this->_headerArray as $key => $value) {
-                    $customHeaderString .= $key . ': ' . $value . "\r\n";
-                }
-            }
-
-            // @todo merge
             fwrite(
                 $this->stream,
-                "GET {$this->_path} HTTP/1.1\r\n"
-                . "Host: {$this->_host}\r\n"
-                . "Upgrade: websocket\r\n"
-                . "Connection: Upgrade\r\n"
-                . "Sec-WebSocket-Key: ".base64_encode(random_bytes(16))."\r\n"
-                . "Sec-WebSocket-Version: 13\r\n"
-                . $customHeaderString
+                "GET {$this->_path} HTTP/1.1\r\nHost: {$this->_host}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: ".base64_encode(random_bytes(16))."\r\nSec-WebSocket-Version: 13\r\n"
+                . ($this->_headerArray ? implode("\r\n", $this->_headerArray)."\r\n" : '')
                 . "\r\n"
             );
 
@@ -496,6 +482,9 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     }
 
     private $_writeArray = [];
+    /**
+     * @var array<string>
+     */
     private $_headerArray = [];
     private $_path = ''; // string
     private $_buffer = ''; // string
