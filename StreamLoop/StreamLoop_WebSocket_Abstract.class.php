@@ -293,13 +293,12 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                 Cli::Print_n(__CLASS__.": sent frame-ping");
                 # debug:end
             } else {
-                $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_NO_PONG, false);
+                $this->throwError($tsSelect, StreamLoop_WebSocket_Const::ERROR_NO_PONG);
                 return;
             }
 
             // @todo какая-то мутная логика ping-pong
-            $this->_timeoutTo = $tsSelect + 10 + rand() % 5;
-            $this->_loop->registerHandler($this, true, false, $this->_timeoutTo); // ready timeout: ping-pong
+            $this->_loop->registerHandler($this, true, false, $tsSelect + 10 + rand() % 5); // ready timeout: ping-pong
         } else {
             // во всех остальных случаях я нарвался на проблему что за timeout я не смог установить соединение и сделать handshake/upgrade
             // (то есть не успел аж до ready)
@@ -335,8 +334,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                 $this->_state = StreamLoop_WebSocket_Const::STATE_READY;
 
                 // таймер двигаем вперед на 10-15 сек
-                $this->_timeoutTo = $tsSelect + 10 + rand() % 5;
-                $this->_loop->registerHandler($this, true, false, $this->_timeoutTo); // upgrading done - ready
+                $this->_loop->registerHandler($this, true, false, $tsSelect + 10 + rand() % 5); // upgrading done - ready
 
                 $this->_buffer = '';
                 $this->_bufferLength = 0;
