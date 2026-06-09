@@ -183,6 +183,34 @@ class StreamLoop {
     }
 
     /**
+     * Специальный метод который только поменяет timeout и все;
+     * предполагается что handler уже зарегистрирован и его состояния rw правильные.
+     * Использовать очень аккуратно и только в hot path.
+     *
+     * @param $streamID
+     * @param $timeoutTo
+     * @return void
+     * @throws StreamLoop_Exception
+     */
+    public function updateStreamTimeout($streamID, $timeoutTo) {
+        # debug:start
+        if (!$streamID) {
+            throw new StreamLoop_Exception('Cannot update handler without streamID');
+        }
+        # debug:end
+
+        $this->_selectTimeoutToArray[$streamID] = $timeoutTo;
+
+        // если timeoutto меньше - то используем его;
+        // иначе пересчитываем
+        if ($timeoutTo <= $this->_selectTimeoutToMin) {
+            $this->_selectTimeoutToMin = $timeoutTo;
+        } else {
+            $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
+        }
+    }
+
+    /**
      * @var array<StreamLoop_Handler_Abstract>
      */
     private $_handlerArray = [];

@@ -86,8 +86,8 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
     }
 
     public function readyTimeout($tsSelect) {
-        // @todo а нахуя? я ж могу поставить таймаут условно 1 год
-        $this->_loop->registerHandler($this, true, false, $tsSelect + 60); // ready timeout
+        // @todo drop it
+        $this->_loop->updateStreamTimeout($this->streamID, $tsSelect + 60); // ready timeout
     }
 
     public Connection_SocketStream $socket;

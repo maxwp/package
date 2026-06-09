@@ -35,7 +35,7 @@ abstract class StreamLoop_Timer_Abstract extends StreamLoop_Handler_Abstract {
 
     public function readyTimeout($tsSelect) {
         // сначала меняем handler, а затем вызываем onTimer
-        $this->_loop->registerHandler($this, false, false, $tsSelect + $this->_timeout); // timeout
+        $this->_loop->updateStreamTimeout($this->streamID, $tsSelect + $this->_timeout); // readyTimeout
         $this->_onTimer($tsSelect);
     }
 
