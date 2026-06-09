@@ -77,10 +77,11 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                 // такая строка — конец блока заголовков
                 if ($line == "\r\n" || $line == "\n") {
                     // разбираем заголовки в ассоц. массив
-                    $lines = explode("\r\n", $this->_buffer);
+                    $lineArray = explode("\r\n", $this->_buffer);
 
+                    // @todo можно ускорить за счет [...]
                     // Формат статус-строки: HTTP/1.1 200 OK
-                    $statusParts = explode(' ', $lines[0], 3);
+                    $statusParts = explode(' ', $lineArray[0], 3);
                     // $statusParts[0] = "HTTP/1.1"
                     // $statusParts[1] = "200"
                     // $statusParts[2] = "OK"
@@ -88,32 +89,31 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                     $this->_statusCode = (int) $statusParts[1] ?? 0;
                     $this->_statusMessage = $statusParts[2] ?? '';
 
+                    // @todo сохранить content-length отдельно если он есть
                     $this->_headerArray = [];
-                    foreach ($lines as $line) {
-                        // Пропускаем пустые строки (например, если что-то пошло не так)
-                        if ($line) {
-                            // Разделяем заголовок на имя и значение
-                            $x = explode(':', $line, 2);
-                            if (count($x) == 2) {
-                                $this->_headerArray[strtolower(trim($x[0]))] = trim($x[1]);
-                            }
+                    foreach ($lineArray as $line) {
+                        // разделяем заголовок на имя и значение
+                        $x = explode(':', $line, 2);
+                        if (isset($x[1])) {
+                            // уже lowercase key
+                            $this->_headerArray[strtolower(trim($x[0]))] = trim($x[1]);
                         }
                     }
 
-                    $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_BODY; // in read
+                    $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_BODY; // headers readed -> waiting for body
 
                     $this->_buffer = '';
 
                     return;
                 } elseif (!$line) {
                     // fgets может вернуть false - это или просто ничего нет в не-блок-режиме или реально EOF (не путай с fread)
-                    $this->_checkEOF();
+                    $this->_checkEOF(); // read headers - empty line
                     break; // break цикла
                 }
             } while (true);
         } elseif ($this->_state == StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_BODY) {
             // @todo как смержить wait for headers & body в кучу? Все равно у меня http 1.1
-            $headerArray = $this->_headerArray;
+            $headerArray = $this->_headerArray; // @todo
 
             if (isset($headerArray['content-length'])) {
                 // ровно N байт
@@ -160,13 +160,13 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                         // в неблокирующем режиме если данных нет - то будет string ''
                         // а если false - то это ошибка чтения
                         // например, PHP Warning: fread(): SSL: Connection reset by peer
-                        $this->_checkEOF();
+                        $this->_checkEOF(); // read body - empty chunk
                         break;
                     }
                 } while (--$drainIndex);
 
                 $this->_buffer = $buffer;
-            } elseif (isset($headerArray['transfer-encoding']) && stripos($headerArray['transfer-encoding'], 'chunked') !== false) {
+            } elseif (isset($headerArray['transfer-encoding']) && strpos($headerArray['transfer-encoding'], 'chunked') !== false) {
                 // ---- chunked ----
                 // докачиваем сырой поток chunked-данных в _buffer
                 $drainIndex = 10;
@@ -175,7 +175,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                     if ($chunk === '') {
                         break;
                     } elseif ($chunk === false) {
-                        $this->_checkEOF();
+                        $this->_checkEOF(); // read body - false chunk
                         break;
                     }
                     $this->_buffer .= $chunk;
@@ -365,7 +365,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
             return; // чтобы не лупиться в eof
         }
 
-        $this->_checkEOF();
+        $this->_checkEOF(); // in _processHandshake
     }
 
     private function _reset($state = StreamLoop_HTTPS_Const::STATE_READY) {
