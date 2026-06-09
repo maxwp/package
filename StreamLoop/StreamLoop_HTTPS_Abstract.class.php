@@ -25,15 +25,9 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
             if ($body) {
                 $request .= "Content-Length: ".strlen($body)."\r\n";
             }
+            $request .= "Host: {$this->_host}\r\nConnection: keep-alive\r\n\r\n".$body; // даже если body пустота - ну и ладно, это быстрее чем if (body) ...
 
-            // @todo merge
-            $request .= "Host: {$this->_host}\r\n";
-            //$request .= "Connection: close\r\n"; // нельзя писать close для keep-alive
-            $request .= "Connection: keep-alive\r\n";
-            $request .= "\r\n";
-            $request .= $body; // даже если body пустота - ну и ладно, это бытсрее if (body) ...
-
-            if (fwrite($this->stream, $request)) {
+            if (fwrite($this->stream, $request)) { // это не совсем верная проверка, но для коротких payload пойдет
                 // timeout на запрос есть всегда, по дефолту это 10 сек (см код выше)
                 $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS; // new request
 
