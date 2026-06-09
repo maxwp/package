@@ -528,11 +528,11 @@ $this->_step; // 4 ns
 $step = $this->_step; // 5 ns, 4 доступ + 1 ns запись в локальную переменную
 
 // 9 ns
-$step = $this->_step;
-$step * $step;
+$step = $this->_step; // доступ к свойству 4, присвоение 1
+$step * $step; // доступ к локальной переменной 1 - 2 штуки, умножение 2
 
 // 8 ns
-$this->_step * $this->_step;
+$this->_step * $this->_step; // это какой-то кривой тест, потому что умножение занимает 0?
 
 // 11 ns
 $step = $this->_step;
@@ -601,15 +601,15 @@ class Tool_Benchmark implements Benchmark_Interface {
         // 1 - 16
         // 2 - 32
         // 3 - 48
-        //$this->_call($this->_int);
+        //$this->_call($this->_int); // call 10, int-arg 2, доступ к свойству 4
         //$this->_call($this->_int);
         //$this->_call($this->_int);
 
         // 1 - 18
         // 2 - 31
         // 3 - 44
-        $int = $this->_int;
-        $this->_call($int);
+        $int = $this->_int; // присвоение 1, доступ к свойству 4
+        $this->_call($int); // call 10, int-arg 2, доступ к локальной переменной 1
         $this->_call($int);
         $this->_call($int);
     }
@@ -620,6 +620,31 @@ class Tool_Benchmark implements Benchmark_Interface {
 
     private function _call($int) {
 
+    }
+
+    private $_int;
+
+}
+
+// пока два элемента - одинаково, на 3м уже выгоднее, но на одном - хуже
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        //$this->_int; // 3-4 ns
+        //$x = $this->_int; // 5 ns
+
+        //log($this->_int); // 16
+        //log($this->_int); // 32
+        //log($this->_int); // 48
+
+        $x = $this->_int;
+        log($x); // 18
+        log($x); // 32
+        log($x); // 46
+    }
+
+    public function __construct() {
+        $this->_int = rand();
     }
 
     private $_int;
