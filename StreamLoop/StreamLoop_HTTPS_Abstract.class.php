@@ -15,12 +15,10 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     }
 
     public function write($method, $path, $body, $headerArray, $timeoutTo) {
-        if ($this->_idle) {
-            $this->_idle = false; // занят, пошел запрос
-
+        if ($this->_state == StreamLoop_HTTPS_Const::STATE_READY) {
             $request = $method . ' ' . $path . " HTTP/1.1\r\nHost: {$this->_host}\r\nConnection: keep-alive\r\n" . implode("\r\n", $headerArray)."\r\n";
 
-            if ($body) {
+            if ($body != '') {
                 $request .= 'Content-Length: ' . strlen($body) . "\r\n\r\n" . $body;
             } else {
                 $request .= "\r\n";
@@ -50,7 +48,6 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         // перед connect надо вызвать setupConnection чтобы он поправил все параметры соединения
         $this->_setupConnection();
 
-        $this->_idle = false; // занят, подключаюсь
         $this->_state = StreamLoop_HTTPS_Const::STATE_CONNECTING; // in 1st connect
 
         $this->_createAndConnectTCP();
@@ -278,9 +275,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
 
     public function readyWrite($tsSelect) {
         // if-tree optimization
-        if ($this->_state == StreamLoop_HTTPS_Const::STATE_READY) {
-            $this->_idle = true; // свободен
-        } elseif ($this->_state == StreamLoop_HTTPS_Const::STATE_CONNECTING) {
+        if ($this->_state == StreamLoop_HTTPS_Const::STATE_CONNECTING) {
             // коннект установился, я готов к записи
             stream_context_set_option($this->stream, [
                 'ssl' => [
@@ -379,7 +374,6 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         $this->_statusCode = 0;
         $this->_statusMessage = '';
         $this->_headerArray = [];
-        $this->_idle = true; // свободен
 
         // reset chunked state
         $this->_chunkExpected = null;
@@ -400,7 +394,6 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     private $_headerArray = []; // array
     private $_statusCode = 0; // int
     private $_statusMessage = ''; // string
-    private $_idle = true; // bool, свободен или не
     private $_state = 0; // int, 0 is STATE_DISCONNECTED, by default disconnected
     private $_chunkExpected = null; // int|null, сколько байт данных ждем в текущем чанке
     private $_bodyDecoded = ''; // сюда складываем уже декодированное тело (без chunk-обвязки)
