@@ -18,14 +18,13 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         if ($this->_idle) {
             $this->_idle = false; // занят, пошел запрос
 
-            $request = $method." ".$path." HTTP/1.1\r\n";
-            foreach ($headerArray as $value) {
-                $request .= "{$value}\r\n";
-            }
+            $request = $method . ' ' . $path . " HTTP/1.1\r\nHost: {$this->_host}\r\nConnection: keep-alive\r\n" . implode("\r\n", $headerArray)."\r\n";
+
             if ($body) {
-                $request .= "Content-Length: ".strlen($body)."\r\n";
+                $request .= 'Content-Length: ' . strlen($body) . "\r\n\r\n" . $body;
+            } else {
+                $request .= "\r\n";
             }
-            $request .= "Host: {$this->_host}\r\nConnection: keep-alive\r\n\r\n".$body; // даже если body пустота - ну и ладно, это быстрее чем if (body) ...
 
             if (fwrite($this->stream, $request)) { // это не совсем верная проверка, но для коротких payload пойдет
                 // timeout на запрос есть всегда, по дефолту это 10 сек (см код выше)
