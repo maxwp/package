@@ -198,7 +198,9 @@ class StreamLoop {
     private $_rwFlag = false; // bool
     private $_selectReadArray = [];
     private $_selectWriteArray = [];
-    private $_selectTimeoutToArray = [];
-    private $_selectTimeoutToMin = PHP_FLOAT_MAX; // float @todo а нахера max?
+    private $_selectTimeoutToArray = [
+        0 => PHP_FLOAT_MAX, // специальный костыль, чтобы массив таймаутов всегда был не пустой; sentinel: keeps timeout array non-empty; streamID=0 is forbidden
+    ];
+    private $_selectTimeoutToMin = PHP_FLOAT_MAX; // float
 
 }

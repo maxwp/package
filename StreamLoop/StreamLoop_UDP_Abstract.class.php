@@ -45,7 +45,6 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
             stream_set_blocking($this->stream, false);
 
             $this->_loop->registerHandler($this, true, false); // 1st register
-            $this->_loop->updateStreamTimeout($this->streamID, microtime(true) + 60); // @todo drop in future
         } else {
             // критическая ошибка — завершаем
             throw new StreamLoop_Exception("$errstr ($errno)");
@@ -88,8 +87,7 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
     }
 
     public function readyTimeout($tsSelect) {
-        // @todo drop it
-        $this->_loop->updateStreamTimeout($this->streamID, $tsSelect + 60); // ready timeout
+        // nothing for UDP
     }
 
     public Connection_SocketStream $socket;
