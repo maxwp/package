@@ -384,6 +384,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         if ($return === true) {
             // ssl handshake успешен - делаем websocket upgrade
 
+            // @todo implode
             $customHeaderString = '';
             if ($this->_headerArray) {
                 foreach ($this->_headerArray as $key => $value) {
@@ -391,6 +392,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                 }
             }
 
+            // @todo merge
             fwrite(
                 $this->stream,
                 "GET {$this->_path} HTTP/1.1\r\n"
