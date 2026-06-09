@@ -13,8 +13,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     // @todo сначала надо придумать как сделать StateMachine, чтобы я мог помещать команду с событиями onXXX,
     //       и затем handshake и switching protocol снанут этими командами
 
-    // @todo возможно в момент ready тоже пихать except=true?
-
     abstract protected function _setupConnection();
     abstract protected function _onInit(); // @todo rename to _beforeConnect, и вообще надо явно Events before/after
     abstract protected function _onReceive($tsSelect, $payload, $opcode);
