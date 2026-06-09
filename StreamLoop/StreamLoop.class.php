@@ -125,7 +125,7 @@ class StreamLoop {
      * @return void
      * @throws StreamLoop_Exception
      */
-    public function registerHandler(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite, $timeoutTo) {
+    public function registerHandler(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite) {
         // to locals
         $streamID = $handler->streamID;
         $stream = $handler->stream;
@@ -149,9 +149,6 @@ class StreamLoop {
         } else {
             unset($this->_selectWriteArray[$streamID]);
         }
-
-        $this->_selectTimeoutToArray[$streamID] = $timeoutTo;
-        $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
 
         // обновляем rw флаг
         if ($this->_selectReadArray) {
@@ -178,13 +175,15 @@ class StreamLoop {
         if (!$streamID) {
             throw new StreamLoop_Exception('Cannot update handler without streamID');
         }
+        if (!isset($this->_handlerArray[$streamID])) {
+            throw new StreamLoop_Exception('Cannot update timeout for unregistered handler');
+        }
         # debug:end
 
         $this->_selectTimeoutToArray[$streamID] = $timeoutTo;
 
-        // если timeoutto меньше - то используем его;
-        // иначе пересчитываем
-        // if-tree-optimization: обычно timeout увеличивается, а не уменьшается
+        // если timeoutto меньше - то используем его; иначе пересчитываем
+        // if-tree-optimization: обычно timeout увеличивается, а не уменьшается, поэтому if (true) первое
         if ($timeoutTo > $this->_selectTimeoutToMin) {
             $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
         } else {

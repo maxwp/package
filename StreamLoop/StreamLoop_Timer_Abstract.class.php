@@ -16,13 +16,18 @@ abstract class StreamLoop_Timer_Abstract extends StreamLoop_Handler_Abstract {
     public function __construct(StreamLoop $loop, $timerID, $timeout) {
         parent::__construct($loop);
 
-        $this->setTimeout($timeout);
+        $timeout = (float) $timeout;
+        if ($timeout <= 0) {
+            throw new StreamLoop_Exception('Timeout must be a positive number');
+        }
+        $this->_timeout = $timeout;
 
         // @todo how to check id?
         $this->streamID = -1 * (int) $timerID; // id нужен отрицательный чтобы не пересекся с настоящими stream
         $this->stream = null;
 
-        $this->_loop->registerHandler($this, false, false, microtime(true) + $timeout); // 1st register
+        $this->_loop->registerHandler($this, false, false); // 1st register
+        $this->_loop->updateStreamTimeout($this->streamID, microtime(true) + $timeout);
     }
 
     public function readyRead($tsSelect) {
@@ -39,14 +44,6 @@ abstract class StreamLoop_Timer_Abstract extends StreamLoop_Handler_Abstract {
         $this->_onTimer($tsSelect);
     }
 
-    public function setTimeout($timeout) {
-        $this->_timeout = (float) $timeout;
-    }
-
-    public function getTimeout() {
-        return $this->_timeout;
-    }
-
-    private $_timeout = 0.0;
+    private $_timeout = 0.0; // float
 
 }

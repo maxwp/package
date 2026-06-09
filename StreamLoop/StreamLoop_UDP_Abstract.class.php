@@ -25,29 +25,31 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
             $errstr,
             STREAM_SERVER_BIND,
         );
-        if (!$stream) {
+
+        if ($stream) {
+            $this->stream = $stream;
+            $this->streamID = (int) $stream;
+
+            $this->socket = new Connection_SocketStream($this->stream);
+            $this->socket->setReuseAddr(0);
+            $this->socket->setBufferSizeRead(2 * 1024 * 1024);
+            $this->socket->setNonBlocking();
+            $this->socket->setKeepAlive();
+            $this->_socketResource = $this->socket->getLink();
+
+            // Отключаем все таймауты и буферизацию PHP
+            stream_set_read_buffer($this->stream, 0);
+            stream_set_write_buffer($this->stream, 0);
+
+            // non-block-mode
+            stream_set_blocking($this->stream, false);
+
+            $this->_loop->registerHandler($this, true, false); // 1st register
+            $this->_loop->updateStreamTimeout($this->streamID, microtime(true) + 60); // @todo drop in future
+        } else {
             // критическая ошибка — завершаем
             throw new StreamLoop_Exception("$errstr ($errno)");
         }
-
-        $this->stream = $stream;
-        $this->streamID = (int) $stream;
-
-        $this->socket = new Connection_SocketStream($this->stream);
-        $this->socket->setReuseAddr(0);
-        $this->socket->setBufferSizeRead(2 * 1024 * 1024);
-        $this->socket->setNonBlocking();
-        $this->socket->setKeepAlive();
-        $this->_socketResource = $this->socket->getLink();
-
-        // Отключаем все таймауты и буферизацию PHP
-        stream_set_read_buffer($this->stream, 0);
-        stream_set_write_buffer($this->stream, 0);
-
-        // non-block-mode
-        stream_set_blocking($this->stream, false);
-
-        $this->_loop->registerHandler($this, true, false, microtime(true) + 60); // 1st register
     }
 
     public function readyRead($tsSelect) {

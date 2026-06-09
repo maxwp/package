@@ -54,7 +54,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     public function disconnect() {
         // дисконнект закрывает снимает регистрацию handler'a и закрывает stream.
         // это приводит к тому, что SL временно забывает про handler и не ебет его
-        $this->_timeoutTo = 0;
         $this->_loop->unregisterHandler($this); // on disconnect
 
         // бывают ситуации когда throwError два раза подряд и тогда disconnect два раза подряд
@@ -255,7 +254,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                 $this->_state = StreamLoop_WebSocket_Const::STATE_HANDSHAKING;
 
                 // NB! НЕ ставим write, потому что во время handshaking всегда идет write и просто зайобка CPU, я проверял
-                $this->_loop->registerHandler($this, true, false, $this->_timeoutTo); // connecting done -> handshaking
+                $this->_loop->registerHandler($this, true, false); // connecting done -> handshaking
 
                 $this->_processHandshake($tsSelect);
                 return;
@@ -407,7 +406,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
             );
 
             $this->_state = StreamLoop_WebSocket_Const::STATE_UPGRADING;
-            $this->_loop->registerHandler($this, true, false, $this->_timeoutTo); // handshaking done -> upgrading
+            $this->_loop->registerHandler($this, true, false); // handshaking done -> upgrading
 
             $this->_checkUpgrade($tsSelect);
 
@@ -482,7 +481,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     public function getState() {
         return $this->_state;
     }
-
 
     public function __construct(StreamLoop $loop) {
         parent::__construct($loop);
