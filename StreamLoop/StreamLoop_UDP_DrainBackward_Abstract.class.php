@@ -2,10 +2,7 @@
 abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Drain_Abstract {
 
     public function readyRead($tsSelect) {
-        // тут я не делаю socket to locals, потому что в 90% случаев будет одно чтение,
-        // в 7% случаев 2 чтения,
-        // и 3% случаев 3+ чтения,
-        // поэтому не выгодно выносить переменные в локальные
+        // тут всегда будет как минимум две попытки чтения, поэтому to locals оправдан для всего
 
         $buffer = '';
         $fromAddress = '';
@@ -28,7 +25,7 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Drai
         }
 
         // stash #1 (because next recv overwrites vars)
-        $buffer1 = $buffer;
+        $buffer1 = $buffer; // @todo проще отдельную переменную, чем переприсванивать
         $addr1 = $fromAddress;
 
         // --- recv #2 (single extra recv to detect batching) ---

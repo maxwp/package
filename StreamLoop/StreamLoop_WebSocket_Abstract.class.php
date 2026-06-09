@@ -71,14 +71,15 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     public function readyRead($tsSelect) {
         // if-tree optimization
         if ($this->_state == StreamLoop_WebSocket_Const::STATE_READY) {
-            $readFrameLength = $this->_readFrameLength;
-            $readFrameDrain = $this->_readFrameDrain;
-            $stream = $this->stream;
+            // счетчик чтений
+            $drainCounter = $this->_readFrameDrain;
 
             // to locals (оправдано)
             $buffer = $this->_buffer;
             $bufLen = $this->_bufferLength;
             $offset = $this->_bufferOffset;
+            $stream = $this->stream; // @todo чтение одно, не нужен to locals
+            $readFrameLength = $this->_readFrameLength;
 
             // один общий try-catch экономит до 11% cpu time если вызовов onReceive несколько
             try {
@@ -88,7 +89,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                 // еще раз, чтобы не ждать нового круга stream_select(). Но опять-таки, это сильно зависит от количество
                 // потоков внутри всего StreamLoop и насколько я могу затупить на одном handler'e.
                 do {
-                    // @todo в большинстве случаев будет два read?
                     $data = fread($stream, $readFrameLength);
                     $length = strlen($data);
 
@@ -209,7 +209,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                         //$errorString = error_get_last()['message'];
                         throw new StreamLoop_Exception(StreamLoop_WebSocket_Const::ERROR_RESET_BY_PEER);
                     }
-                } while (--$readFrameDrain);
+                } while (--$drainCounter);
 
                 $this->_buffer = $buffer;
                 $this->_bufferLength = $bufLen;
@@ -441,6 +441,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         }
 
         try {
+            // @todo не хватает проверки на результат записи
             fwrite(
                 $this->stream,
                 $s

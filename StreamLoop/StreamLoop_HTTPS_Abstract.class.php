@@ -119,7 +119,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                 $length = (int) $headerArray['content-length'];
 
                 // to locals
-                // @todo возможно не стоит делать to locals так как в 99% случаев чтение одно
+                // @todo прилепить skip если я считал меньше чем хотел - и тогда to locals не нужен
                 $buffer = $this->_buffer;
 
                 // dynamic drain read
