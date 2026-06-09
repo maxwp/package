@@ -26,11 +26,10 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
 
             if (fwrite($this->stream, $request)) { // это не совсем верная проверка, но для коротких payload пойдет
                 // timeout на запрос есть всегда, по дефолту это 10 сек (см код выше)
-                $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS; // new request
+                $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS; // new request sent
 
                 // я специально регистрирую тут handler снова, потому что после успешного ответа вызывался _reset и handler был снят:
                 // я так сделал специально, чтобы StreamLoop не таскал ничего в себе для пассивных HTTP соединений
-                // @todo сделать updateStreamState method
                 $this->_loop->registerHandler($this, true, false); // request sent -> waiting for headers
                 $this->_loop->updateStreamTimeout($this->streamID, $timeoutTo); // request sent -> waiting for headers
             } else {
