@@ -15,41 +15,41 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     }
 
     public function write($method, $path, $body, $headerArray, $timeoutTo) {
-        if ($this->_active) { // @todo if-tree
-            throw new StreamLoop_Exception(__CLASS__." already under active request");
-        }
+        if ($this->_idle) {
+            $this->_idle = false; // занят, пошел запрос
 
-        $this->_active = true;
+            $request = $method." ".$path." HTTP/1.1\r\n";
+            foreach ($headerArray as $value) {
+                $request .= "{$value}\r\n";
+            }
+            if ($body) {
+                $request .= "Content-Length: ".strlen($body)."\r\n";
+            }
 
-        $request = $method." ".$path." HTTP/1.1\r\n";
-        foreach ($headerArray as $value) {
-            $request .= "{$value}\r\n";
-        }
-        if ($body) {
-            $request .= "Content-Length: ".strlen($body)."\r\n";
-        }
+            // @todo merge
+            $request .= "Host: {$this->_host}\r\n";
+            //$request .= "Connection: close\r\n"; // нельзя писать close для keep-alive
+            $request .= "Connection: keep-alive\r\n";
+            $request .= "\r\n";
+            $request .= $body; // даже если body пустота - ну и ладно, это бытсрее if (body) ...
 
-        // @todo merge
-        $request .= "Host: {$this->_host}\r\n";
-        //$request .= "Connection: close\r\n"; // нельзя писать close для keep-alive
-        $request .= "Connection: keep-alive\r\n";
-        $request .= "\r\n";
-        $request .= $body; // даже если body пустота - ну и ладно, это бытсрее if (body) ...
+            if (fwrite($this->stream, $request)) {
+                // timeout на запрос есть всегда, по дефолту это 10 сек (см код выше)
+                $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS; // new request
 
-        if (fwrite($this->stream, $request)) {
-            // timeout на запрос есть всегда, по дефолту это 10 сек (см код выше)
-            $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS; // new request
-
-            // я специально регистрирую тут handler снова, потому что после успешного ответа вызывался _reset и handler был снят:
-            // я так сделал специально, чтобы StreamLoop не таскал ничего в себе для пассивных HTTP соединений
-            // @todo сделать updateStreamState method
-            $this->_loop->registerHandler($this, true, false, $timeoutTo); // request sent -> waiting for headers
+                // я специально регистрирую тут handler снова, потому что после успешного ответа вызывался _reset и handler был снят:
+                // я так сделал специально, чтобы StreamLoop не таскал ничего в себе для пассивных HTTP соединений
+                // @todo сделать updateStreamState method
+                $this->_loop->registerHandler($this, true, false, $timeoutTo); // request sent -> waiting for headers
+            } else {
+                $this->throwError( // closed by server / reset by peer
+                    microtime(true), // tsSelect
+                    StreamLoop_HTTPS_Const::ERROR_CLOSED_BY_SERVER, // http code 0
+                    'Connection closed by server', // ясное сообщение
+                );
+            }
         } else {
-            $this->throwError( // closed by server / reset by peer
-                microtime(true), // tsSelect
-                StreamLoop_HTTPS_Const::ERROR_CLOSED_BY_SERVER, // http code 0
-                'Connection closed by server', // ясное сообщение
-            );
+            throw new StreamLoop_Exception(__CLASS__." already under active request");
         }
     }
 
@@ -57,7 +57,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         // перед connect надо вызвать setupConnection чтобы он поправил все параметры соединения
         $this->_setupConnection();
 
-        $this->_active = true; // ставим флаг что я активен (потому что подключаюсь)
+        $this->_idle = false; // занят, подключаюсь
         $this->_state = StreamLoop_HTTPS_Const::STATE_CONNECTING; // in 1st connect
 
         $this->_createAndConnectTCP();
@@ -286,7 +286,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     public function readyWrite($tsSelect) {
         // if-tree optimization
         if ($this->_state == StreamLoop_HTTPS_Const::STATE_READY) {
-            $this->_active = false;
+            $this->_idle = true; // свободен
         } elseif ($this->_state == StreamLoop_HTTPS_Const::STATE_CONNECTING) {
             // коннект установился, я готов к записи
             stream_context_set_option($this->stream, [
@@ -386,7 +386,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         $this->_statusCode = 0;
         $this->_statusMessage = '';
         $this->_headerArray = [];
-        $this->_active = false;
+        $this->_idle = true; // свободен
 
         // reset chunked state
         $this->_chunkExpected = null;
@@ -407,7 +407,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     private $_headerArray = []; // array
     private $_statusCode = 0; // int
     private $_statusMessage = ''; // string
-    private $_active = false; // bool @todo перевернуть на _busy
+    private $_idle = true; // bool, свободен или не
     private $_state = 0; // int, 0 is STATE_DISCONNECTED, by default disconnected
     private $_chunkExpected = null; // int|null, сколько байт данных ждем в текущем чанке
     private $_bodyDecoded = ''; // сюда складываем уже декодированное тело (без chunk-обвязки)
