@@ -137,6 +137,7 @@ class StreamLoop {
         }
         # debug:end
 
+        // @todo нужно ли делать isset for performance?
         $this->_handlerArray[$streamID] = $handler;
 
         if ($flagRead) {
