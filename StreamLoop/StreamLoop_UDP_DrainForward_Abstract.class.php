@@ -6,15 +6,16 @@ abstract class StreamLoop_UDP_DrainForward_Abstract extends StreamLoop_UDP_Drain
         $fromAddress = '';
         $fromPort = 0;
 
+        // to locals
+        // нужно потому что будет минимум две попытки чтения
+        $socket = $this->_socketResource;
+
+        // counter
         $drainLimit = $this->_drainLimit;
 
-        // тут я не делаю socket to locals, потому что в 90% случаев будет одно чтение,
-        // в 7% случаев 2 чтения,
-        // и 3% случаев 3+ чтения,
-        // поэтому не выгодно выносить переменные в локальные
         do {
             $bytes = socket_recvfrom(
-                $this->_socketResource,
+                $socket,
                 $buffer,
                 1024,
                 MSG_DONTWAIT,

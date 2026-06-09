@@ -78,7 +78,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
             $buffer = $this->_buffer;
             $bufLen = $this->_bufferLength;
             $offset = $this->_bufferOffset;
-            $stream = $this->stream; // @todo чтение одно, не нужен to locals
             $readFrameLength = $this->_readFrameLength;
 
             // один общий try-catch экономит до 11% cpu time если вызовов onReceive несколько
@@ -89,7 +88,10 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                 // еще раз, чтобы не ждать нового круга stream_select(). Но опять-таки, это сильно зависит от количество
                 // потоков внутри всего StreamLoop и насколько я могу затупить на одном handler'e.
                 do {
-                    $data = fread($stream, $readFrameLength);
+                    // я не использую stream to locals, потому что в 95% случаев чтение одно
+                    // и у меня есть проверка $length < $readFrameLength - то есть я выйду сразу же и не буду
+                    // пытаться сделать второй fread
+                    $data = fread($this->stream, $readFrameLength);
                     $length = strlen($data);
 
                     // чаще всего будет срабатывать length > 0

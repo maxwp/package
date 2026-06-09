@@ -3,18 +3,19 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Drai
 
     public function readyRead($tsSelect) {
         // тут всегда будет как минимум две попытки чтения, поэтому to locals оправдан для всего
+        $socket = $this->_socketResource;
 
-        $buffer = '';
-        $fromAddress = '';
+        $buffer1 = '';
+        $fromAddress1 = '';
         $fromPort = 0;
 
         // --- recv #1 (must exist if select says readable) ---
         $bytes1 = socket_recvfrom(
-            $this->_socketResource,
-            $buffer,
+            $socket,
+            $buffer1,
             1024,
             MSG_DONTWAIT,
-            $fromAddress,
+            $fromAddress1,
             $fromPort
         );
 
@@ -25,22 +26,22 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Drai
         }
 
         // stash #1 (because next recv overwrites vars)
-        $buffer1 = $buffer; // @todo проще отдельную переменную, чем переприсванивать
-        $addr1 = $fromAddress;
+        $buffer2 = '';
+        $fromAddress2 = '';
 
         // --- recv #2 (single extra recv to detect batching) ---
         $bytes2 = socket_recvfrom(
-            $this->_socketResource,
-            $buffer,
+            $socket,
+            $buffer2,
             1024,
             MSG_DONTWAIT,
-            $fromAddress,
+            $fromAddress2,
             $fromPort
         );
 
         if ($bytes2 <= 0) {
             // common case: only one datagram available -> no arrays/loops
-            $this->_onReceive($tsSelect, $buffer1, $bytes1, $addr1);
+            $this->_onReceive($tsSelect, $buffer1, $bytes1, $fromAddress1);
             return;
         }
 
@@ -48,9 +49,9 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Drai
         // push #1
         // push #2 (currently in $buffer/$fromAddress/$fromPort)
         // NB! Такой подход с отдельными массивами на 32% быстрее чем делать вложенный массив, я проверил дважды.
-        $bufferArray = [$buffer1, $buffer];
+        $bufferArray = [$buffer1, $buffer2];
         $bytesArray = [$bytes1, $bytes2];
-        $fromAddressArray = [$addr1, $fromAddress];
+        $fromAddressArray = [$fromAddress1, $fromAddress2];
 
         $found = 2;
 
@@ -59,19 +60,19 @@ abstract class StreamLoop_UDP_DrainBackward_Abstract extends StreamLoop_UDP_Drai
         $drainLimit = $this->_drainLimit - 2;
 
         do {
-            $bytes = socket_recvfrom(
-                $this->_socketResource,
-                $buffer,
+            $bytes1 = socket_recvfrom(
+                $socket,
+                $buffer1,
                 1024,
                 MSG_DONTWAIT,
-                $fromAddress,
+                $fromAddress1,
                 $fromPort
             );
 
-            if ($bytes > 0) {
-                $bufferArray[] = $buffer;
-                $bytesArray[] = $bytes;
-                $fromAddressArray[] = $fromAddress;
+            if ($bytes1 > 0) {
+                $bufferArray[] = $buffer1;
+                $bytesArray[] = $bytes1;
+                $fromAddressArray[] = $fromAddress1;
                 $found ++;
             } else {
                 // end of drain

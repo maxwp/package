@@ -52,9 +52,11 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     }
 
     public function disconnect() {
-        // reset сам сделает updateHandler в ноль
-        $this->_reset(StreamLoop_HTTPS_Const::STATE_DISCONNECTED); // reset in disconnect
-        $this->_loop->unregisterHandler($this); // важно: disconnect снимает регистрацию handler'a
+        if ($this->streamID) { // этот if - защита от double disconnect: вдруг сработает read, а потом write и в нем я disconnected
+            // reset сам сделает updateHandler в ноль
+            $this->_reset(StreamLoop_HTTPS_Const::STATE_DISCONNECTED); // reset in disconnect
+            $this->_loop->unregisterHandler($this); // важно: disconnect снимает регистрацию handler'a
+        }
 
         // бывают ситуации когда throwError два раза подряд и тогда disconnect два раза подряд
         if (is_resource($this->stream)) {
@@ -106,6 +108,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                     return;
                 } elseif (!$line) {
                     // fgets может вернуть false - это или просто ничего нет в не-блок-режиме или реально EOF (не путай с fread)
+                    // то есть fgets не отличает false от пустой строки
                     $this->_checkEOF(); // read headers - empty line
                     break; // break цикла
                 }
@@ -119,7 +122,8 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                 $length = (int) $headerArray['content-length'];
 
                 // to locals
-                // @todo прилепить skip если я считал меньше чем хотел - и тогда to locals не нужен
+                // он тут нужен потому что 2+ использование,
+                // и в случае успеха мне нужно будет все равно запоминать буфер перед вызовом reset
                 $buffer = $this->_buffer;
 
                 // dynamic drain read
@@ -160,6 +164,10 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                         // а если false - то это ошибка чтения
                         // например, PHP Warning: fread(): SSL: Connection reset by peer
                         $this->_checkEOF(); // read body - empty chunk
+                        break;
+                    } elseif (strlen($chunk) < 4096) {
+                        // если длинна которую я считал меньше запрошенной - то резко на выход
+                        // и не пытаться сделать второй read
                         break;
                     }
                 } while (--$drainIndex);
@@ -309,7 +317,6 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         $this->throwError( // timeout 408
             $tsSelect,
             StreamLoop_HTTPS_Const::ERROR_TIMEOUT,
-            'timeout',
         );
     }
 
