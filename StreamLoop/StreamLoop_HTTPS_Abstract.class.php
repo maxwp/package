@@ -14,16 +14,9 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         $this->_updateSourcePort($bindPort);
     }
 
-    // @todo вместо $timeout=sec сразу передавать $timeoutTo=ttl, это позволит убрать microtime call
-    public function write($method, $path, $body, $headerArray, $timeout = 10) {
+    public function write($method, $path, $body, $headerArray, $timeoutTo) {
         if ($this->_active) { // @todo if-tree
             throw new StreamLoop_Exception(__CLASS__." already under active request");
-        }
-
-        if ($timeout) {
-            $timeout = (float) $timeout;
-        } else {
-            $timeout = 10; // 10 sec everytime
         }
 
         $this->_active = true;
@@ -50,7 +43,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
             // я специально регистрирую тут handler снова, потому что после успешного ответа вызывался _reset и handler был снят:
             // я так сделал специально, чтобы StreamLoop не таскал ничего в себе для пассивных HTTP соединений
             // @todo сделать updateStreamState method
-            $this->_loop->registerHandler($this, true, false, microtime(true) + $timeout); // request sent -> waiting for headers
+            $this->_loop->registerHandler($this, true, false, $timeoutTo); // request sent -> waiting for headers
         } else {
             $this->throwError( // closed by server / reset by peer
                 microtime(true), // tsSelect
@@ -411,7 +404,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     }
 
     private $_buffer = ''; // string
-    private $_headerArray = [];
+    private $_headerArray = []; // array
     private $_statusCode = 0; // int
     private $_statusMessage = ''; // string
     private $_active = false; // bool @todo перевернуть на _busy
