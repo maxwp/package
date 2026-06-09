@@ -591,6 +591,41 @@ $x * $x; // 19
 $x * $x * $x; // 20
 $x * $x * $x * $x; // 21
 
+upd: для int/float to locals trick надо делать начиная с 2х использований
+
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        //$int = $this->_int; // 5 ns
+
+        // 1 - 16
+        // 2 - 32
+        // 3 - 48
+        //$this->_call($this->_int);
+        //$this->_call($this->_int);
+        //$this->_call($this->_int);
+
+        // 1 - 18
+        // 2 - 31
+        // 3 - 44
+        $int = $this->_int;
+        $this->_call($int);
+        $this->_call($int);
+        $this->_call($int);
+    }
+
+    public function __construct() {
+        $this->_int = rand();
+    }
+
+    private function _call($int) {
+
+    }
+
+    private $_int;
+
+}
+
 ==============================================================
 
 to locals trick for array/object:
@@ -645,6 +680,54 @@ class Tool_Benchmark implements Benchmark_Interface {
     }
 
     private PairConfig $_pairConfig;
+
+}
+
+==============================================================
+
+to locals trick for resource:
+
+выгоднее выстаскивать начиная с 2х использований
+
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        //$this->_socket; // 5 ns
+        //$this->_stream; // 5 ns
+
+        // 1 - 17
+        // 2 - 34
+        // 3 - 51
+        //$this->_call($this->_socket);
+        //$this->_call($this->_socket);
+        //$this->_call($this->_socket);
+
+        // 1 - 20
+        // 2 - 33
+        // 3 - 47
+        $socket = $this->_socket;
+        $this->_call($socket);
+        $this->_call($socket);
+        $this->_call($socket);
+    }
+
+    public function __construct() {
+        $this->_socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+
+        $this->_stream = stream_socket_server(
+            'udp://127.0.0.1:3333',
+            $errno,
+            $errstr,
+            STREAM_SERVER_BIND,
+        );
+    }
+
+    private function _call($socket) {
+
+    }
+
+    private $_socket; // resource
+    private $_stream; // resource
 
 }
 
