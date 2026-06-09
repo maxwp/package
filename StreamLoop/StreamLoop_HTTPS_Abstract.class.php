@@ -28,9 +28,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                 // timeout на запрос есть всегда, по дефолту это 10 сек (см код выше)
                 $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS; // new request sent
 
-                // я специально регистрирую тут handler снова, потому что после успешного ответа вызывался _reset и handler был снят:
-                // я так сделал специально, чтобы StreamLoop не таскал ничего в себе для пассивных HTTP соединений
-                $this->_loop->registerHandler($this, true, false); // request sent -> waiting for headers
+                $this->_loop->updateHandlerFlags($this, true, false); // request sent -> waiting for headers
                 $this->_loop->updateStreamTimeout($this->streamID, $timeoutTo); // request sent -> waiting for headers
             } else {
                 $this->throwError( // closed by server / reset by peer
@@ -56,6 +54,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     public function disconnect() {
         // reset сам сделает updateHandler в ноль
         $this->_reset(StreamLoop_HTTPS_Const::STATE_DISCONNECTED); // reset in disconnect
+        $this->_loop->unregisterHandler($this); // важно: disconnect снимает регистрацию handler'a
 
         // бывают ситуации когда throwError два раза подряд и тогда disconnect два раза подряд
         if (is_resource($this->stream)) {
@@ -291,7 +290,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
             $this->_state = StreamLoop_HTTPS_Const::STATE_HANDSHAKING; // handshake starting
 
             // NB! НЕ ставим write, потому что во время handshaking всегда идет write и просто зайобка
-            $this->_loop->registerHandler($this, true, false); // connected done -> waiting for SSL handshake
+            $this->_loop->updateHandlerFlags($this, true, false); // connected done -> waiting for SSL handshake
 
             // и сразу же проверяем его, вдруг подключился
             $this->_processHandshake($tsSelect);
@@ -382,7 +381,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         // обнуляем состояние в ready и стираем все таймеры
         $this->_state = $state; // in reset
 
-        $this->_loop->unregisterHandler($this); // важно: reset снимает регистрацию handler'a
+        $this->_loop->resetHandler($this); // важно: reset снимает флаги чтобы получить тишину, в тч таймаут
     }
 
     public function getState() {

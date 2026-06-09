@@ -26,7 +26,8 @@ abstract class StreamLoop_Timer_Abstract extends StreamLoop_Handler_Abstract {
         $this->streamID = -1 * (int) $timerID; // id нужен отрицательный чтобы не пересекся с настоящими stream
         $this->stream = null;
 
-        $this->_loop->registerHandler($this, false, false); // 1st register
+        $this->_loop->registerHandler($this); // 1st register
+        // $this->_loop->updateHandlerFlags($this, false, false); // даже вызывать не надо
         $this->_loop->updateStreamTimeout($this->streamID, microtime(true) + $timeout);
     }
 

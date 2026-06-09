@@ -44,7 +44,8 @@ abstract class StreamLoop_UDP_Abstract extends StreamLoop_Handler_Abstract {
             // non-block-mode
             stream_set_blocking($this->stream, false);
 
-            $this->_loop->registerHandler($this, true, false); // 1st register
+            $this->_loop->registerHandler($this); // 1st register
+            $this->_loop->updateHandlerFlags($this, true, false);
         } else {
             // критическая ошибка — завершаем
             throw new StreamLoop_Exception("$errstr ($errno)");

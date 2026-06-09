@@ -120,37 +120,70 @@ class StreamLoop {
      * Тяжелый метод, не использовать в hot path
      *
      * @param StreamLoop_Handler_Abstract $handler
-     * @param $flagRead
-     * @param $flagWrite
-     * @param $timeoutTo
      * @return void
      * @throws StreamLoop_Exception
      */
-    public function registerHandler(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite) {
-        // to locals
-        $streamID = $handler->streamID;
-        $stream = $handler->stream;
-
+    public function registerHandler(StreamLoop_Handler_Abstract $handler) {
         # debug:start
         if (!$handler->streamID) {
             throw new StreamLoop_Exception('Cannot register handler without streamID');
         }
         # debug:end
 
-        // @todo нужно ли делать isset for performance?
-        $this->_handlerArray[$streamID] = $handler;
+        $this->_handlerArray[$handler->streamID] = $handler;
+    }
+
+    public function updateHandlerFlags(StreamLoop_Handler_Abstract $handler, $flagRead, $flagWrite) {
+        # debug:start
+        if (!$handler->streamID) {
+            throw new StreamLoop_Exception('Cannot register handler without streamID');
+        }
+        # debug:end
 
         if ($flagRead) {
-            $this->_selectReadArray[$streamID] = $stream;
+            $this->_selectReadArray[$handler->streamID] = $handler->stream;
         } else {
-            unset($this->_selectReadArray[$streamID]);
+            unset($this->_selectReadArray[$handler->streamID]);
         }
 
         if ($flagWrite) {
-            $this->_selectWriteArray[$streamID] = $stream;
+            $this->_selectWriteArray[$handler->streamID] = $handler->stream;
         } else {
-            unset($this->_selectWriteArray[$streamID]);
+            unset($this->_selectWriteArray[$handler->streamID]);
         }
+
+        // обновляем rw флаг
+        if ($this->_selectReadArray) {
+            $this->_rwFlag = true;
+        } elseif ($this->_selectWriteArray) {
+            $this->_rwFlag = true;
+        } else {
+            $this->_rwFlag = false;
+        }
+    }
+
+    /**
+     * Сбросить все флаги у handler'a и таймаут
+     *
+     * @param StreamLoop_Handler_Abstract $handler
+     * @return void
+     * @throws StreamLoop_Exception
+     */
+    public function resetHandler(StreamLoop_Handler_Abstract $handler) {
+        # debug:start
+        if (!$handler->streamID) {
+            throw new StreamLoop_Exception('Cannot register handler without streamID');
+        }
+        # debug:end
+
+        // to locals не нужен, только начиная от 4х использований
+        unset(
+            $this->_selectReadArray[$handler->streamID],
+            $this->_selectWriteArray[$handler->streamID],
+            $this->_selectTimeoutToArray[$handler->streamID],
+        );
+
+        $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
 
         // обновляем rw флаг
         if ($this->_selectReadArray) {
