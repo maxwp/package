@@ -4,7 +4,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     abstract protected function _setupConnection();
     abstract protected function _onReceive($tsSelect, $statusCode, $statusMessage, $headerArray, $body);
     abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
-    abstract protected function _onReady($tsSelect); // @todo надо переименовать во что-то типа onReady1st, потому что для SL это скорее on 1st ready @todo после StateMachines
+    abstract protected function _onReady($tsSelect); // @todo переделать на FSM Events?
 
     public function updateConnection($host, $port, $ip = false, $bindIP = false, $bindPort = false) {
         $this->_updateDestinationHost($host);
@@ -14,9 +14,10 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         $this->_updateSourcePort($bindPort);
     }
 
+    // @todo вместо $timeout=sec сразу передавать $timeoutTo=ttl, это позволит убрать microtime call
     public function write($method, $path, $body, $headerArray, $timeout = 10) {
-        if ($this->_active) {
-            throw new StreamLoop_Exception("SL_HTTP already under active request");
+        if ($this->_active) { // @todo if-tree
+            throw new StreamLoop_Exception(__CLASS__." already under active request");
         }
 
         if ($timeout) {
@@ -42,7 +43,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         $request .= $body; // даже если body пустота - ну и ладно, это бытсрее if (body) ...
 
         $n = fwrite($this->stream, $request);
-        if ($n === false) {
+        if ($n === false) { // @todo отказаться от === и сделать другой if
             $this->throwError( // closed by server / reset by peer
                 microtime(true), // tsSelect
                 StreamLoop_HTTPS_Const::ERROR_CLOSED_BY_SERVER, // http code 0
@@ -55,8 +56,10 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         // timeout на запрос есть всегда, по дефолту это 10 сек (см код выше)
         $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_HEADERS; // new request
 
-        $this->_timeoutTo = microtime(true) + $timeout;
-        $this->_loop->registerHandler($this, true, false, $this->_timeoutTo); // waiting for headers
+        // я специально регистрирую тут handler снова, потому что после успешного ответа вызывался _reset и handler был снят:
+        // я так сделал специально, чтобы StreamLoop не таскал ничего в себе для пассивных HTTP соединений
+        // @todo сделать updateStreamState method
+        $this->_loop->registerHandler($this, true, false, microtime(true) + $timeout); // request sent -> waiting for headers
     }
 
     public function connect() {
@@ -117,8 +120,6 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                     }
 
                     $this->_state = StreamLoop_HTTPS_Const::STATE_WAIT_FOR_RESPONSE_BODY; // in read
-
-                    $this->_loop->registerHandler($this, true, false, $this->_timeoutTo); // headers parsed, waiting for body
 
                     $this->_buffer = '';
 
@@ -311,7 +312,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
             $this->_state = StreamLoop_HTTPS_Const::STATE_HANDSHAKING; // handshake starting
 
             // NB! НЕ ставим write, потому что во время handshaking всегда идет write и просто зайобка
-            $this->_loop->registerHandler($this, true, false, $this->_timeoutTo); // connected, waiting for SSL handshake
+            $this->_loop->registerHandler($this, true, false, $this->_timeoutTo); // connected done -> waiting for SSL handshake
 
             // и сразу же проверяем его, вдруг подключился
             $this->_processHandshake($tsSelect);

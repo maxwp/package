@@ -336,7 +336,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                 $this->_state = StreamLoop_WebSocket_Const::STATE_READY;
 
                 // таймер двигаем вперед на 10-15 сек
-                $this->_loop->registerHandler($this, true, false, $tsSelect + 10 + rand() % 5); // upgrading done -> ready with iframe-layer ping-pong
+                $this->_loop->updateStreamTimeout($this->streamID, $tsSelect + 10 + rand() % 5); // upgrading done -> ready with iframe-layer ping-pong
 
                 $this->_buffer = '';
                 $this->_bufferLength = 0;

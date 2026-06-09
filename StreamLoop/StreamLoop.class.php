@@ -116,6 +116,7 @@ class StreamLoop {
 
     /**
      * Регистрация: обязательно должен быть timeoutTo > 0
+     * Тяжелый метод, не использовать в hot path
      *
      * @param StreamLoop_Handler_Abstract $handler
      * @param $flagRead
@@ -135,14 +136,6 @@ class StreamLoop {
         }
         # debug:end
 
-        // нельзя ничего регистрировать с нулевым timeout:
-        // я это проверяю только в debug-mode, чтобы в hot-path не тратить на это время
-        # debug:start
-        if ($timeoutTo <= 0) {
-            throw new StreamLoop_Exception('Cannot register handler without timeout');
-        }
-        # debug:end
-
         $this->_handlerArray[$streamID] = $handler;
 
         if ($flagRead) {
@@ -158,22 +151,10 @@ class StreamLoop {
         }
 
         $this->_selectTimeoutToArray[$streamID] = $timeoutTo;
-
-        // если timeoutto меньше - то используем его;
-        // иначе пересчитываем
-        if ($timeoutTo <= $this->_selectTimeoutToMin) {
-            $this->_selectTimeoutToMin = $timeoutTo;
-        } else {
-            $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
-        }
+        $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
 
         // обновляем rw флаг
-        // хитрожопая if-tree optimization: чаще всего есть что-то в read и нет смысла делать OR-конструкцию
-        if ($flagRead) {
-            $this->_rwFlag = true;
-        } elseif ($flagWrite) {
-            $this->_rwFlag = true;
-        } elseif ($this->_selectReadArray) {
+        if ($this->_selectReadArray) {
             $this->_rwFlag = true;
         } elseif ($this->_selectWriteArray) {
             $this->_rwFlag = true;
@@ -203,10 +184,11 @@ class StreamLoop {
 
         // если timeoutto меньше - то используем его;
         // иначе пересчитываем
-        if ($timeoutTo <= $this->_selectTimeoutToMin) {
-            $this->_selectTimeoutToMin = $timeoutTo;
-        } else {
+        // if-tree-optimization: обычно timeout увеличивается, а не уменьшается
+        if ($timeoutTo > $this->_selectTimeoutToMin) {
             $this->_selectTimeoutToMin = min($this->_selectTimeoutToArray);
+        } else {
+            $this->_selectTimeoutToMin = $timeoutTo;
         }
     }
 
