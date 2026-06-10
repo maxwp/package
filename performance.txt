@@ -3358,6 +3358,26 @@ class Tool_Benchmark implements Benchmark_Interface {
 
 ==============================================================
 
+deflate с самым минимальным сжатием - 5 us
+inflate - 680-700 ns на распаковку (очень быстро)
+
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        // 67 ns
+        $s = '{"method": "bookTicker_update", "params": [[1781127255.6309509, 1781127255.6317029, "XMR_USDT", '.rand().', "327.11", "3", "327.86", "3"]], "id": null}';
+
+        // 5658 - 67  ns
+        $x = gzdeflate($s, 1);
+
+        // 6365 - 5658 = 707 ns
+        $y = gzinflate($x);
+    }
+
+}
+
+==============================================================
+
 Это 1М вызовов:
 
 $data = json_decode($payload, true); // 945 ms
