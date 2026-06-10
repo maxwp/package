@@ -48,6 +48,7 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
     }
 
     protected function _updateDestinationHost($host) {
+        // @todo if наружу
         if (Checker::CheckHostname($host)) {
             $this->_host = $host;
         } else {
@@ -56,6 +57,7 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
     }
 
     protected function _updateDestinationIP($ip = false) {
+        // @todo if наружу
         if ($ip) {
             if (Checker::CheckIP($ip)) {
                 $this->_ip = $ip;
@@ -68,6 +70,7 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
     }
 
     protected function _updateDestinationPort($port) {
+        // @todo if наружу
         $port = (int) $port;
         if ($port > 0) {
             $this->_port = $port;
@@ -77,6 +80,7 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
     }
 
     protected function _updateSourceIP($ip = false) {
+        // @todo if наружу
         if ($ip) {
             if (Checker::CheckIP($ip)) {
                 $this->_sourceIP = $ip;
@@ -89,6 +93,7 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
     }
 
     protected function _updateSourcePort($port = 0) {
+        // @todo if наружу
         $port = (int) $port;
         if ($port >= 0) {
             $this->_sourcePort = $port;

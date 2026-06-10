@@ -104,7 +104,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                             $secondByte = ord($buffer[$offset + 1]);
                             $lenFlag = $secondByte & 0x7F;
                             $isMasked = ($secondByte >= 128); // установлен ли 7й бит, это быстрее чем & + bool
-                            $opcode = ord($buffer[$offset]) & 0x0F;
+                            $opcode = ord($buffer[$offset]) & 0x0F; // @todo move down
 
                             if ($lenFlag == 126) { // чаще всего срабатывает 126
                                 $maskOffset = 4; // 2 + 2 bytes ext len
@@ -124,9 +124,11 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                                 $payloadLength = $lenFlag; // 0..125
                             }
 
+                            // @todo разные ветки на if masked or not
+
                             $maskLen = $isMasked ? 4 : 0; // +4 если masked
                             $payloadOffset = $offset + $maskOffset + $maskLen;
-                            $frameLength = $maskOffset + $maskLen + $payloadLength;
+                            $frameLength = $maskOffset + $payloadLength + $maskLen;
                             if ($bufLen - $offset < $frameLength) {
                                 break;
                             }
@@ -299,7 +301,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
             // @todo какая-то мутная логика ping-pong
 
-            //$this->_loop->registerHandler($this, true, false, $tsSelect + 10 + rand() % 5); // ready timeout: ping-pong
             $this->_loop->updateStreamTimeout($this->streamID, $tsSelect + 10 + rand() % 5);
         } else {
             // во всех остальных случаях я нарвался на проблему что за timeout я не смог установить соединение и сделать handshake/upgrade
