@@ -1239,6 +1239,52 @@ for ($j = 0; $j < 1_000_000; $j++) {
 
 ==============================================================
 
+round-robin trick
+
+1. выгодно бесконечно увеличивать int-счетчик и брать % 5 от него все время
+2. выгодно сразу подставлять в foreach (если нужно)
+
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        // 20 ns
+        //$socketArray = $this->_socketArray[$this->_rr ++ % 5];
+
+        // 25 ns
+        //$socketArray = $this->_socketArray[rand() % 5];
+
+        // 47 ns
+        /*$socketArray = $this->_socketArray[rand() % 5];
+        foreach ($socketArray as $socket) {
+
+        }*/
+
+        // 41 ns
+        /*$socketArray = $this->_socketArray[$this->_rr ++ % 5];
+        foreach ($socketArray as $socket) {
+
+        }*/
+
+        // 37 ns
+        /*foreach ($this->_socketArray[$this->_rr ++ % 5] as $socket) {
+
+        }*/
+    }
+
+    public function __construct() {
+        for ($i = 0; $i < 5; $i++) {
+            $this->_socketArray[] = [$i, $i, $i];
+        }
+    }
+
+    private $_rr = 0;
+    private $_socketArray = [];
+
+
+}
+
+==============================================================
+
 Параллельные массивы лучше вложенных,
 это объясняется дорогим доступом к $message[i],
 а также очень тяжелой клейкой array = [a, b, c]
