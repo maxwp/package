@@ -47,6 +47,9 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         $this->_createAndConnectTCP();
 
         $this->_onInit();
+
+        // на каждый connect новый период пинга
+        $this->_pingPeriod = 10.01 + rand() % 5;
     }
 
     public function disconnect() {
@@ -272,16 +275,15 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
     public function readyTimeout($tsSelect) {
         /*
-         * idle ping logic:
+         * idle ping logic: @todo какая-то мутная логика ping-pong
          * - изначально после подключения ставится первый интервал в 10-15 sec (rand) updateHandlerTimeout(),
          *   а флаг active = 1 (bool)
          * - при каждом pong ставится active =1 и продлевается updateHandlerTimeout() на 10-15 sec rand
-         * - когда запускается readySelectTimeout():
+         * - когда запускается readyTimeout():
          *   если флаг active = 1, то я ставлю active = 0 и вбрасываю ping и продлеваю updateHandlerTimeout на 10-15 sec rand.
          *   если флаг active = 0 - я выхожу по ошибке что мол нет iframe pong'a
          *
          * Таким образом интервалы длинные, нет бесконечных проверок в конце каждого read.
-         *
          * плюс я отказываюсь от переменных ping intrval чтобы их не запрашивать все время.
          */
 
@@ -299,9 +301,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                 return;
             }
 
-            // @todo какая-то мутная логика ping-pong
-
-            $this->_loop->updateStreamTimeout($this->streamID, $tsSelect + 10 + rand() % 5);
+            $this->_loop->updateStreamTimeout($this->streamID, $tsSelect + $this->_pingPeriod);
         } else {
             // во всех остальных случаях я нарвался на проблему что за timeout я не смог установить соединение и сделать handshake/upgrade
             // (то есть не успел аж до ready)
@@ -326,7 +326,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                     $this->_state = StreamLoop_WebSocket_Const::STATE_READY;
 
                     // таймер двигаем вперед на 10-15 сек
-                    $this->_loop->updateStreamTimeout($this->streamID, $tsSelect + 10 + rand() % 5); // upgrading done -> ready with iframe-layer ping-pong
+                    $this->_loop->updateStreamTimeout($this->streamID, $tsSelect + $this->_pingPeriod); // upgrading done -> ready with iframe-layer ping-pong
 
                     $this->_buffer = '';
                     $this->_bufferLength = 0;
@@ -386,7 +386,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         // тут нужны ===, потому что если вернется int 0 - то надо пробовать еще раз
         if ($return === true) {
             // ssl handshake успешен -> делаем websocket upgrade
-
             fwrite(
                 $this->stream,
                 "GET {$this->_path} HTTP/1.1\r\nHost: {$this->_host}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: ".base64_encode(random_bytes(16))."\r\nSec-WebSocket-Version: 13\r\n"
@@ -496,5 +495,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     private $_readFrameLength = 4096; // 4Kb by default
     private $_readFrameDrain = 1;
     private $_chr126, $_chr127;
+    private $_pingPeriod = 0.0; // float
 
 }

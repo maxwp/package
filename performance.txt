@@ -3340,6 +3340,22 @@ rand() & 3; // 11-12 ns << тоже быстро, но это &3 &7 &15 ...
 rand(5,7); // 19 ns
 (5 + rand() % 3); // 15 ns << лучше так
 
++0.01 позволяет хитро получить float не делая type-casting, который дороже
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        // 26 ns
+        //$x = (float) rand(5, 7);
+
+        // 24 ns
+        $x = rand(5, 7) + 0.01;
+
+        // 17 ns
+        //$x = 5.01 + rand() % 3; //rand(5, 7);
+    }
+
+}
+
 ==============================================================
 
 Это 1М вызовов:
