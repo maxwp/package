@@ -140,7 +140,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                                 );
                             } else {
                                 // masked
-                                $payloadOffset = $offset + $maskOffset + 4;
                                 $frameLength = $maskOffset + $payloadLength + 4;
                                 if ($bufLen - $offset < $frameLength) {
                                     break;
@@ -148,7 +147,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
                                 $payload = substr(
                                     $buffer,
-                                    $payloadOffset,
+                                    $offset + $maskOffset + 4,
                                     $payloadLength
                                 );
 
