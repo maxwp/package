@@ -106,8 +106,6 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                         while ($bufLen - $offset >= 2) {
                             $secondByte = ord($buffer[$offset + 1]);
                             $lenFlag = $secondByte & 0x7F;
-                            $isMasked = ($secondByte >= 128); // установлен ли 7й бит, это быстрее чем & + bool
-                            $opcode = ord($buffer[$offset]) & 0x0F; // @todo move down
 
                             if ($lenFlag == 126) { // чаще всего срабатывает 126
                                 $maskOffset = 4; // 2 + 2 bytes ext len
@@ -127,23 +125,33 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                                 $payloadLength = $lenFlag; // 0..125
                             }
 
-                            // @todo разные ветки на if masked or not
+                            // разные ветки на if masked or not, причем обычно NOT masked:
+                            if ($secondByte < 128) {
+                                // not masked
+                                $frameLength = $maskOffset + $payloadLength;
+                                if ($bufLen - $offset < $frameLength) {
+                                    break;
+                                }
 
-                            $maskLen = $isMasked ? 4 : 0; // +4 если masked
-                            $payloadOffset = $offset + $maskOffset + $maskLen;
-                            $frameLength = $maskOffset + $payloadLength + $maskLen;
-                            if ($bufLen - $offset < $frameLength) {
-                                break;
-                            }
+                                $payload = substr(
+                                    $buffer,
+                                    $offset + $maskOffset,
+                                    $payloadLength
+                                );
+                            } else {
+                                // masked
+                                $payloadOffset = $offset + $maskOffset + 4;
+                                $frameLength = $maskOffset + $payloadLength + 4;
+                                if ($bufLen - $offset < $frameLength) {
+                                    break;
+                                }
 
-                            $payload = substr(
-                                $buffer,
-                                $payloadOffset,
-                                $payloadLength
-                            );
+                                $payload = substr(
+                                    $buffer,
+                                    $payloadOffset,
+                                    $payloadLength
+                                );
 
-                            // masked frames бывают редко
-                            if ($isMasked) {
                                 $maskKey = substr($buffer, $offset + $maskOffset, 4);
 
                                 // повторяем маску до длины payload и XOR'им строкой
@@ -153,7 +161,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                                 $payload ^= str_repeat($maskKey, ($payloadLength >> 2) + 1);
                             }
 
-                            // Обработка опкодов
+                            // обработка опкодов
+                            $opcode = ord($buffer[$offset]) & 0x0F;
                             if ($opcode <= 0x2) { // // 0x1 (text) или 0x2 (binary)
                                 $this->_onReceive($tsSelect, $payload, $opcode);
                             } elseif ($opcode == 0xA) { // FRAME PONG
