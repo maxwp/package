@@ -9,6 +9,8 @@
 
 /**
  * Класс-проверщик различных данных на корректность
+ *
+ * @todo сама концепция говно
  */
 class Checker {
 
@@ -287,8 +289,10 @@ class Checker {
      * @return bool
      */
     public static function CheckHostname($hostname, $cyrillic = false) {
+        // @todo inverse cyrillic to latin
         $result = false;
 
+        // @todo вроде ж underline не может быть в hostname?
         if ($cyrillic) {
             // имя может соответсововать "localhost" например
             if (preg_match('/^([a-z0-9-а-яіїєґ]+)$/iu', $hostname)) {
@@ -304,6 +308,8 @@ class Checker {
                 $result = true;
             }
         }
+
+        // @todo if-tree
 
         if (!$result) {
             return false;
@@ -341,6 +347,8 @@ class Checker {
      * @return bool
      */
     public static function CheckIP($ip, $format = 'ipv4') {
+        // @todo разделить методы
+
         if ($format == 'ipv4') {
             if (preg_match("/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/", $ip)) {
                 return true;
@@ -349,9 +357,9 @@ class Checker {
             if (preg_match('/((^|:)([0-9a-fA-F]{0,4})){1,8}$/', $ip)) {
                 return true;
             }
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     /**
@@ -363,11 +371,13 @@ class Checker {
     public static function CheckPort($port) {
         if (!is_integer($port)) {
             return false;
-        }
-        if ($port < 0 || $port > 65535) {
+        } elseif ($port < 0) {
             return false;
+        } elseif ($port > 65535) {
+            return false;
+        } else {
+            return true;
         }
-        return true;
     }
 
     /**
@@ -441,8 +451,9 @@ class Checker {
     public static function StringInUTF8($string) {
         if (preg_match('//u', $string)) {
             return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
     /**
@@ -456,6 +467,7 @@ class Checker {
      */
     public static function CheckFileFormat($type, $allowMIME = array(
         'application/vnd.ms-excel', 'application/pdf', 'application/zip', 'application/msword')) {
+        // @todo const
         if (in_array($type, $allowMIME)) {
             return true;
         }
@@ -473,6 +485,7 @@ class Checker {
      * @param string $word
      *
      * @return bool
+     * @todo move to StringUtils
      */
     public static function CheckWord($word) {
         if (preg_match("/([0-9_])+/ius", $word)) {
