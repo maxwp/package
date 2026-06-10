@@ -1128,6 +1128,55 @@ if ($state == 1) {
 
 ==============================================================
 
+if-tree
+Разница в 3 ns/call
+
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        // 87
+        $ask = rand(0, 100);
+        $bid = rand(0, 100);
+        $askSize = rand(0, 100);
+        $bidSize = rand(0, 100);
+
+        // 105 - 87 = 18
+        /*if ($bid > 0) {
+            if ($ask > $bid) {
+                if ($askSize > 0) {
+                    if ($bidSize > 0) {
+                        $this->_call($ask, $askSize, $bid, $bidSize);
+                    }
+                }
+            }
+        }*/
+
+        // 108 - 87 = 21
+        if ($ask <= 0) {
+            return;
+        } elseif ($ask <= $bid) {
+            return;
+        } elseif ($askSize <= 0) {
+            return;
+        } elseif ($bidSize <= 0) {
+            return;
+        } else {
+            $this->_call($ask, $askSize, $bid, $bidSize);
+        }
+    }
+
+    public function __construct() {
+
+    }
+
+    private function _call($ask, $askSize, $bid, $bidSize) {
+
+    }
+
+}
+
+==============================================================
+
 Динамическая типизация в if-ах
 
 if ($x) {} // если $x = null; то 5.5 ms
