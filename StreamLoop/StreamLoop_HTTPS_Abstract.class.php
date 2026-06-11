@@ -7,8 +7,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     abstract protected function _onReady($tsSelect); // @todo переделать на FSM Events?
 
     /**
-     * @deprecated нахер надо для abstract class
-     * @todo
+     * @todo нахер надо для abstract class
      */
     public function updateConnection($host, $port, $ip = false, $bindIP = false, $bindPort = false) {
         $this->_updateDestinationHost($host);

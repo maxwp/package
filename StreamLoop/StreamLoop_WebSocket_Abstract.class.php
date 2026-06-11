@@ -13,16 +13,14 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     // @todo сначала надо придумать как сделать StateMachine, чтобы я мог помещать команду с событиями onXXX,
     //       и затем handshake и switching protocol снанут этими командами
 
-    abstract protected function _setupConnection();
-    abstract protected function _onInit(); // @todo rename to _beforeConnect, и вообще надо явно Events before/after
+    abstract protected function _setupConnection(); // @todo rename to _beforeConnect?
     abstract protected function _onReceive($tsSelect, $payload, $opcode);
     abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
     abstract protected function _onReady($tsSelect);
 
     /**
      * @throws StreamLoop_Exception
-     * @deprecated нахер надо для abstract class
-     * @todo
+     * @todo нахер надо для abstract class
      */
     public function updateConnection($host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindIP = false, $bindPort = false) {
         $this->_updateDestinationHost($host);
@@ -44,10 +42,10 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         $this->_bufferLength = 0;
         $this->_bufferOffset = 0;
 
-        $this->_state = StreamLoop_WebSocket_Const::STATE_CONNECTING;
         $this->_createAndConnectTCP();
 
-        $this->_onInit();
+        // state меняем после createAndConnectTCP, потому он может кинуть exception и всему пизда, а state будет connecting
+        $this->_state = StreamLoop_WebSocket_Const::STATE_CONNECTING;
 
         // на каждый connect новый период пинга
         $this->_pingPeriod = 10.01 + rand() % 5;
