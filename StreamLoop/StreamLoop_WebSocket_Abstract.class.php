@@ -21,7 +21,8 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
 
     /**
      * @throws StreamLoop_Exception
-     * @todo нахер этот лишний метод? и зачем он public для abstract-класса?
+     * @deprecated нахер надо для abstract class
+     * @todo
      */
     public function updateConnection($host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindIP = false, $bindPort = false) {
         $this->_updateDestinationHost($host);
@@ -254,13 +255,14 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
         switch ($this->_state) {
             case StreamLoop_WebSocket_Const::STATE_CONNECTING:
                 // коннект установился, я готов к записи
+                $host = $this->getDestinationHost(); // to locals: 2+
                 stream_context_set_option($this->stream, [
                     'ssl' => [
                         'SNI_enabled' => true,
-                        'SNI_server_name' => $this->_host,
+                        'SNI_server_name' => $host,
                         'verify_peer' => false,
                         'verify_peer_name' => false,
-                        'peer_name' => $this->_host, // так надо делать если я перебираю IPшники хоста
+                        'peer_name' => $host, // так надо делать если я перебираю IPшники хоста
                         'allow_self_signed' => true,
                     ],
                 ]);
@@ -327,6 +329,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
             if ($line == "\r\n" || $line == "\n") {
                 if (str_contains($this->_buffer, '101 Switching Protocols')) {
                     // вот тут опционально ебашим writeArray если он передан, за один fwrite syscall
+                    // @todo write можно вызвать в onReady и тогда его не передавать в SL_WS вообще
                     if ($this->_writeArray) {
                         $this->writeMulti($this->_writeArray);
                     }
@@ -396,7 +399,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
             // ssl handshake успешен -> делаем websocket upgrade
             fwrite(
                 $this->stream,
-                "GET {$this->_path} HTTP/1.1\r\nHost: {$this->_host}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: ".base64_encode(random_bytes(16))."\r\nSec-WebSocket-Version: 13\r\n"
+                "GET {$this->_path} HTTP/1.1\r\nHost: ".$this->getDestinationHost()."\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: ".base64_encode(random_bytes(16))."\r\nSec-WebSocket-Version: 13\r\n"
                 . ($this->_headerArray ? implode("\r\n", $this->_headerArray)."\r\n" : '')
                 . "\r\n"
             );

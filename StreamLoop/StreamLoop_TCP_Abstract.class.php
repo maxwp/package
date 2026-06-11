@@ -1,13 +1,15 @@
 <?php
 abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
 
+    // @todo теоретически можно перейти на trait, но что это даст?
+
     protected function _createAndConnectTCP() {
         # debug:start
-        Cli::Print_n(__CLASS__." connecting to {$this->_host} ip={$this->_ip} port={$this->_port} bind={$this->_sourceIP}:{$this->_sourcePort}");
+        Cli::Print_n(__CLASS__." connecting to {$this->_destinationHost} ip={$this->_destinationIP} port={$this->_destinationPort} bind={$this->_sourceIP}:{$this->_sourcePort}");
         # debug:end
 
         $stream = stream_socket_client(
-            'tcp://'.($this->_ip ?: $this->_host).':'.$this->_port,
+            'tcp://'.($this->_destinationIP ?: $this->_destinationHost).':'.$this->_destinationPort,
             $errno,
             $errstr,
             0, // timeout = 0, чтобы мгновенно вернулось
@@ -15,7 +17,7 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
             stream_context_create([
                 'socket' => [ // супер важно: надо создавать контекст без ssl-опций!
                     'tcp_nodelay' => true,  // no Nagle algorithm
-                    'bindto' => "{$this->_sourceIP}:{$this->_sourcePort}",
+                    'bindto' => $this->_sourceIP.':'.$this->_sourcePort,
                 ],
             ]),
         );
@@ -48,44 +50,43 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
     }
 
     protected function _updateDestinationHost($host) {
-        // @todo if наружу
         if (Validator::CheckHost($host)) {
-            $this->_host = $host;
+            $this->_destinationHost = $host;
         } else {
             throw new StreamLoop_Exception("Invalid hostname $host");
         }
     }
 
-    protected function _updateDestinationIP($ip = false) {
-        // @todo if наружу
+    protected function _updateDestinationIP($ip) {
         if ($ip) {
             if (Validator::CheckIP($ip)) {
-                $this->_ip = $ip;
+                $this->_destinationIP = $ip;
             } else {
-                throw new StreamLoop_Exception("Invalid IP $ip");
+                throw new StreamLoop_Exception("Invalid destination IP $ip");
             }
         } else {
-            $this->_ip = false;
+            $this->_destinationIP = false;
         }
     }
 
     protected function _updateDestinationPort($port) {
-        // @todo if наружу
-        $port = (int) $port;
-        if ($port > 0) {
-            $this->_port = $port;
+        if ($port) {
+            if (Validator::CheckPort($port)) {
+                $this->_destinationPort = $port;
+            } else {
+                throw new StreamLoop_Exception("Invalid destination port $port");
+            }
         } else {
-            throw new StreamLoop_Exception("Invalid port $port");
+            $this->_destinationPort = 0;
         }
     }
 
-    protected function _updateSourceIP($ip = false) {
-        // @todo if наружу
+    protected function _updateSourceIP($ip) {
         if ($ip) {
             if (Validator::CheckIP($ip)) {
                 $this->_sourceIP = $ip;
             } else {
-                throw new StreamLoop_Exception("Invalid IP $ip");
+                throw new StreamLoop_Exception("Invalid source IP $ip");
             }
         } else {
             $this->_sourceIP = '0.0.0.0';
@@ -93,19 +94,42 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
     }
 
     protected function _updateSourcePort($port = 0) {
-        // @todo if наружу
-        $port = (int) $port;
-        if ($port >= 0) {
-            $this->_sourcePort = $port;
+        if ($port) {
+            if (Validator::CheckPort($port)) {
+                $this->_sourcePort = $port;
+            } else {
+                throw new StreamLoop_Exception("Invalid source port $port");
+            }
         } else {
-            throw new StreamLoop_Exception("Invalid port $port");
+            $this->_sourcePort = 0;
         }
     }
 
-    protected $_host; // string
-    protected $_port; // int
-    protected $_ip = false; // string
-    protected $_sourceIP = '0.0.0.0'; // string, any ip by default
-    protected $_sourcePort = 0; // int, any port by default
+    public function getDestinationHost() {
+        return $this->_destinationHost;
+    }
+
+    public function getDestinationIP() {
+        return $this->_destinationIP;
+    }
+
+    public function getDestinationPort() {
+        return $this->_destinationPort;
+    }
+
+    public function getSourceIP() {
+        return $this->_sourceIP;
+
+    }
+
+    public function getSourcePort() {
+        return $this->_sourcePort;
+    }
+
+    private $_destinationHost; // string
+    private $_destinationPort; // int
+    private $_destinationIP = false; // string
+    private $_sourceIP = '0.0.0.0'; // string, any ip by default
+    private $_sourcePort = 0; // int, any port by default
 
 }

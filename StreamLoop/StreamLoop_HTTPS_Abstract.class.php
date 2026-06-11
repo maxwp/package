@@ -6,6 +6,10 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
     abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
     abstract protected function _onReady($tsSelect); // @todo переделать на FSM Events?
 
+    /**
+     * @deprecated нахер надо для abstract class
+     * @todo
+     */
     public function updateConnection($host, $port, $ip = false, $bindIP = false, $bindPort = false) {
         $this->_updateDestinationHost($host);
         $this->_updateDestinationPort($port);
@@ -16,9 +20,9 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
 
     public function write($method, $path, $body, $headerArray, $timeoutTo) {
         if ($this->_state == StreamLoop_HTTPS_Const::STATE_READY) {
-            $request = $method . ' ' . $path . " HTTP/1.1\r\nHost: {$this->_host}\r\nConnection: keep-alive\r\n" . implode("\r\n", $headerArray)."\r\n";
+            $request = $method . ' ' . $path . " HTTP/1.1\r\nHost: ".$this->getDestinationHost()."\r\nConnection: keep-alive\r\n" . implode("\r\n", $headerArray)."\r\n";
 
-            if ($body != '') {
+            if ($body != '') { // чаще body есть
                 $request .= 'Content-Length: ' . strlen($body) . "\r\n\r\n" . $body;
             } else {
                 $request .= "\r\n";
@@ -284,13 +288,14 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
         // if-tree optimization
         if ($this->_state == StreamLoop_HTTPS_Const::STATE_CONNECTING) {
             // коннект установился, я готов к записи
+            $host = $this->getDestinationHost(); // to locals: 2+
             stream_context_set_option($this->stream, [
                 'ssl' => [
                     'SNI_enabled' => true,
-                    'SNI_server_name' => $this->_host,
+                    'SNI_server_name' => $host,
                     'verify_peer' => false,
                     'verify_peer_name' => false,
-                    'peer_name' => $this->_host,
+                    'peer_name' => $host,
                     'allow_self_signed' => true,
                 ],
             ]);
