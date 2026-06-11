@@ -49,7 +49,20 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
         }
     }
 
-    // @todo host + port + ip merge
+    protected function _updateDestination($host, $port, $ip = false) {
+        if (Validator::CheckHost($host)) {
+            if (Validator::CheckPort($port)) {
+                $this->_destinationHost = $host;
+                $this->_destinationPort = $port;
+                $this->_destinationIP = $ip; // @todo ip пока не проверяется
+
+                return;
+            }
+        }
+
+        throw new StreamLoop_Exception("Invalid destination $host:$port");
+    }
+
     protected function _updateDestinationHost($host) {
         if (Validator::CheckHost($host)) {
             $this->_destinationHost = $host;
