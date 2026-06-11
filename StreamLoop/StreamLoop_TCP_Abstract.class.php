@@ -49,7 +49,7 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
 
     protected function _updateDestinationHost($host) {
         // @todo if наружу
-        if (Checker::CheckHostname($host)) {
+        if (Checker::CheckHost($host)) {
             $this->_host = $host;
         } else {
             throw new StreamLoop_Exception("Invalid hostname $host");
