@@ -1730,6 +1730,44 @@ class Tool_Benchmark implements Benchmark_Interface {
 
 ==============================================================
 
+null-colleasing оператор:
+
+1. вложенный isset + if = 8 ns
+2. ?? дольше на 3 ns
+
+<?php
+class Tool_Benchmark implements Benchmark_Interface {
+
+    public function process() {
+        // 41 ns
+        $data = [];
+        if (rand(0, 1) == 0) {
+            $data['result'] = 'pong';
+        }
+
+        // 101 - 41 = 60 ns
+        //if (@$data['result'] == 'pong') {}
+
+        // 49 - 41 = 8 ns
+        /*if (isset($data['result'])) {
+            if ($data['result'] == 'pong') {
+
+            }
+        }*/
+
+        // 53 - 41 = 12 ns
+        /*if (isset($data['result']) && $data['result'] == 'pong') {
+
+        }*/
+
+        // 52 - 41 = 11 ns
+        //if ($data['result'] ?? '' == 'pong') {}
+    }
+
+}
+
+==============================================================
+
 printы:
 
 1M вызовов print '.';
