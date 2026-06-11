@@ -49,6 +49,7 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
         }
     }
 
+    // @todo host + port + ip merge
     protected function _updateDestinationHost($host) {
         if (Validator::CheckHost($host)) {
             $this->_destinationHost = $host;

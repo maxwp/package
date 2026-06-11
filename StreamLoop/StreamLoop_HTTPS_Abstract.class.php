@@ -1,21 +1,10 @@
 <?php
 abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
 
-    abstract protected function _setupConnection();
+    abstract protected function _beforeConnect();
     abstract protected function _onReceive($tsSelect, $statusCode, $statusMessage, $headerArray, $body);
     abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
     abstract protected function _onReady($tsSelect); // @todo переделать на FSM Events?
-
-    /**
-     * @todo нахер надо для abstract class
-     */
-    public function updateConnection($host, $port, $ip = false, $bindIP = false, $bindPort = false) {
-        $this->_updateDestinationHost($host);
-        $this->_updateDestinationPort($port);
-        $this->_updateDestinationIP($ip);
-        $this->_updateSourceIP($bindIP);
-        $this->_updateSourcePort($bindPort);
-    }
 
     public function write($method, $path, $body, $headerArray, $timeoutTo) {
         if ($this->_state == StreamLoop_HTTPS_Const::STATE_READY) {
@@ -47,11 +36,12 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
 
     public function connect() {
         // перед connect надо вызвать setupConnection чтобы он поправил все параметры соединения
-        $this->_setupConnection();
-
-        $this->_state = StreamLoop_HTTPS_Const::STATE_CONNECTING; // in 1st connect
+        $this->_beforeConnect();
 
         $this->_createAndConnectTCP();
+
+        // state меняем ТОЛЬКО createAndConnect, потому что он может выкинуть exeption и мне нельзя остаться в state connecting
+        $this->_state = StreamLoop_HTTPS_Const::STATE_CONNECTING; // in 1st connect
     }
 
     public function disconnect() {

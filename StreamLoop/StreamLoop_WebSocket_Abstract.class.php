@@ -18,17 +18,7 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
     abstract protected function _onError($tsSelect, $errorCode, $errorMessage);
     abstract protected function _onReady($tsSelect);
 
-    /**
-     * @throws StreamLoop_Exception
-     * @todo нахер надо для abstract class
-     */
-    public function updateConnection($host, $port, $path, $writeArray, $ip = false, $headerArray = [], $bindIP = false, $bindPort = false) {
-        $this->_updateDestinationHost($host);
-        $this->_updateDestinationPort($port);
-        $this->_updateDestinationIP($ip);
-        $this->_updateSourceIP($bindIP);
-        $this->_updateSourcePort($bindPort);
-
+    protected function _updateUpgradeParams($path, $headerArray = [], $writeArray = []) {
         $this->_path = $path;
         $this->_writeArray = $writeArray;
         $this->_headerArray = $headerArray;
