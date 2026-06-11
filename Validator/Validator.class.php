@@ -1,19 +1,15 @@
 <?php
-
 /**
  * Eventic Packages
- * Copyright (C) 2007-2025 WebProduction
+ * Copyright (C) 2007-2026 WebProduction
  *
  * @author Maxim Miroshnichenko <max@miroshnichenko.org>
  */
 
 /**
  * Класс-проверщик различных данных на корректность
- *
- * @todo сама концепция говно
- * @todo rename to Validator
  */
-class Checker {
+class Validator {
 
     /**
      * Проверить E-mail на корректность

@@ -49,7 +49,7 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
 
     protected function _updateDestinationHost($host) {
         // @todo if наружу
-        if (Checker::CheckHost($host)) {
+        if (Validator::CheckHost($host)) {
             $this->_host = $host;
         } else {
             throw new StreamLoop_Exception("Invalid hostname $host");
@@ -59,7 +59,7 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
     protected function _updateDestinationIP($ip = false) {
         // @todo if наружу
         if ($ip) {
-            if (Checker::CheckIP($ip)) {
+            if (Validator::CheckIP($ip)) {
                 $this->_ip = $ip;
             } else {
                 throw new StreamLoop_Exception("Invalid IP $ip");
@@ -82,7 +82,7 @@ abstract class StreamLoop_TCP_Abstract extends StreamLoop_Handler_Abstract {
     protected function _updateSourceIP($ip = false) {
         // @todo if наружу
         if ($ip) {
-            if (Checker::CheckIP($ip)) {
+            if (Validator::CheckIP($ip)) {
                 $this->_sourceIP = $ip;
             } else {
                 throw new StreamLoop_Exception("Invalid IP $ip");

@@ -44,7 +44,7 @@ ClassLoader::Get()->registerClassArray([
     __DIR__.'/File/File.class.php',
     __DIR__.'/File/File_Exception.class.php',
 
-    __DIR__.'/Checker/Checker.class.php',
+    __DIR__.'/Validator/Validator.class.php',
 
     __DIR__.'/Connection/Connection.class.php',
     __DIR__.'/Connection/Connection_IConnection.class.php',
