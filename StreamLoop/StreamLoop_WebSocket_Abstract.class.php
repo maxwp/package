@@ -86,6 +86,12 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                     $data = fread($this->stream, $readFrameLength);
                     $length = strlen($data);
 
+                    # debug:start
+                    if ($length > 1500) {
+                        Cli::Print_n(__CLASS__ . ": received $length bytes");
+                    }
+                    # debug:end
+
                     // чаще всего будет срабатывать length > 0
                     if ($length > 0) {
                         $buffer .= $data;
