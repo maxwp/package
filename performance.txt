@@ -1761,7 +1761,7 @@ class Tool_Benchmark implements Benchmark_Interface {
         }*/
 
         // 52 - 41 = 11 ns
-        //if ($data['result'] ?? '' == 'pong') {}
+        //if (($data['result'] ?? '') == 'pong') {} // главное не забыть скобки! а то приорите операторов ппц
     }
 
 }

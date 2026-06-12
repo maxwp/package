@@ -80,7 +80,7 @@ abstract class StreamLoop_HTTPS_Abstract extends StreamLoop_TCP_Abstract {
                     // $statusParts[1] = "200"
                     // $statusParts[2] = "OK"
 
-                    $this->_statusCode = (int) $statusParts[1] ?? 0;
+                    $this->_statusCode = (int) ($statusParts[1] ?? 0);
                     $this->_statusMessage = $statusParts[2] ?? '';
 
                     // @todo сохранить content-length отдельно если он есть
