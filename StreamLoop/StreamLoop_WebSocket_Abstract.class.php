@@ -158,6 +158,10 @@ abstract class StreamLoop_WebSocket_Abstract extends StreamLoop_TCP_Abstract {
                             // обработка опкодов
                             $opcode = ord($buffer[$offset]) & 0x0F;
                             if ($opcode <= 0x2) { // // 0x1 (text) или 0x2 (binary)
+                                # debug:start
+                                Cli::Print_n(__CLASS__.': received opcode='.$opcode.' '.$payload);
+                                # debug:end
+
                                 $this->_onReceive($tsSelect, $payload, $opcode);
                             } elseif ($opcode == 0xA) { // FRAME PONG
                                 # debug:start
